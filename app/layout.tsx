@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import "../styles/globals.css";
 import type { Metadata } from "next";
 import { Providers } from "./providers";
