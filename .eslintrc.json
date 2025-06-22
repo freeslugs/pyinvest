@@ -1,0 +1,49 @@
+{
+  "extends": ["next/core-web-vitals", "prettier"],
+  "plugins": ["import"],
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": true,
+      "node": true
+    }
+  },
+  "rules": {
+    // Import rules for better organization
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external",
+          "internal",
+          "parent",
+          "sibling",
+          "index"
+        ],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ],
+    "import/no-duplicates": "error",
+
+    // General rules
+    "no-console": ["warn", { "allow": ["log", "warn", "error"] }],
+    "no-debugger": "error",
+    "prefer-const": "error",
+    "no-var": "error",
+
+    // React/Next.js specific
+    "react-hooks/exhaustive-deps": "warn",
+
+    // App Router - disable pages directory check
+    "@next/next/no-html-link-for-pages": "off"
+  }
+}

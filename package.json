@@ -9,8 +9,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "format": "npx prettier --write \"{__tests__,components,app,styles}/**/*.{ts,tsx,js,jsx}\"",
-    "lint": "next lint && npx prettier --check \"{__tests__,components,app,styles}/**/*.{ts,tsx,js,jsx}\" && npx tsc --noEmit"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "lint:strict": "next lint && prettier --check . && tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "check-all": "npm run lint:strict && npm run type-check"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.3",
@@ -26,8 +31,8 @@
     "permissionless": "^0.2.47",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "viem": "^2.31.4" ,
-    "tailwind-merge": "^3.3.1"  
+    "tailwind-merge": "^3.3.1",
+    "viem": "^2.31.4"
   },
   "devDependencies": {
     "@tsconfig/next": "^2.0.0",
@@ -35,11 +40,21 @@
     "@tsconfig/strictest": "^2.0.1",
     "@types/node": "^18",
     "@types/react": "18.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
     "autoprefixer": "^10.4.7",
     "dotenv-cli": "^6.0.0",
     "eslint": "^8.23.0",
     "eslint-config-next": "12.2.5",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-tailwindcss": "^3.13.0",
     "postcss": "^8.4.14",
+    "prettier": "^3.1.0",
+    "prettier-plugin-tailwindcss": "^0.5.7",
     "tailwindcss": "^3.1.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
