@@ -17,10 +17,17 @@ export default function PyUSDYieldSelector() {
 
         {/* Balance Display */}
         <div className="rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm">
-          <div className="p-6 text-center">
-            <p className="text-sm text-gray-500 mb-1">Available Balance</p>
-            <p className="text-3xl font-bold text-gray-900">$12,450.00</p>
-            <p className="text-sm text-gray-500">pyUSD</p>
+          <div className="p-6">
+            <p className="text-sm text-gray-500 mb-1 text-center">Available Balance</p>
+            <div className="flex items-center justify-center space-x-2">
+              <p className="text-3xl font-bold text-gray-900">$12,450.00</p>
+              <img 
+                src="/assets/pyusd_logo.png" 
+                alt="pyUSD logo" 
+                className="h-6 w-6"
+              />
+            </div>
+            <p className="text-sm text-gray-500 text-center">pyUSD</p>
           </div>
         </div>
 
