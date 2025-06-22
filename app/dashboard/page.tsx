@@ -18,16 +18,44 @@ export default function PyUSDYieldSelector() {
         {/* Balance Display */}
         <div className="rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm">
           <div className="p-6">
-            <p className="text-sm text-gray-500 mb-1 text-center">Available Balance</p>
-            <div className="flex items-center justify-center space-x-2">
-              <p className="text-3xl font-bold text-gray-900">$12,450.00</p>
+            <p className="text-sm text-gray-500 mb-2">Amount</p>
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-gray-300 text-4xl font-light">$</span>
+              <p className="text-4xl font-medium text-gray-800">12,450.00</p>
               <img 
                 src="/assets/pyusd_logo.png" 
                 alt="pyUSD logo" 
-                className="h-6 w-6"
+                className="h-6 w-6 ml-1"
               />
             </div>
-            <p className="text-sm text-gray-500 text-center">pyUSD</p>
+            
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-2">Balance sources</p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <img 
+                      src="/assets/Venmo-icon.png" 
+                      alt="Venmo" 
+                      className="h-4 w-4 mr-2"
+                    />
+                    <span className="text-sm text-gray-500">Venmo</span>
+                  </div>
+                  <span className="text-sm text-gray-500">$8,250.00</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <img 
+                      src="/assets/coinbase-icon.png" 
+                      alt="Coinbase" 
+                      className="h-4 w-4 mr-2"
+                    />
+                    <span className="text-sm text-gray-500">Coinbase</span>
+                  </div>
+                  <span className="text-sm text-gray-500">$4,200.00</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
