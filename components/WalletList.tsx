@@ -1,14 +1,23 @@
 import {
   useCreateWallet,
   useSolanaWallets,
-  WalletWithMetadata,
   useUser,
+  type WalletWithMetadata,
 } from "@privy-io/react-auth";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useCallback, useMemo, useState } from "react";
 import WalletCard from "./WalletCard";
 
+// Smart wallet type definition based on Privy's actual type
+interface SmartWallet {
+  type: 'smart_wallet';
+  address: string;
+  smartWalletType?: string;
+}
+
 export default function WalletList() {
   const { user } = useUser();
+  const { client } = useSmartWallets();
   const { createWallet: createEthereumWallet } = useCreateWallet();
   const { createWallet: createSolanaWallet } = useSolanaWallets();
   const [isCreating, setIsCreating] = useState(false);
@@ -35,6 +44,26 @@ export default function WalletList() {
     [user]
   );
 
+  const smartWallets = useMemo<SmartWallet[]>(
+    () =>
+      (user?.linkedAccounts.filter(
+        (account) => account.type === "smart_wallet"
+      ) as SmartWallet[]) ?? [],
+    [user]
+  );
+
+  // Get chain information for smart wallet
+  const smartWalletChainInfo = useMemo(() => {
+    if (client?.chain) {
+      return {
+        name: client.chain.name,
+        id: client.chain.id,
+        nativeCurrency: client.chain.nativeCurrency
+      };
+    }
+    return null;
+  }, [client]);
+
   const handleCreateWallet = useCallback(
     async (type: "ethereum" | "solana") => {
       setIsCreating(true);
@@ -54,47 +83,108 @@ export default function WalletList() {
   );
 
   return (
-    <div className="space-y-4">
-      {ethereumEmbeddedWallets.length === 0 ? (
-        <div className="p-4 border border-gray-200 rounded-lg text-center">
-          <p className="text-gray-600 mb-4">
-            No Ethereum embedded wallets found.
-          </p>
-          <button
-            onClick={() => handleCreateWallet("ethereum")}
-            disabled={isCreating}
-            className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white disabled:bg-violet-400 disabled:cursor-not-allowed"
-          >
-            {isCreating ? "Creating..." : "Create Ethereum Embedded Wallet"}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {ethereumEmbeddedWallets.map((wallet) => (
-            <WalletCard key={wallet.address} wallet={wallet} />
-          ))}
-        </div>
-      )}
-      {solanaEmbeddedWallets.length === 0 ? (
-        <div className="p-4 border border-gray-200 rounded-lg text-center">
-          <p className="text-gray-600 mb-4">
-            No Solana embedded wallets found.
-          </p>
-          <button
-            onClick={() => handleCreateWallet("solana")}
-            disabled={isCreating}
-            className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white disabled:bg-violet-400 disabled:cursor-not-allowed"
-          >
-            {isCreating ? "Creating..." : "Create Solana Embedded Wallet"}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {solanaEmbeddedWallets.map((wallet) => (
-            <WalletCard key={wallet.address} wallet={wallet} />
-          ))}
-        </div>
-      )}
+    <div className="space-y-6">
+      {/* Smart Wallets Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">Smart Wallets</h3>
+        {smartWallets.length === 0 ? (
+          <div className="p-4 border border-gray-200 rounded-lg text-center bg-blue-50">
+            <p className="text-gray-600 mb-2">
+              No smart wallets found. Smart wallets will be automatically created when you have an embedded wallet.
+            </p>
+            <p className="text-sm text-gray-500">
+              Make sure smart wallets are configured in your Privy Dashboard.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {smartWallets.map((wallet) => (
+              <div
+                key={wallet.address}
+                className="p-4 border border-blue-200 rounded-lg bg-blue-50"
+              >
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-blue-800">
+                      Smart Wallet {wallet.smartWalletType ? `(${wallet.smartWalletType})` : ''}
+                    </span>
+                    <div className="flex gap-2">
+                      {smartWalletChainInfo && (
+                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                          {smartWalletChainInfo.name} (ID: {smartWalletChainInfo.id})
+                        </span>
+                      )}
+                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                        EVM Compatible
+                      </span>
+                    </div>
+                  </div>
+                  <div className="font-mono text-sm text-gray-700 break-all">
+                    {wallet.address}
+                  </div>
+                  {smartWalletChainInfo && (
+                    <div className="text-xs text-gray-600">
+                      Native Currency: {smartWalletChainInfo.nativeCurrency?.symbol || 'ETH'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Ethereum Embedded Wallets Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">Ethereum Embedded Wallets</h3>
+        {ethereumEmbeddedWallets.length === 0 ? (
+          <div className="p-4 border border-gray-200 rounded-lg text-center">
+            <p className="text-gray-600 mb-4">
+              No Ethereum embedded wallets found.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleCreateWallet("ethereum")}
+              disabled={isCreating}
+              className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white disabled:bg-violet-400 disabled:cursor-not-allowed"
+            >
+              {isCreating ? "Creating..." : "Create Ethereum Embedded Wallet"}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {ethereumEmbeddedWallets.map((wallet) => (
+              <WalletCard key={wallet.address} wallet={wallet} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Solana Embedded Wallets Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800">Solana Embedded Wallets</h3>
+        {solanaEmbeddedWallets.length === 0 ? (
+          <div className="p-4 border border-gray-200 rounded-lg text-center">
+            <p className="text-gray-600 mb-4">
+              No Solana embedded wallets found.
+            </p>
+            <button
+              type="button"
+              onClick={() => handleCreateWallet("solana")}
+              disabled={isCreating}
+              className="text-sm bg-violet-600 hover:bg-violet-700 py-2 px-4 rounded-md text-white disabled:bg-violet-400 disabled:cursor-not-allowed"
+            >
+              {isCreating ? "Creating..." : "Create Solana Embedded Wallet"}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {solanaEmbeddedWallets.map((wallet) => (
+              <WalletCard key={wallet.address} wallet={wallet} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

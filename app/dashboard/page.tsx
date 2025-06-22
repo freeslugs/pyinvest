@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAccessToken, usePrivy } from "@privy-io/react-auth";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import WalletList from "../../components/WalletList";
 
 async function verifyToken() {
@@ -38,6 +39,7 @@ export default function DashboardPage() {
     linkDiscord,
     unlinkDiscord,
   } = usePrivy();
+  const { client } = useSmartWallets();
 
   useEffect(() => {
     if (ready && !authenticated) {
@@ -51,6 +53,11 @@ export default function DashboardPage() {
   const email = user?.email;
   const phone = user?.phone;
   const wallet = user?.wallet;
+
+  // Find smart wallet from linked accounts
+  const smartWallet = user?.linkedAccounts?.find(
+    (account) => account.type === 'smart_wallet'
+  ) as { type: 'smart_wallet'; address: string; smartWalletType?: string } | undefined;
 
   const googleSubject = user?.google?.subject || null;
   const twitterSubject = user?.twitter?.subject || null;
@@ -206,8 +213,41 @@ export default function DashboardPage() {
               </details>
             )}
           </div>
+
+          {/* Smart Wallet Section */}
+          {smartWallet && (
+            <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <h2 className="text-xl font-bold text-blue-900 mb-4">Your Smart Wallet</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-blue-700 mb-1">
+                    Smart Wallet Address {smartWallet.smartWalletType ? `(${smartWallet.smartWalletType})` : ''}:
+                  </p>
+                  <p className="font-mono text-sm bg-white p-3 rounded border text-gray-800 break-all">
+                    {smartWallet.address}
+                  </p>
+                </div>
+                {client?.chain && (
+                  <div className="bg-white p-3 rounded border">
+                    <p className="text-sm font-medium text-blue-700 mb-2">Network Information:</p>
+                    <div className="space-y-1 text-sm text-gray-700">
+                      <p><span className="font-medium">Chain:</span> {client.chain.name}</p>
+                      <p><span className="font-medium">Chain ID:</span> {client.chain.id}</p>
+                      <p><span className="font-medium">Native Currency:</span> {client.chain.nativeCurrency?.symbol || 'ETH'}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="text-sm text-blue-600">
+                  <p>✅ Gas sponsorship enabled</p>
+                  <p>✅ Batch transactions supported</p>
+                  <p>✅ EVM compatible</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-6 max-w-4xl mt-6">
-            <h2 className="text-xl font-bold">Your Wallet</h2>
+            <h2 className="text-xl font-bold">Your Wallets</h2>
             <WalletList />
           </div>
           <p className="mt-6 font-bold uppercase text-sm text-gray-600">
