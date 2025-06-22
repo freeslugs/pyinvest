@@ -4,8 +4,8 @@ import type { Metadata } from "next";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Privy Auth Starter",
-  description: "Privy Auth Starter",
+  title: "Pyinvest",
+  description: "Pyinvest",
   icons: {
     icon: [
       { url: "/favicons/favicon.ico", sizes: "any" },
