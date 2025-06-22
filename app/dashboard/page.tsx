@@ -458,6 +458,54 @@ export default function DashboardPage() {
       // Get the MetaMask wallet's provider directly
       const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
       
+      // Check if MetaMask is on Sepolia network (chainId 11155111 = 0xaa36a7 in hex)
+      const currentChainId = await metamaskProvider.request({ method: 'eth_chainId' });
+      const sepoliaChainId = '0xaa36a7'; // 11155111 in hex
+      
+      if (currentChainId !== sepoliaChainId) {
+        setTokenTestResults({ approveStatus: 'Switching MetaMask to Sepolia...', error: '' });
+        
+        try {
+          // Request to switch to Sepolia
+          await metamaskProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: sepoliaChainId }],
+          });
+          
+          // Wait a moment for the switch to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+        } catch (switchError: any) {
+          // If the network doesn't exist, try to add it
+          if (switchError.code === 4902) {
+            try {
+              await metamaskProvider.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: sepoliaChainId,
+                  chainName: 'Sepolia Testnet',
+                  nativeCurrency: {
+                    name: 'Sepolia ETH',
+                    symbol: 'SEP',
+                    decimals: 18,
+                  },
+                  rpcUrls: ['https://rpc.sepolia.org'],
+                  blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                }],
+              });
+            } catch (addError) {
+              setTokenTestResults({ error: 'Failed to add Sepolia network to MetaMask' });
+              return;
+            }
+          } else {
+            setTokenTestResults({ error: 'Failed to switch MetaMask to Sepolia network' });
+            return;
+          }
+        }
+      }
+      
+      setTokenTestResults({ approveStatus: 'Preparing approval transaction...', error: '' });
+      
       const { encodeFunctionData } = await import('viem');
 
       // Approve 100 PYUSD (with 6 decimals)
