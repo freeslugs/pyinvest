@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  fetchAndVerifyAuthorizationAppRouter,
+  createPrivyClient,
+} from "../../../../lib/utils";
+
+const client = createPrivyClient();
+
+export async function POST(request: NextRequest) {
+  const errorOrVerifiedClaims = await fetchAndVerifyAuthorizationAppRouter(
+    request,
+    client
+  );
+  
+  // If it's a NextResponse, it means there was an error
+  if (errorOrVerifiedClaims instanceof NextResponse) {
+    return errorOrVerifiedClaims;
+  }
+
+  const body = await request.json();
+  const message = body.message;
+  const walletId = body.wallet_id;
+
+  if (!message || !walletId) {
+    return NextResponse.json(
+      { error: "Message and wallet_id are required" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const { signature } = await client.walletApi.ethereum.signMessage({
+      walletId,
+      message,
+    });
+    return NextResponse.json(
+      {
+        method: "personal_sign",
+        data: {
+          signature: signature,
+          encoding: "hex",
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(error);
+    let statusCode = 500;
+
+    return NextResponse.json(
+      {
+        error: (error as Error).message,
+        cause: (error as Error).stack,
+      },
+      { status: statusCode }
+    );
+  }
+}
