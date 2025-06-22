@@ -1,8 +1,8 @@
-import { AuthTokenClaims, PrivyClient } from "@privy-io/server-auth";
-import type { NextApiRequest, NextApiResponse } from "next";
-import { NextRequest, NextResponse } from "next/server";
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { AuthTokenClaims, PrivyClient } from '@privy-io/server-auth';
+import { type ClassValue, clsx } from 'clsx';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -26,14 +26,14 @@ export const fetchAndVerifyAuthorization = async (
 ): Promise<AuthTokenClaims | void> => {
   const header = req.headers.authorization;
   if (!header) {
-    return res.status(401).json({ error: "Missing auth token." });
+    return res.status(401).json({ error: 'Missing auth token.' });
   }
-  const authToken = header.replace(/^Bearer /, "");
+  const authToken = header.replace(/^Bearer /, '');
 
   try {
     return client.verifyAuthToken(authToken);
   } catch {
-    return res.status(401).json({ error: "Invalid auth token." });
+    return res.status(401).json({ error: 'Invalid auth token.' });
   }
 };
 
@@ -46,16 +46,16 @@ export const fetchAndVerifyAuthorizationAppRouter = async (
   req: NextRequest,
   client: PrivyClient
 ): Promise<AuthTokenClaims | NextResponse> => {
-  const header = req.headers.get("authorization");
+  const header = req.headers.get('authorization');
   if (!header) {
-    return NextResponse.json({ error: "Missing auth token." }, { status: 401 });
+    return NextResponse.json({ error: 'Missing auth token.' }, { status: 401 });
   }
-  const authToken = header.replace(/^Bearer /, "");
+  const authToken = header.replace(/^Bearer /, '');
 
   try {
     return await client.verifyAuthToken(authToken);
   } catch {
-    return NextResponse.json({ error: "Invalid auth token." }, { status: 401 });
+    return NextResponse.json({ error: 'Invalid auth token.' }, { status: 401 });
   }
 };
 
@@ -66,17 +66,16 @@ export const createPrivyClient = () => {
 
   // Only add wallet API config if we have a valid session signer secret
   // and we're not in build mode (when NODE_ENV is set to production during build)
-  const walletApiConfig = sessionSignerSecret && sessionSignerSecret.startsWith('0x') && sessionSignerSecret.length === 66
-    ? {
-        walletApi: {
-          authorizationPrivateKey: sessionSignerSecret,
-        },
-      }
-    : {};
+  const walletApiConfig =
+    sessionSignerSecret &&
+    sessionSignerSecret.startsWith('0x') &&
+    sessionSignerSecret.length === 66
+      ? {
+          walletApi: {
+            authorizationPrivateKey: sessionSignerSecret,
+          },
+        }
+      : {};
 
-  return new PrivyClient(
-    appId,
-    appSecret,
-    walletApiConfig
-  );
+  return new PrivyClient(appId, appSecret, walletApiConfig);
 };

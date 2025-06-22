@@ -1,19 +1,20 @@
-import type React from "react";
-import "../styles/globals.css";
-import type { Metadata } from "next";
-import { Providers } from "./providers";
+import type { Metadata } from 'next';
+import type React from 'react';
+import '../styles/globals.css';
+
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: "Pyinvest",
-  description: "Pyinvest",
+  title: 'Pyinvest',
+  description: 'Pyinvest',
   icons: {
     icon: [
-      { url: "/favicons/favicon.ico", sizes: "any" },
-      { url: "/favicons/icon.svg", type: "image/svg+xml" },
+      { url: '/favicons/favicon.ico', sizes: 'any' },
+      { url: '/favicons/icon.svg', type: 'image/svg+xml' },
     ],
-    apple: "/favicons/apple-touch-icon.png",
+    apple: '/favicons/apple-touch-icon.png',
   },
-  manifest: "/favicons/manifest.json",
+  manifest: '/favicons/manifest.json',
 };
 
 export default function RootLayout({
@@ -22,37 +23,35 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang='en'>
       <head>
         <link
-          rel="preload"
-          href="/fonts/AdelleSans-Regular.woff"
-          as="font"
-          crossOrigin=""
+          rel='preload'
+          href='/fonts/AdelleSans-Regular.woff'
+          as='font'
+          crossOrigin=''
         />
         <link
-          rel="preload"
-          href="/fonts/AdelleSans-Regular.woff2"
-          as="font"
-          crossOrigin=""
+          rel='preload'
+          href='/fonts/AdelleSans-Regular.woff2'
+          as='font'
+          crossOrigin=''
         />
         <link
-          rel="preload"
-          href="/fonts/AdelleSans-Semibold.woff"
-          as="font"
-          crossOrigin=""
+          rel='preload'
+          href='/fonts/AdelleSans-Semibold.woff'
+          as='font'
+          crossOrigin=''
         />
         <link
-          rel="preload"
-          href="/fonts/AdelleSans-Semibold.woff2"
-          as="font"
-          crossOrigin=""
+          rel='preload'
+          href='/fonts/AdelleSans-Semibold.woff2'
+          as='font'
+          crossOrigin=''
         />
       </head>
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

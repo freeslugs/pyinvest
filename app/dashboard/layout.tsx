@@ -1,9 +1,9 @@
-import React from "react";
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
+import React from 'react';
 
 export const metadata: Metadata = {
-  title: "Pyinvest Dashboard",
-  description: "Pyinvest Dashboard",
+  title: 'Pyinvest Dashboard',
+  description: 'Pyinvest Dashboard',
 };
 
 export default function DashboardLayout({
