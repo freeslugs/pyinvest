@@ -60,13 +60,23 @@ export const fetchAndVerifyAuthorizationAppRouter = async (
 };
 
 export const createPrivyClient = () => {
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID as string;
+  const appSecret = process.env.PRIVY_APP_SECRET as string;
+  const sessionSignerSecret = process.env.SESSION_SIGNER_SECRET;
+
+  // Only add wallet API config if we have a valid session signer secret
+  // and we're not in build mode (when NODE_ENV is set to production during build)
+  const walletApiConfig = sessionSignerSecret && sessionSignerSecret.startsWith('0x') && sessionSignerSecret.length === 66
+    ? {
+        walletApi: {
+          authorizationPrivateKey: sessionSignerSecret,
+        },
+      }
+    : {};
+
   return new PrivyClient(
-    process.env.NEXT_PUBLIC_PRIVY_APP_ID as string,
-    process.env.PRIVY_APP_SECRET as string,
-    {
-      walletApi: {
-        authorizationPrivateKey: process.env.SESSION_SIGNER_SECRET,
-      },
-    }
+    appId,
+    appSecret,
+    walletApiConfig
   );
 };
