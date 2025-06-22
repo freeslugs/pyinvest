@@ -2,8 +2,8 @@ import React from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "PyUSD Yield Dashboard",
-  description: "Dashboard for PyUSD yield strategies and investment options",
+  title: "Pyinvest Dashboard",
+  description: "Pyinvest Dashboard",
 };
 
 export default function DashboardLayout({
