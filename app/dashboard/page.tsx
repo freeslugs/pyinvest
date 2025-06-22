@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getAccessToken, usePrivy } from "@privy-io/react-auth";
+import { getAccessToken, usePrivy, useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import WalletList from "../../components/WalletList";
 
@@ -57,6 +57,7 @@ export default function DashboardPage() {
     linkDiscord,
     unlinkDiscord,
   } = usePrivy();
+  const { wallets } = useWallets();
   const { client } = useSmartWallets();
 
   useEffect(() => {
@@ -430,6 +431,33 @@ export default function DashboardPage() {
     setTokenTestResults({ approveStatus: 'Requesting approval...', error: '' });
 
     try {
+      // Get MetaMask wallet address to ensure we're approving from the right wallet
+      const metamaskWallet = user?.linkedAccounts?.find(
+        (account) => account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setTokenTestResults({ error: 'MetaMask wallet not found' });
+        return;
+      }
+
+      console.log('Approving from MetaMask wallet:', metamaskWallet.address);
+      console.log('Approving smart wallet to spend:', smartWallet.address);
+
+      // Switch to the MetaMask wallet first, then send the approval transaction
+      const metamaskWalletInList = wallets.find(w => 
+        w.address.toLowerCase() === metamaskWallet.address.toLowerCase() &&
+        w.walletClientType !== 'privy'
+      );
+
+      if (!metamaskWalletInList) {
+        setTokenTestResults({ error: 'MetaMask wallet not found in wallet list' });
+        return;
+      }
+
+      // Get the MetaMask wallet's provider directly
+      const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
+      
       const { encodeFunctionData } = await import('viem');
 
       // Approve 100 PYUSD (with 6 decimals)
@@ -441,11 +469,14 @@ export default function DashboardPage() {
         args: [smartWallet.address as `0x${string}`, approveAmount]
       });
 
-      // This will be signed by MetaMask (user's personal wallet)
-      const txHash = await client.sendTransaction({
-        to: PYUSD_TOKEN_CONFIG.address,
-        data,
-        value: 0n
+      // Send transaction directly through MetaMask provider
+      const txHash = await metamaskProvider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: metamaskWallet.address,
+          to: PYUSD_TOKEN_CONFIG.address,
+          data,
+        }]
       });
 
       setTokenTestResults({
@@ -455,7 +486,9 @@ export default function DashboardPage() {
       });
 
       // Refresh balances after approval
-      setTimeout(() => checkTokenBalances(), 2000);
+      setTimeout(() => {
+        checkTokenBalances();
+      }, 2000);
     } catch (error) {
       console.error('Error approving:', error);
       setTokenTestResults({ 
