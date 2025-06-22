@@ -27,8 +27,8 @@ export default function PyUSDYieldSelector() {
           <div className='p-6'>
             <p className='mb-2 text-sm text-gray-500'>Amount</p>
             <div className='mb-1 flex items-center space-x-2'>
-              <span className='text-4xl font-light text-gray-300'>$</span>
-              <p className='text-4xl font-medium text-gray-800'>12,450.00</p>
+              <span className='text-4xl font-light text-gray-300 font-adelle'>$</span>
+              <p className='text-4xl font-medium text-gray-800 font-adelle'>12,450.00</p>
               <Image
                 src='/assets/pyusd_logo.png'
                 alt='pyUSD logo'
@@ -74,20 +74,20 @@ export default function PyUSDYieldSelector() {
 
         {/* Investment Options */}
         <div className='space-y-4'>
-          <h2 className='px-2 text-lg font-semibold text-gray-900'>
-            Choose your yield strategy
+          <h2 className='px-2 text-xl font-semibold text-gray-900'>
+            Earn Strategies
           </h2>
 
           {/* Conservative Vault */}
-          <div className='group cursor-pointer rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm transition-shadow hover:shadow-md'>
-            <div className='p-6'>
-              <div className='mb-4 flex items-start justify-between'>
+          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md'>
+            <div className='p-5'>
+              <div className='mb-4 flex items-center justify-between'>
                 <div className='flex items-center space-x-3'>
-                  <div className='flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>
+                  <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-green-50'>
                     <Shield className='h-5 w-5 text-green-600' />
                   </div>
                   <div>
-                    <h3 className='font-semibold text-gray-900'>
+                    <h3 className='text-base font-semibold text-gray-900'>
                       Conservative Vault
                     </h3>
                     <p className='text-sm text-gray-500'>
@@ -95,48 +95,45 @@ export default function PyUSDYieldSelector() {
                     </p>
                   </div>
                 </div>
-                <div className='inline-flex items-center rounded-full border border-green-200 border-transparent bg-gray-100 bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-gray-900 text-green-700'>
+                <div className='rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700'>
                   Stable
                 </div>
               </div>
 
               <div className='mb-4 space-y-3'>
                 <div className='flex items-center justify-between'>
-                  <span className='text-sm text-gray-600'>Expected APY</span>
-                  <span className='font-semibold text-green-600'>
+                  <span className='text-sm font-medium text-gray-600'>
+                    Expected APY
+                  </span>
+                  <span className='text-base font-semibold text-green-600'>
                     4.2% - 5.8%
                   </span>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <span className='text-sm text-gray-600'>Lock period</span>
-                  <span className='font-medium text-gray-900'>30 days</span>
-                </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-sm text-gray-600'>Risk level</span>
-                  <span className='font-medium text-gray-900'>Low</span>
+                  <span className='text-sm font-medium text-gray-600'>
+                    Risk level
+                  </span>
+                  <span className='text-sm font-medium text-gray-900'>Low</span>
                 </div>
               </div>
 
-              <button
-                type='button'
-                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
-              >
+              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
                 <span>1-click invest</span>
-                <ArrowRight className='ml-2 h-4 w-4' />
+                <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
               </button>
             </div>
           </div>
 
           {/* Growth Vault */}
-          <div className='group cursor-pointer rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm transition-shadow hover:shadow-md'>
-            <div className='p-6'>
-              <div className='mb-4 flex items-start justify-between'>
+          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md'>
+            <div className='p-5'>
+              <div className='mb-4 flex items-center justify-between'>
                 <div className='flex items-center space-x-3'>
-                  <div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
+                  <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50'>
                     <TrendingUp className='h-5 w-5 text-blue-600' />
                   </div>
                   <div>
-                    <h3 className='font-semibold text-gray-900'>
+                    <h3 className='text-base font-semibold text-gray-900'>
                       Growth Vault
                     </h3>
                     <p className='text-sm text-gray-500'>
@@ -144,34 +141,33 @@ export default function PyUSDYieldSelector() {
                     </p>
                   </div>
                 </div>
-                <div className='inline-flex items-center rounded-full border border-blue-200 border-transparent bg-blue-50 bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 text-gray-900'>
+                <div className='rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700'>
                   Growth
                 </div>
               </div>
 
               <div className='mb-4 space-y-3'>
                 <div className='flex items-center justify-between'>
-                  <span className='text-sm text-gray-600'>Expected APY</span>
-                  <span className='font-semibold text-blue-600'>
+                  <span className='text-sm font-medium text-gray-600'>
+                    Expected APY
+                  </span>
+                  <span className='text-base font-semibold text-blue-600'>
                     8.5% - 12.3%
                   </span>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <span className='text-sm text-gray-600'>Lock period</span>
-                  <span className='font-medium text-gray-900'>90 days</span>
-                </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-sm text-gray-600'>Risk level</span>
-                  <span className='font-medium text-gray-900'>Medium</span>
+                  <span className='text-sm font-medium text-gray-600'>
+                    Risk level
+                  </span>
+                  <span className='text-sm font-medium text-gray-900'>
+                    Medium
+                  </span>
                 </div>
               </div>
 
-              <button
-                type='button'
-                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
-              >
+              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
                 <span>1-click invest</span>
-                <ArrowRight className='ml-2 h-4 w-4' />
+                <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
               </button>
             </div>
           </div>
