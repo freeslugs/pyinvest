@@ -289,7 +289,7 @@ export default function DashboardPage() {
       return;
     }
     
-    setTokenTestResults({ error: '', balances: undefined });
+    setTokenTestResults(prev => ({ ...prev, error: '', balances: undefined }));
     
     try {
       const { createPublicClient, http } = await import('viem');
@@ -405,12 +405,13 @@ export default function DashboardPage() {
         return (Number(balance) / (10 ** PYUSD_TOKEN_CONFIG.decimals)).toFixed(2);
       };
 
-      setTokenTestResults({
+      setTokenTestResults(prev => ({
+        ...prev,
         balances: {
           metamask: formatBalance(metamaskBalance as bigint),
           smartWallet: formatBalance(smartWalletBalance as bigint)
         }
-      });
+      }));
       
       console.log('Balance check completed successfully');
     } catch (error) {
