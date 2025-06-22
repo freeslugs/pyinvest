@@ -2,11 +2,11 @@ import React from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pyinvest Dashboard",
-  description: "Pyinvest Dashboard",
+  title: "Privy Auth Cookbook",
+  description: "Cookbook examples for Privy Auth implementation",
 };
 
-export default function DashboardLayout({
+export default function CookbookLayout({
   children,
 }: {
   children: React.ReactNode;

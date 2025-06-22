@@ -1,4 +1,5 @@
 {
+  "name": "pyinvest",
   "private": true,
   "engines": {
     "npm": ">=10.0.0",
@@ -19,10 +20,14 @@
     "@privy-io/server-auth": "1.21.2",
     "@tailwindcss/forms": "^0.5.3",
     "axios": "^1.9.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.522.0",
     "next": "latest",
+    "permissionless": "^0.2.47",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "viem": "^2.31.4"
+    "viem": "^2.31.4" ,
+    "tailwind-merge": "^3.3.1"  
   },
   "devDependencies": {
     "@tsconfig/next": "^2.0.0",
