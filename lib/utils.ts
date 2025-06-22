@@ -1,6 +1,12 @@
 import { AuthTokenClaims, PrivyClient } from "@privy-io/server-auth";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { NextRequest, NextResponse } from "next/server";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export type APIError = {
   error: string;

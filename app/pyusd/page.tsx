@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowRight, TrendingUp, Shield, Zap } from "lucide-react"
 
 export default function PyUSDYieldSelector() {
@@ -41,7 +39,7 @@ export default function PyUSDYieldSelector() {
                     <p className="text-sm text-gray-500">Low risk, stable returns</p>
                   </div>
                 </div>
-                <div className="inline-flex items-center rounded-full border border-transparent bg-gray-100 text-gray-900 px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">
+                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">
                   Stable
                 </div>
               </div>
@@ -81,7 +79,7 @@ export default function PyUSDYieldSelector() {
                     <p className="text-sm text-gray-500">Higher potential returns</p>
                   </div>
                 </div>
-                <div className="inline-flex items-center rounded-full border border-transparent bg-gray-100 text-gray-900 px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border-blue-200">
+                <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border-blue-200">
                   Growth
                 </div>
               </div>

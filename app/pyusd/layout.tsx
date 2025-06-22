@@ -6,10 +6,16 @@ export const metadata: Metadata = {
   description: "Dashboard for PyUSD yield strategies and investment options",
 };
 
-export default function DashboardLayout({
+export default function PyUSDLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <html lang="en">
+      <body>
+        {children}
+      </body>
+    </html>
+  );
 }
