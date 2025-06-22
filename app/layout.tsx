@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import type React from 'react';
+
+import { adelleSans } from '../lib/fonts';
 import '../styles/globals.css';
 
 import { Providers } from './providers';
@@ -23,34 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='en'>
-      <head>
-        <link
-          rel='preload'
-          href='/fonts/AdelleSans-Regular.woff'
-          as='font'
-          crossOrigin=''
-        />
-        <link
-          rel='preload'
-          href='/fonts/AdelleSans-Regular.woff2'
-          as='font'
-          crossOrigin=''
-        />
-        <link
-          rel='preload'
-          href='/fonts/AdelleSans-Semibold.woff'
-          as='font'
-          crossOrigin=''
-        />
-        <link
-          rel='preload'
-          href='/fonts/AdelleSans-Semibold.woff2'
-          as='font'
-          crossOrigin=''
-        />
-      </head>
-      <body>
+    <html lang='en' className={adelleSans.variable}>
+      <body className={adelleSans.className}>
         <Providers>{children}</Providers>
       </body>
     </html>
