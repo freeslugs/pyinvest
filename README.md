@@ -6,17 +6,20 @@ This app uses NextJS's [App Router](https://nextjs.org/docs/app).
 
 ## Setup
 
-1. Clone this repository and open it in your terminal. 
+1. Clone this repository and open it in your terminal.
+
 ```sh
 git clone <your-repo-url>
 ```
 
 2. Install the necessary dependencies (including [Privy Auth](https://www.npmjs.com/package/@privy-io/react-auth)) with `npm`.
+
 ```sh
-npm i 
+npm i
 ```
 
 3. Initialize your environment variables by copying the `.env.example` file to an `.env.local` file. Then, in `.env.local`, [paste your Privy App ID from the dashboard](https://docs.privy.io/guide/dashboard/api-keys).
+
 ```sh
 # In your terminal, create .env.local from .env.example
 cp .env.example .env.local

@@ -5,17 +5,20 @@
 ### 🔧 **What Was Fixed:**
 
 1. **Lock File Conflicts Resolved**
+
    - Removed conflicting `package-lock.json` file
-   - Deleted old `pnpm-lock.yaml` 
+   - Deleted old `pnpm-lock.yaml`
    - Performed clean `pnpm install` to regenerate fresh lock file
    - New lock file: 268KB, 8,017 lines
 
 2. **Build Errors Fixed**
+
    - **Issue**: Privy client initialization failing during build due to invalid wallet authorization private key
    - **Solution**: Moved Privy client creation from module-level to request handler level
    - **Benefit**: Prevents validation errors during static build process
 
 3. **API Route Improvements**
+
    - Modified `app/api/ethereum/personal_sign/route.ts`
    - Modified `app/api/solana/sign_message/route.ts`
    - Added graceful error handling for missing wallet API configuration
@@ -48,11 +51,13 @@
 ### 🛠 **Key Changes Made:**
 
 1. **lib/utils.ts**
+
    - Enhanced `createPrivyClient()` with better error handling
    - Added validation for wallet authorization private key format
    - Conditional wallet API configuration
 
 2. **API Routes**
+
    - Lazy client initialization (created per request)
    - Added wallet API availability checks
    - Improved error responses

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { PrivyClient, AuthTokenClaims } from "@privy-io/server-auth";
+import { PrivyClient, AuthTokenClaims } from '@privy-io/server-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 const PRIVY_APP_SECRET = process.env.PRIVY_APP_SECRET;
@@ -22,12 +22,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleAuth(request: NextRequest) {
-  const headerAuthToken = request.headers.get("authorization")?.replace(/^Bearer /, "");
-  const cookieAuthToken = request.cookies.get("privy-token")?.value;
+  const headerAuthToken = request.headers
+    .get('authorization')
+    ?.replace(/^Bearer /, '');
+  const cookieAuthToken = request.cookies.get('privy-token')?.value;
 
   const authToken = cookieAuthToken || headerAuthToken;
   if (!authToken) {
-    return NextResponse.json({ error: "Missing auth token" }, { status: 401 });
+    return NextResponse.json({ error: 'Missing auth token' }, { status: 401 });
   }
 
   try {

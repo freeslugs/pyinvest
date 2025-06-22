@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+
 import {
   fetchAndVerifyAuthorizationAppRouter,
   createPrivyClient,
-} from "../../../../lib/utils";
+} from '../../../../lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
     const client = createPrivyClient();
-    
+
     const errorOrVerifiedClaims = await fetchAndVerifyAuthorizationAppRouter(
       request,
       client
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (!message || !walletId) {
       return NextResponse.json(
-        { error: "Message and wallet_id are required" },
+        { error: 'Message and wallet_id are required' },
         { status: 400 }
       );
     }
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Check if wallet API is available
     if (!client.walletApi) {
       return NextResponse.json(
-        { error: "Wallet API not configured" },
+        { error: 'Wallet API not configured' },
         { status: 503 }
       );
     }
@@ -43,17 +44,17 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(
       {
-        method: "sign_message",
+        method: 'sign_message',
         data: {
           signature: signature,
-          encoding: "hex",
+          encoding: 'hex',
         },
       },
       { status: 200 }
     );
   } catch (error) {
     console.error(error);
-    let statusCode = 500;
+    const statusCode = 500;
 
     return NextResponse.json(
       {
