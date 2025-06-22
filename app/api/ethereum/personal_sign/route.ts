@@ -4,31 +4,39 @@ import {
   createPrivyClient,
 } from "../../../../lib/utils";
 
-const client = createPrivyClient();
-
 export async function POST(request: NextRequest) {
-  const errorOrVerifiedClaims = await fetchAndVerifyAuthorizationAppRouter(
-    request,
-    client
-  );
-  
-  // If it's a NextResponse, it means there was an error
-  if (errorOrVerifiedClaims instanceof NextResponse) {
-    return errorOrVerifiedClaims;
-  }
-
-  const body = await request.json();
-  const message = body.message;
-  const walletId = body.wallet_id;
-
-  if (!message || !walletId) {
-    return NextResponse.json(
-      { error: "Message and wallet_id are required" },
-      { status: 400 }
-    );
-  }
-
   try {
+    const client = createPrivyClient();
+    
+    const errorOrVerifiedClaims = await fetchAndVerifyAuthorizationAppRouter(
+      request,
+      client
+    );
+    
+    // If it's a NextResponse, it means there was an error
+    if (errorOrVerifiedClaims instanceof NextResponse) {
+      return errorOrVerifiedClaims;
+    }
+
+    const body = await request.json();
+    const message = body.message;
+    const walletId = body.wallet_id;
+
+    if (!message || !walletId) {
+      return NextResponse.json(
+        { error: "Message and wallet_id are required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if wallet API is available
+    if (!client.walletApi) {
+      return NextResponse.json(
+        { error: "Wallet API not configured" },
+        { status: 503 }
+      );
+    }
+
     const { signature } = await client.walletApi.ethereum.signMessage({
       walletId,
       message,
