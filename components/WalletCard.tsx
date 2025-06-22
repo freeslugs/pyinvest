@@ -1,9 +1,9 @@
 import {
+  type WalletWithMetadata,
   getAccessToken,
   useSessionSigners,
   useSignMessage,
   useSignMessage as useSignMessageSolana,
-  WalletWithMetadata,
 } from '@privy-io/react-auth';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
@@ -71,7 +71,7 @@ export default function WalletCard({ wallet }: WalletCardProps) {
     setIsClientSigning(true);
     try {
       const message = `Signing this message to verify ownership of ${wallet.address}`;
-      let signature;
+      let signature: string | undefined;
       if (wallet.chainType === 'ethereum') {
         const result = await signMessageEthereum({ message });
         signature = result.signature;
@@ -81,13 +81,13 @@ export default function WalletCard({ wallet }: WalletCardProps) {
         });
         signature = result.signature;
       }
-      console.log('Message signed on client! Signature: ', signature);
+      console.log(`Message signed on client! Signature: ${signature}`);
     } catch (error) {
       console.error('Error signing message:', error);
     } finally {
       setIsClientSigning(false);
     }
-  }, [wallet]);
+  }, [wallet, signMessageEthereum, signMessageSolana]);
 
   const handleRemoteSign = useCallback(async () => {
     setIsRemoteSigning(true);
@@ -125,7 +125,7 @@ export default function WalletCard({ wallet }: WalletCardProps) {
     } finally {
       setIsRemoteSigning(false);
     }
-  }, [wallet.id]);
+  }, [wallet.id, wallet.chainType, wallet.address]);
 
   return (
     <div className='flex flex-col gap-4 rounded-lg border border-gray-200 p-4'>
@@ -137,6 +137,7 @@ export default function WalletCard({ wallet }: WalletCardProps) {
 
       <div className='flex flex-col gap-2 sm:flex-row'>
         <button
+          type='button'
           onClick={() => addSessionSigner(wallet.address)}
           disabled={isLoading || hasSessionSigners}
           className={`rounded-md px-4 py-2 text-sm text-white ${
@@ -149,6 +150,7 @@ export default function WalletCard({ wallet }: WalletCardProps) {
         </button>
 
         <button
+          type='button'
           onClick={() => removeSessionSigner(wallet.address)}
           disabled={isLoading || !hasSessionSigners}
           className={`rounded-md px-4 py-2 text-sm text-white ${
@@ -169,6 +171,7 @@ export default function WalletCard({ wallet }: WalletCardProps) {
 
       <div className='flex flex-row gap-2'>
         <button
+          type='button'
           onClick={handleRemoteSign}
           disabled={isRemoteSigning || !hasSessionSigners}
           className={`rounded-md px-4 py-2 text-sm text-white ${
@@ -181,6 +184,7 @@ export default function WalletCard({ wallet }: WalletCardProps) {
         </button>
 
         <button
+          type='button'
           onClick={handleClientSign}
           disabled={isClientSigning}
           className={`rounded-md px-4 py-2 text-sm text-white ${
