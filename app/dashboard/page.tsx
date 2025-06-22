@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowRight, TrendingUp, Shield, Zap } from 'lucide-react';
+import { ArrowRight, Shield, TrendingUp, Zap } from 'lucide-react';
+import Image from 'next/image';
 
 export default function PyUSDYieldSelector() {
   return (
@@ -28,9 +29,11 @@ export default function PyUSDYieldSelector() {
             <div className='mb-1 flex items-center space-x-2'>
               <span className='text-4xl font-light text-gray-300'>$</span>
               <p className='text-4xl font-medium text-gray-800'>12,450.00</p>
-              <img
+              <Image
                 src='/assets/pyusd_logo.png'
                 alt='pyUSD logo'
+                width={24}
+                height={24}
                 className='ml-1 h-6 w-6'
               />
             </div>
@@ -40,9 +43,11 @@ export default function PyUSDYieldSelector() {
               <div className='space-y-2'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center'>
-                    <img
+                    <Image
                       src='/assets/Venmo-icon.png'
                       alt='Venmo'
+                      width={16}
+                      height={16}
                       className='mr-2 h-4 w-4'
                     />
                     <span className='text-sm text-gray-500'>Venmo</span>
@@ -51,9 +56,11 @@ export default function PyUSDYieldSelector() {
                 </div>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center'>
-                    <img
+                    <Image
                       src='/assets/coinbase-icon.png'
                       alt='Coinbase'
+                      width={16}
+                      height={16}
                       className='mr-2 h-4 w-4'
                     />
                     <span className='text-sm text-gray-500'>Coinbase</span>
@@ -110,7 +117,10 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'>
+              <button
+                type='button'
+                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
+              >
                 <span>1-click invest</span>
                 <ArrowRight className='ml-2 h-4 w-4' />
               </button>
@@ -156,7 +166,10 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'>
+              <button
+                type='button'
+                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
+              >
                 <span>1-click invest</span>
                 <ArrowRight className='ml-2 h-4 w-4' />
               </button>
