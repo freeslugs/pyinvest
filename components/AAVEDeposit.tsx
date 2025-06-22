@@ -1,5 +1,5 @@
 'use client';
-import { usePrivy, getAccessToken } from '@privy-io/react-auth';
+import { usePrivy, getAccessToken, useWallets, useSendTransaction } from '@privy-io/react-auth';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { encodeFunctionData, parseUnits } from 'viem';
 import axios from 'axios';
@@ -46,6 +46,8 @@ const AAVE_POOL_ABI = [
 export default function AAVEDeposit() {
   // Privy hooks
   const { user, ready, authenticated } = usePrivy();
+  const { wallets } = useWallets();
+  const { sendTransaction } = useSendTransaction();
   
   // State management
   const [amount, setAmount] = useState('');
@@ -58,30 +60,45 @@ export default function AAVEDeposit() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  // All Ethereum wallets (embedded + external)
-  const allEthereumWallets = user?.linkedAccounts.filter(
-    (account) => 
-      account.type === 'wallet' && 
-      account.chainType === 'ethereum'
+  // Debug logging for wallets
+  console.log('All wallets from useWallets():', wallets);
+  console.log('User linked accounts:', user?.linkedAccounts);
+  
+  // All Ethereum wallets (embedded + external) - use both sources as fallback
+  const walletsFromHook = wallets.filter(
+    (wallet) => wallet.chainType === 'ethereum'
   ) || [];
+  
+  const walletsFromUser = user?.linkedAccounts?.filter(
+    (account) => account.type === 'wallet' && account.chainType === 'ethereum'
+  ) || [];
+  
+  // Use wallets hook if available, fallback to user linked accounts
+  const allEthereumWallets = walletsFromHook.length > 0 ? walletsFromHook : walletsFromUser;
+  
+  console.log('Ethereum wallets found:', allEthereumWallets.length);
+  
+  // Helper function to get wallet address (handle both data structures)
+  const getWalletAddress = (wallet: any) => wallet?.address || (wallet as any)?.address;
+  const getWalletClientType = (wallet: any) => wallet?.walletClientType || (wallet as any)?.walletClientType;
   
   // Selected wallet for deposits
   const selectedWallet = allEthereumWallets.find(
-    (account) => (account as any).address === selectedWalletAddress
+    (wallet) => getWalletAddress(wallet) === selectedWalletAddress
   );
   
   // If no wallet selected, default to embedded wallet or first available
   const defaultWallet = allEthereumWallets.find(
-    (account) => (account as any).walletClientType === 'privy'
+    (wallet) => getWalletClientType(wallet) === 'privy'
   ) || allEthereumWallets[0];
   
   const activeWallet = selectedWallet || defaultWallet;
-  const walletAddress = (activeWallet as any)?.address as `0x${string}`;
+  const walletAddress = getWalletAddress(activeWallet) as `0x${string}`;
 
   // Auto-select default wallet when wallets load
   useEffect(() => {
     if (!selectedWalletAddress && defaultWallet) {
-      setSelectedWalletAddress((defaultWallet as any).address);
+      setSelectedWalletAddress(getWalletAddress(defaultWallet));
     }
   }, [selectedWalletAddress, defaultWallet]);
 
@@ -122,18 +139,14 @@ export default function AAVEDeposit() {
 
   // Load balances for all wallets - stable function
   const loadAllBalances = useCallback(async () => {
-    const walletsToLoad = user?.linkedAccounts.filter(
-      (account) => 
-        account.type === 'wallet' && 
-        account.chainType === 'ethereum'
-    ) || [];
+    const walletsToLoad = allEthereumWallets;
     
     if (walletsToLoad.length === 0) return;
     
     setLoadingBalance(true);
     try {
       const balancePromises = walletsToLoad.map(async (wallet) => {
-        const address = (wallet as any).address;
+        const address = getWalletAddress(wallet);
         const balance = await loadWalletBalance(address);
         return { address, balance };
       });
@@ -156,16 +169,16 @@ export default function AAVEDeposit() {
     } finally {
       setLoadingBalance(false);
     }
-  }, [user?.linkedAccounts, loadWalletBalance]);
+  }, [allEthereumWallets, loadWalletBalance]);
 
   // Load balances on mount and when wallets change
   useEffect(() => {
-    if (authenticated && user?.linkedAccounts) {
+    if (authenticated && allEthereumWallets.length > 0) {
       loadAllBalances();
     }
-  }, [authenticated, user?.linkedAccounts?.length]); // Only depend on length to avoid infinite loops
+  }, [authenticated, allEthereumWallets.length]); // Only depend on length to avoid infinite loops
 
-  // Deposit function using server-side transaction execution
+  // Deposit function using client-side transaction execution
   const depositPyUSD = useCallback(async () => {
     if (!activeWallet || !walletAddress || !amount) return;
     
@@ -175,64 +188,57 @@ export default function AAVEDeposit() {
     
     try {
       const amountWei = parseUnits(amount, 6); // PyUSD 6 decimals
-      const authToken = await getAccessToken();
       
-      // Encode approve transaction
-      const approveCalldata = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [CONTRACTS.AAVE_POOL, amountWei],
-      });
+      console.log('Starting client-side transaction...');
+      console.log('Active wallet:', activeWallet);
+      console.log('Amount:', amount);
       
-      // Encode supply transaction
-      const supplyCalldata = encodeFunctionData({
-        abi: AAVE_POOL_ABI,
-        functionName: 'supply',
-        args: [CONTRACTS.PYUSD, amountWei, walletAddress, 0],
-      });
-      
-      // Send batch transaction via custom API endpoint
-      const response = await axios.post('/api/aave-deposit', {
-        wallet_id: (activeWallet as any)?.id,
-        transactions: [
-          {
-            to: CONTRACTS.PYUSD,
-            data: approveCalldata,
-            value: '0x0',
-          },
-          {
-            to: CONTRACTS.AAVE_POOL,
-            data: supplyCalldata,
-            value: '0x0',
-          }
-        ],
-        amount: amount
+      // Step 1: Send approve transaction
+      console.log('Sending approve transaction...');
+      const approveResult = await sendTransaction({
+        to: CONTRACTS.PYUSD,
+        data: encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [CONTRACTS.AAVE_POOL, amountWei],
+        }),
+        value: '0x0',
       }, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        wallet: activeWallet,
       });
-
-      const data = response.data;
       
-      if (response.status === 200 && data.success) {
-        setTxHash(data.txHash);
-        setSuccess('Deposit successful!');
-        setAmount('');
-        
-        // Reload balance after successful deposit
-        setTimeout(loadAllBalances, 2000);
-      } else {
-        throw new Error(data.error || 'Transaction failed');
-      }
+      console.log('Approve transaction hash:', approveResult.transactionHash);
+      
+      // Step 2: Send supply transaction
+      console.log('Sending supply transaction...');
+      const supplyResult = await sendTransaction({
+        to: CONTRACTS.AAVE_POOL,
+        data: encodeFunctionData({
+          abi: AAVE_POOL_ABI,
+          functionName: 'supply',
+          args: [CONTRACTS.PYUSD, amountWei, walletAddress, 0],
+        }),
+        value: '0x0',
+      }, {
+        wallet: activeWallet,
+      });
+      
+      console.log('Supply transaction hash:', supplyResult.transactionHash);
+      
+      setTxHash(supplyResult.transactionHash);
+      setSuccess('Deposit successful!');
+      setAmount('');
+      
+      // Reload balance after successful deposit
+      setTimeout(loadAllBalances, 3000);
       
     } catch (err: any) {
       console.error('Deposit failed:', err);
-      setError(err?.response?.data?.error || err?.message || 'Transaction failed');
+      setError(err?.message || 'Transaction failed');
     } finally {
       setLoading(false);
     }
-  }, [activeWallet, walletAddress, amount, loadAllBalances]);
+  }, [activeWallet, walletAddress, amount, sendTransaction, loadAllBalances]);
 
   // Input validation
   const isValidAmount = amount && parseFloat(amount) > 0 && parseFloat(amount) <= parseFloat(balance);
@@ -288,8 +294,8 @@ export default function AAVEDeposit() {
         ) : (
           <div className="space-y-3">
             {allEthereumWallets.map((wallet, index) => {
-              const address = (wallet as any).address;
-              const walletType = (wallet as any).walletClientType;
+              const address = getWalletAddress(wallet);
+              const walletType = getWalletClientType(wallet);
               const isSelected = address === selectedWalletAddress;
               const walletBalance = allBalances[address] || '0.000000';
               
@@ -314,7 +320,7 @@ export default function AAVEDeposit() {
                           onClick={(e) => e.stopPropagation()}
                         />
                         <span className="text-xs font-medium text-gray-600">
-                          {walletType === 'privy' ? '🔐 Embedded' : '🔗 External'}
+                          {walletType === 'privy' ? '🔐 Embedded' : `🔗 ${walletType || 'External'}`}
                         </span>
                         {isSelected && (
                           <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Selected for Deposit</span>
@@ -340,7 +346,7 @@ export default function AAVEDeposit() {
       {/* Amount Input */}
       <div className="mb-4">
         <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-          Amount to Deposit {activeWallet && `(from ${(activeWallet as any).walletClientType === 'privy' ? 'Embedded' : 'External'} Wallet)`}
+          Amount to Deposit {activeWallet && `(from ${getWalletClientType(activeWallet) === 'privy' ? 'Embedded' : getWalletClientType(activeWallet) || 'External'} Wallet)`}
         </label>
         <div className="relative">
           <input

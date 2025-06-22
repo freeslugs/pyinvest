@@ -19,12 +19,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    console.log('Request body:', body);
+    
     const { wallet_id, transactions, amount } = body;
 
     if (!wallet_id || !transactions || !Array.isArray(transactions)) {
+      console.error('Validation failed:', { wallet_id, transactions: !!transactions, isArray: Array.isArray(transactions) });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    console.log('Executing approve transaction...');
     // Execute the approve transaction first
     const approveResult = await client.walletApi.ethereum.sendTransaction({
       walletId: wallet_id,
@@ -35,7 +39,9 @@ export async function POST(request: NextRequest) {
         value: transactions[0].value || '0x0',
       },
     });
+    console.log('Approve result:', approveResult);
 
+    console.log('Executing supply transaction...');
     // Execute the supply transaction second
     const supplyResult = await client.walletApi.ethereum.sendTransaction({
       walletId: wallet_id,
@@ -46,6 +52,7 @@ export async function POST(request: NextRequest) {
         value: transactions[1].value || '0x0',
       },
     });
+    console.log('Supply result:', supplyResult);
 
     return NextResponse.json({
       success: true,
