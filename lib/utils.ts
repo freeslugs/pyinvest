@@ -1,5 +1,6 @@
 import { AuthTokenClaims, PrivyClient } from "@privy-io/server-auth";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 
 export type APIError = {
   error: string;
@@ -7,7 +8,7 @@ export type APIError = {
 };
 
 /**
- * Authorizes a user to call an endpoint, returning either an error result or their verifiedClaims
+ * Authorizes a user to call an endpoint (Pages Router version)
  * @param req - The API request
  * @param res - The API response
  * @param client - A PrivyClient
@@ -27,6 +28,28 @@ export const fetchAndVerifyAuthorization = async (
     return client.verifyAuthToken(authToken);
   } catch {
     return res.status(401).json({ error: "Invalid auth token." });
+  }
+};
+
+/**
+ * Authorizes a user to call an endpoint (App Router version)
+ * @param req - The API request
+ * @param client - A PrivyClient
+ */
+export const fetchAndVerifyAuthorizationAppRouter = async (
+  req: NextRequest,
+  client: PrivyClient
+): Promise<AuthTokenClaims | NextResponse> => {
+  const header = req.headers.get("authorization");
+  if (!header) {
+    return NextResponse.json({ error: "Missing auth token." }, { status: 401 });
+  }
+  const authToken = header.replace(/^Bearer /, "");
+
+  try {
+    return await client.verifyAuthToken(authToken);
+  } catch {
+    return NextResponse.json({ error: "Invalid auth token." }, { status: 401 });
   }
 };
 
