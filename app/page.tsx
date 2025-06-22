@@ -25,7 +25,7 @@ async function checkAuth() {
 }
 
 export const metadata = {
-  title: "Login · Privy",
+  title: "Login · Pyinvest",
 };
 
 export default async function LoginPage() {
