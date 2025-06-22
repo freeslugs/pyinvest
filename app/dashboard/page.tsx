@@ -65,84 +65,76 @@ export default function PyUSDYieldSelector() {
 
         {/* Investment Options */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 px-2">Choose your yield strategy</h2>
+          <h2 className="text-xl font-semibold text-gray-900 px-2">Earn Strategies</h2>
 
           {/* Conservative Vault */}
-          <div className="rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group">
             <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-green-600" />
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Conservative Vault</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Conservative Vault</h3>
                     <p className="text-sm text-gray-500">Low risk, stable returns</p>
                   </div>
                 </div>
-                <div className="inline-flex items-center rounded-full border border-transparent bg-gray-100 text-gray-900 px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200">
+                <div className="inline-flex items-center rounded-full bg-green-50 text-green-700 border border-green-200 px-3 py-1 text-xs font-medium">
                   Stable
                 </div>
               </div>
 
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Expected APY</span>
-                  <span className="font-semibold text-green-600">4.2% - 5.8%</span>
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-600">Expected APY</span>
+                  <span className="text-lg font-semibold text-green-600">4.2% - 5.8%</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Lock period</span>
-                  <span className="font-medium text-gray-900">30 days</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Risk level</span>
-                  <span className="font-medium text-gray-900">Low</span>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-600">Risk level</span>
+                  <span className="text-sm font-medium text-gray-900">Low</span>
                 </div>
               </div>
 
-              <button className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-11 px-8 bg-blue-600 text-white hover:bg-blue-700 group-hover:bg-blue-700">
+              <button className="w-full inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200 h-12 px-6 bg-blue-600 text-white hover:bg-blue-700 group-hover:bg-blue-700 shadow-sm hover:shadow-md">
                 <span>1-click invest</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
 
           {/* Growth Vault */}
-          <div className="rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group">
             <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-blue-600" />
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Growth Vault</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Growth Vault</h3>
                     <p className="text-sm text-gray-500">Higher potential returns</p>
                   </div>
                 </div>
-                <div className="inline-flex items-center rounded-full border border-transparent bg-gray-100 text-gray-900 px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border-blue-200">
+                <div className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 text-xs font-medium">
                   Growth
                 </div>
               </div>
 
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Expected APY</span>
-                  <span className="font-semibold text-blue-600">8.5% - 12.3%</span>
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-600">Expected APY</span>
+                  <span className="text-lg font-semibold text-blue-600">8.5% - 12.3%</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Lock period</span>
-                  <span className="font-medium text-gray-900">90 days</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Risk level</span>
-                  <span className="font-medium text-gray-900">Medium</span>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm font-medium text-gray-600">Risk level</span>
+                  <span className="text-sm font-medium text-gray-900">Medium</span>
                 </div>
               </div>
 
-              <button className="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-11 px-8 bg-blue-600 text-white hover:bg-blue-700 group-hover:bg-blue-700">
+              <button className="w-full inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200 h-12 px-6 bg-blue-600 text-white hover:bg-blue-700 group-hover:bg-blue-700 shadow-sm hover:shadow-md">
                 <span>1-click invest</span>
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
