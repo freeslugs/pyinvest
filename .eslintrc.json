@@ -41,6 +41,9 @@
     "no-var": "error",
 
     // React/Next.js specific
-    "react-hooks/exhaustive-deps": "warn"
+    "react-hooks/exhaustive-deps": "warn",
+
+    // App Router - disable pages directory check
+    "@next/next/no-html-link-for-pages": "off"
   }
 }
