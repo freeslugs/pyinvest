@@ -66,14 +66,26 @@ export default function DashboardPage() {
 
   // Function to check if smart wallet is deployed
   const checkSmartWalletDeployment = async () => {
-    if (!smartWallet?.address || !client) return;
+    if (!smartWallet?.address || !client?.chain) return;
     
     setSmartWalletDeploymentStatus({ isDeployed: false, isChecking: true });
     
     try {
+      // Import viem utilities dynamically
+      const { createPublicClient, http } = await import('viem');
+      
+      // Create a public client for the current chain
+      const publicClient = createPublicClient({
+        chain: client.chain,
+        transport: http()
+      });
+      
       // Check if there's code at the smart wallet address
-      const code = await client.getBytecode({ address: smartWallet.address as `0x${string}` });
-      const isDeployed = code !== undefined && code !== '0x';
+      const code = await publicClient.getBytecode({ 
+        address: smartWallet.address as `0x${string}` 
+      });
+      
+      const isDeployed = code !== undefined && code !== '0x' && code !== null;
       setSmartWalletDeploymentStatus({ isDeployed, isChecking: false });
     } catch (error) {
       console.error('Error checking deployment:', error);
