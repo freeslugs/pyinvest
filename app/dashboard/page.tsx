@@ -20,6 +20,7 @@ async function verifyToken() {
 
 export default function DashboardPage() {
   const [verifyResult, setVerifyResult] = useState();
+  const [smartWalletDeploymentStatus, setSmartWalletDeploymentStatus] = useState<{ isDeployed: boolean; isChecking: boolean }>({ isDeployed: false, isChecking: false });
   const router = useRouter();
   const {
     ready,
@@ -62,6 +63,23 @@ export default function DashboardPage() {
   const googleSubject = user?.google?.subject || null;
   const twitterSubject = user?.twitter?.subject || null;
   const discordSubject = user?.discord?.subject || null;
+
+  // Function to check if smart wallet is deployed
+  const checkSmartWalletDeployment = async () => {
+    if (!smartWallet?.address || !client) return;
+    
+    setSmartWalletDeploymentStatus({ isDeployed: false, isChecking: true });
+    
+    try {
+      // Check if there's code at the smart wallet address
+      const code = await client.getBytecode({ address: smartWallet.address as `0x${string}` });
+      const isDeployed = code !== undefined && code !== '0x';
+      setSmartWalletDeploymentStatus({ isDeployed, isChecking: false });
+    } catch (error) {
+      console.error('Error checking deployment:', error);
+      setSmartWalletDeploymentStatus({ isDeployed: false, isChecking: false });
+    }
+  };
 
   return (
     <main className="flex flex-col min-h-screen px-4 sm:px-20 py-6 sm:py-10 bg-privy-light-blue">
@@ -227,6 +245,34 @@ export default function DashboardPage() {
                     {smartWallet.address}
                   </p>
                 </div>
+
+                {/* Deployment Status */}
+                <div className="bg-white p-3 rounded border">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-blue-700">Deployment Status:</p>
+                    <button
+                      type="button"
+                      onClick={checkSmartWalletDeployment}
+                      disabled={smartWalletDeploymentStatus.isChecking}
+                      className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white disabled:bg-blue-400"
+                    >
+                      {smartWalletDeploymentStatus.isChecking ? 'Checking...' : 'Check Status'}
+                    </button>
+                  </div>
+                  <div className="text-sm">
+                    {smartWalletDeploymentStatus.isChecking ? (
+                      <p className="text-yellow-600">🔄 Checking deployment status...</p>
+                    ) : smartWalletDeploymentStatus.isDeployed ? (
+                      <p className="text-green-600">✅ Smart wallet is deployed on-chain</p>
+                    ) : (
+                      <div className="text-yellow-600">
+                        <p>⏳ Smart wallet not yet deployed</p>
+                        <p className="text-xs mt-1">Will be deployed on your first transaction</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {client?.chain && (
                   <div className="bg-white p-3 rounded border">
                     <p className="text-sm font-medium text-blue-700 mb-2">Network Information:</p>
@@ -234,6 +280,42 @@ export default function DashboardPage() {
                       <p><span className="font-medium">Chain:</span> {client.chain.name}</p>
                       <p><span className="font-medium">Chain ID:</span> {client.chain.id}</p>
                       <p><span className="font-medium">Native Currency:</span> {client.chain.nativeCurrency?.symbol || 'ETH'}</p>
+                      {client.chain.id === 1 && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          🔗 <a 
+                            href={`https://etherscan.io/address/${smartWallet.address}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-800"
+                          >
+                            View on Etherscan
+                          </a>
+                        </p>
+                      )}
+                      {client.chain.id === 11155111 && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          🔗 <a 
+                            href={`https://sepolia.etherscan.io/address/${smartWallet.address}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-800"
+                          >
+                            View on Sepolia Etherscan
+                          </a>
+                        </p>
+                      )}
+                      {client.chain.id === 8453 && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          🔗 <a 
+                            href={`https://basescan.org/address/${smartWallet.address}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-800"
+                          >
+                            View on BaseScan
+                          </a>
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
