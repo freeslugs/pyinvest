@@ -7,12 +7,16 @@ export default function PyUSDYieldSelector() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-md mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center pt-8 pb-4">
-          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-lg">py</span>
+        <div className="pt-8 pb-4">
+          <div className="flex items-center mb-4">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+              <span className="text-white font-bold text-lg">py</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">PyInvest</h1>
+              <p className="text-gray-600 text-sm">Easily securely put digital money to work in 1 click</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Put your pyUSD to work instantly</h1>
-          <p className="text-gray-600 text-sm">1-click yield for pyUSD</p>
         </div>
 
         {/* Balance Display */}
