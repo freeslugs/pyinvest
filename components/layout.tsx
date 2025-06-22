@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import Navbar from "./navbar";
-import type { NavbarItem } from "./navbar";
-import { useRouter } from "next/router";
+import { usePrivy } from '@privy-io/react-auth';
+import { useRouter } from 'next/router';
+import React, { useEffect } from 'react';
+
+import Navbar from './navbar';
+import type { NavbarItem } from './navbar';
 
 type Props = {
   children?: React.ReactNode;
@@ -22,14 +23,14 @@ export default function Layout({
 
   useEffect(() => {
     if (ready && !authenticated) {
-      router.push("/");
+      router.push('/');
     }
   }, [ready, authenticated, router]);
 
   return (
     <>
       <Navbar accountId={accountId} appName={appName} items={navbarItems} />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
+      <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>{children}</div>
     </>
   );
 }

@@ -7,21 +7,25 @@
 ### Changes Made:
 
 1. **Preserved Original Dashboard**
-   - Moved original dashboard content from `/dashboard` to `/cookbook` 
+
+   - Moved original dashboard content from `/dashboard` to `/cookbook`
    - Updated metadata and layout accordingly
    - Old Privy auth demo is now accessible at `/cookbook`
 
 2. **Created New PyUSD Dashboard**
+
    - Replaced `/dashboard` with the new PyUSD yield selector interface
    - Built custom UI components (Button, Card, Badge) using Tailwind CSS
    - Added proper styling with hover effects and transitions
 
 3. **Added Required Dependencies**
+
    - Installed `lucide-react` for icons (ArrowRight, TrendingUp, Shield, Zap)
    - Installed `clsx` and `tailwind-merge` for className utilities
    - Created `cn` utility function for conditional class names
 
 4. **Fixed Configuration Issues**
+
    - Updated `tsconfig.json` with proper path mapping for `@/*` imports
    - Updated `next.config.js` with webpack alias configuration
    - Created `.env.local` with proper Privy environment variables
@@ -53,6 +57,7 @@ npm run dev
 ```
 
 Then visit:
+
 - http://localhost:3000/dashboard (main PyUSD interface)
 - http://localhost:3000/cookbook (original Privy demo)
 - http://localhost:3000/pyusd (standalone PyUSD interface)
