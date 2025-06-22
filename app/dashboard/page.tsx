@@ -27,8 +27,8 @@ export default function PyUSDYieldSelector() {
           <div className='p-6'>
             <p className='mb-2 text-sm text-gray-500'>Amount</p>
             <div className='mb-1 flex items-center space-x-2'>
-              <span className='text-4xl font-light text-gray-300'>$</span>
-              <p className='text-4xl font-medium text-gray-800'>12,450.00</p>
+              <span className='text-4xl font-light text-gray-300 font-adelle'>$</span>
+              <p className='text-4xl font-medium text-gray-800 font-adelle'>12,450.00</p>
               <Image
                 src='/assets/pyusd_logo.png'
                 alt='pyUSD logo'
@@ -79,15 +79,15 @@ export default function PyUSDYieldSelector() {
           </h2>
 
           {/* Conservative Vault */}
-          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg'>
-            <div className='p-6'>
-              <div className='mb-6 flex items-start justify-between'>
-                <div className='flex items-center space-x-4'>
-                  <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-green-100'>
-                    <Shield className='h-6 w-6 text-green-600' />
+          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md'>
+            <div className='p-5'>
+              <div className='mb-4 flex items-center justify-between'>
+                <div className='flex items-center space-x-3'>
+                  <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-green-50'>
+                    <Shield className='h-5 w-5 text-green-600' />
                   </div>
                   <div>
-                    <h3 className='mb-1 text-lg font-semibold text-gray-900'>
+                    <h3 className='text-base font-semibold text-gray-900'>
                       Conservative Vault
                     </h3>
                     <p className='text-sm text-gray-500'>
@@ -95,21 +95,21 @@ export default function PyUSDYieldSelector() {
                     </p>
                   </div>
                 </div>
-                <div className='inline-flex items-center rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700'>
+                <div className='rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700'>
                   Stable
                 </div>
               </div>
 
-              <div className='mb-6 space-y-4'>
-                <div className='flex items-center justify-between py-2'>
+              <div className='mb-4 space-y-3'>
+                <div className='flex items-center justify-between'>
                   <span className='text-sm font-medium text-gray-600'>
                     Expected APY
                   </span>
-                  <span className='text-lg font-semibold text-green-600'>
+                  <span className='text-base font-semibold text-green-600'>
                     4.2% - 5.8%
                   </span>
                 </div>
-                <div className='flex items-center justify-between py-2'>
+                <div className='flex items-center justify-between'>
                   <span className='text-sm font-medium text-gray-600'>
                     Risk level
                   </span>
@@ -117,7 +117,7 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button className='inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md group-hover:bg-blue-700'>
+              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
                 <span>1-click invest</span>
                 <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
               </button>
@@ -125,15 +125,15 @@ export default function PyUSDYieldSelector() {
           </div>
 
           {/* Growth Vault */}
-          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg'>
-            <div className='p-6'>
-              <div className='mb-6 flex items-start justify-between'>
-                <div className='flex items-center space-x-4'>
-                  <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100'>
-                    <TrendingUp className='h-6 w-6 text-blue-600' />
+          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md'>
+            <div className='p-5'>
+              <div className='mb-4 flex items-center justify-between'>
+                <div className='flex items-center space-x-3'>
+                  <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50'>
+                    <TrendingUp className='h-5 w-5 text-blue-600' />
                   </div>
                   <div>
-                    <h3 className='mb-1 text-lg font-semibold text-gray-900'>
+                    <h3 className='text-base font-semibold text-gray-900'>
                       Growth Vault
                     </h3>
                     <p className='text-sm text-gray-500'>
@@ -141,21 +141,21 @@ export default function PyUSDYieldSelector() {
                     </p>
                   </div>
                 </div>
-                <div className='inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700'>
+                <div className='rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700'>
                   Growth
                 </div>
               </div>
 
-              <div className='mb-6 space-y-4'>
-                <div className='flex items-center justify-between py-2'>
+              <div className='mb-4 space-y-3'>
+                <div className='flex items-center justify-between'>
                   <span className='text-sm font-medium text-gray-600'>
                     Expected APY
                   </span>
-                  <span className='text-lg font-semibold text-blue-600'>
+                  <span className='text-base font-semibold text-blue-600'>
                     8.5% - 12.3%
                   </span>
                 </div>
-                <div className='flex items-center justify-between py-2'>
+                <div className='flex items-center justify-between'>
                   <span className='text-sm font-medium text-gray-600'>
                     Risk level
                   </span>
@@ -165,7 +165,7 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button className='inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md group-hover:bg-blue-700'>
+              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
                 <span>1-click invest</span>
                 <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
               </button>
