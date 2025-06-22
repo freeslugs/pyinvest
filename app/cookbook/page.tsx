@@ -43,6 +43,28 @@ export default function CookbookPage() {
     error?: string;
     balances?: { metamask: string; smartWallet: string };
   }>({});
+  const [poolData, setPoolData] = useState<{
+    userBalances?: {
+      metamaskPYUSD: string;
+      smartWalletPYUSD: string;
+      metamaskUSDC: string;
+      smartWalletUSDC: string;
+      poolTokens: string;
+    };
+    approvals?: {
+      pyusdApproved: boolean;
+      usdcApproved: boolean;
+      routerApproved: boolean;
+    };
+    depositAmount: string;
+    depositStatus?: string;
+    depositHash?: string;
+    error?: string;
+    isLoading: boolean;
+  }>({
+    depositAmount: '5',
+    isLoading: false,
+  });
   const router = useRouter();
   const {
     ready,
@@ -89,76 +111,24 @@ export default function CookbookPage() {
   const twitterSubject = user?.twitter?.subject || null;
   const discordSubject = user?.discord?.subject || null;
 
-  // Available networks for switching
-  const availableNetworks = [
-    { id: 1, name: 'Ethereum Mainnet', rpcUrl: 'https://cloudflare-eth.com' },
-    {
-      id: 11155111,
-      name: 'Sepolia Testnet',
-      rpcUrl: 'https://rpc.sepolia.org',
-    },
-    { id: 8453, name: 'Base', rpcUrl: 'https://mainnet.base.org' },
-    { id: 84532, name: 'Base Sepolia', rpcUrl: 'https://sepolia.base.org' },
-  ];
+  // Available networks for switching (using constants)
+  const availableNetworks = Object.values(NETWORKS).map(network => ({
+    id: network.id,
+    name: network.name,
+    rpcUrl: network.rpcUrl,
+  }));
 
-  // PYUSD Token Configuration (Sepolia)
-  const PYUSD_TOKEN_CONFIG = {
+  // Get current network tokens and pools
+  const currentNetworkTokens = getTokensForNetwork(client?.chain?.id || 0);
+  const currentNetworkPools = getPoolsForNetwork(client?.chain?.id || 0);
+  const PYUSD_TOKEN_CONFIG = currentNetworkTokens.PYUSD || {
     address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
     decimals: 6,
     symbol: 'PYUSD',
+    name: 'PayPal USD',
   };
-
-  // ERC20 ABI for approve and transfer functions
-  const ERC20_ABI = [
-    {
-      constant: true,
-      inputs: [{ name: '_owner', type: 'address' }],
-      name: 'balanceOf',
-      outputs: [{ name: 'balance', type: 'uint256' }],
-      type: 'function',
-    },
-    {
-      constant: false,
-      inputs: [
-        { name: '_spender', type: 'address' },
-        { name: '_value', type: 'uint256' },
-      ],
-      name: 'approve',
-      outputs: [{ name: '', type: 'bool' }],
-      type: 'function',
-    },
-    {
-      constant: false,
-      inputs: [
-        { name: '_to', type: 'address' },
-        { name: '_value', type: 'uint256' },
-      ],
-      name: 'transfer',
-      outputs: [{ name: '', type: 'bool' }],
-      type: 'function',
-    },
-    {
-      constant: false,
-      inputs: [
-        { name: '_from', type: 'address' },
-        { name: '_to', type: 'address' },
-        { name: '_value', type: 'uint256' },
-      ],
-      name: 'transferFrom',
-      outputs: [{ name: '', type: 'bool' }],
-      type: 'function',
-    },
-    {
-      constant: true,
-      inputs: [
-        { name: '_owner', type: 'address' },
-        { name: '_spender', type: 'address' },
-      ],
-      name: 'allowance',
-      outputs: [{ name: '', type: 'uint256' }],
-      type: 'function',
-    },
-  ] as const;
+  const USDC_TOKEN_CONFIG = currentNetworkTokens.USDC;
+  const PYUSD_USDC_POOL = currentNetworkPools.PYUSD_USDC;
 
   // Function to switch networks
   const switchNetwork = async (chainId: number) => {
@@ -304,10 +274,10 @@ export default function CookbookPage() {
 
   // Function to check token balances
   const checkTokenBalances = async () => {
-    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
-      console.log('Must be on Sepolia network with smart wallet');
+    if (!client?.chain || client.chain.id !== NETWORKS.SEPOLIA.id || !smartWallet || !PYUSD_TOKEN_CONFIG) {
+      console.log('Must be on Sepolia network with smart wallet and PYUSD token available');
       setTokenTestResults({
-        error: 'Must be on Sepolia network with smart wallet',
+        error: 'Must be on Sepolia network with smart wallet and PYUSD token available',
       });
       return;
     }
@@ -450,9 +420,9 @@ export default function CookbookPage() {
 
   // Function to approve smart wallet to spend PYUSD from MetaMask
   const approveSmartWallet = async () => {
-    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+    if (!client?.chain || client.chain.id !== NETWORKS.SEPOLIA.id || !smartWallet || !PYUSD_TOKEN_CONFIG) {
       setTokenTestResults({
-        error: 'Must be on Sepolia network with smart wallet',
+        error: 'Must be on Sepolia network with smart wallet and PYUSD token available',
       });
       return;
     }
@@ -596,9 +566,9 @@ export default function CookbookPage() {
 
   // Function to transfer PYUSD using smart wallet
   const transferWithSmartWallet = async () => {
-    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+    if (!client?.chain || client.chain.id !== NETWORKS.SEPOLIA.id || !smartWallet || !PYUSD_TOKEN_CONFIG) {
       setTokenTestResults({
-        error: 'Must be on Sepolia network with smart wallet',
+        error: 'Must be on Sepolia network with smart wallet and PYUSD token available',
       });
       return;
     }
@@ -668,6 +638,299 @@ export default function CookbookPage() {
         transferStatus: 'Transfer failed',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+  };
+
+  // Function to check pool-related balances and approvals
+  const checkPoolData = async () => {
+    if (!client?.chain || client.chain.id !== NETWORKS.SEPOLIA.id || !smartWallet || !PYUSD_USDC_POOL) {
+      setPoolData(prev => ({
+        ...prev,
+        error: 'Must be on Sepolia network with smart wallet and pool available',
+      }));
+      return;
+    }
+
+    setPoolData(prev => ({ ...prev, isLoading: true, error: '' }));
+
+    try {
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+      });
+
+      // Get MetaMask wallet address
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setPoolData(prev => ({ ...prev, error: 'MetaMask wallet not found', isLoading: false }));
+        return;
+      }
+
+      // Check balances for both tokens and both wallets
+      const [
+        metamaskPYUSD,
+        smartWalletPYUSD,
+        metamaskUSDC,
+        smartWalletUSDC,
+        poolTokens,
+        pyusdAllowance,
+        usdcAllowance,
+      ] = await Promise.all([
+        publicClient.readContract({
+          address: PYUSD_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [metamaskWallet.address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: PYUSD_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet.address as `0x${string}`],
+        }),
+        USDC_TOKEN_CONFIG ? publicClient.readContract({
+          address: USDC_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [metamaskWallet.address as `0x${string}`],
+        }) : Promise.resolve(0n),
+        USDC_TOKEN_CONFIG ? publicClient.readContract({
+          address: USDC_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet.address as `0x${string}`],
+        }) : Promise.resolve(0n),
+        publicClient.readContract({
+          address: PYUSD_USDC_POOL.address,
+          abi: UNISWAP_V3_POOL_ABI,
+          functionName: 'balanceOf',
+          args: [metamaskWallet.address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: PYUSD_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [metamaskWallet.address as `0x${string}`, UNISWAP_V3_ROUTER_ADDRESS],
+        }),
+        USDC_TOKEN_CONFIG ? publicClient.readContract({
+          address: USDC_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [metamaskWallet.address as `0x${string}`, UNISWAP_V3_ROUTER_ADDRESS],
+        }) : Promise.resolve(0n),
+      ]);
+
+      const formatBalance = (balance: bigint, decimals: number) => {
+        return (Number(balance) / 10 ** decimals).toFixed(2);
+      };
+
+      setPoolData(prev => ({
+        ...prev,
+        userBalances: {
+          metamaskPYUSD: formatBalance(metamaskPYUSD as bigint, PYUSD_TOKEN_CONFIG.decimals),
+          smartWalletPYUSD: formatBalance(smartWalletPYUSD as bigint, PYUSD_TOKEN_CONFIG.decimals),
+          metamaskUSDC: USDC_TOKEN_CONFIG ? formatBalance(metamaskUSDC as bigint, USDC_TOKEN_CONFIG.decimals) : '0',
+          smartWalletUSDC: USDC_TOKEN_CONFIG ? formatBalance(smartWalletUSDC as bigint, USDC_TOKEN_CONFIG.decimals) : '0',
+          poolTokens: formatBalance(poolTokens as bigint, 18), // LP tokens usually have 18 decimals
+        },
+        approvals: {
+          pyusdApproved: (pyusdAllowance as bigint) > 0n,
+          usdcApproved: (usdcAllowance as bigint) > 0n,
+          routerApproved: (pyusdAllowance as bigint) > 0n && (usdcAllowance as bigint) > 0n,
+        },
+        isLoading: false,
+      }));
+
+    } catch (error) {
+      console.error('Error checking pool data:', error);
+      setPoolData(prev => ({
+        ...prev,
+        error: `Error checking pool data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        isLoading: false,
+      }));
+    }
+  };
+
+  // Function to approve tokens for Uniswap router
+  const approveTokensForRouter = async () => {
+    if (!client?.chain || client.chain.id !== NETWORKS.SEPOLIA.id || !PYUSD_USDC_POOL) {
+      setPoolData(prev => ({ ...prev, error: 'Must be on Sepolia network with pool available' }));
+      return;
+    }
+
+    setPoolData(prev => ({ ...prev, depositStatus: 'Approving tokens...', error: '' }));
+
+    try {
+      // Get MetaMask wallet
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setPoolData(prev => ({ ...prev, error: 'MetaMask wallet not found' }));
+        return;
+      }
+
+      const metamaskWalletInList = wallets.find(
+        w =>
+          w.address.toLowerCase() === metamaskWallet.address.toLowerCase() &&
+          w.walletClientType !== 'privy'
+      );
+
+      if (!metamaskWalletInList) {
+        setPoolData(prev => ({ ...prev, error: 'MetaMask wallet not found in wallet list' }));
+        return;
+      }
+
+      const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
+      const { encodeFunctionData } = await import('viem');
+
+      // Approve large amount for both tokens
+      const approveAmount = BigInt(1000000 * 10 ** 6); // 1M tokens
+
+      // Approve PYUSD
+      const pyusdData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [UNISWAP_V3_ROUTER_ADDRESS, approveAmount],
+      });
+
+      await metamaskProvider.request({
+        method: 'eth_sendTransaction',
+        params: [
+          {
+            from: metamaskWallet.address,
+            to: PYUSD_TOKEN_CONFIG.address,
+            data: pyusdData,
+          },
+        ],
+      });
+
+      // Approve USDC if available
+      if (USDC_TOKEN_CONFIG) {
+        const usdcData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [UNISWAP_V3_ROUTER_ADDRESS, approveAmount],
+        });
+
+        await metamaskProvider.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: metamaskWallet.address,
+              to: USDC_TOKEN_CONFIG.address,
+              data: usdcData,
+            },
+          ],
+        });
+      }
+
+      setPoolData(prev => ({ ...prev, depositStatus: 'Tokens approved successfully!' }));
+
+      // Refresh pool data after approval
+      setTimeout(() => checkPoolData(), 3000);
+    } catch (error) {
+      console.error('Error approving tokens:', error);
+      setPoolData(prev => ({
+        ...prev,
+        depositStatus: 'Approval failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
+    }
+  };
+
+  // Function to deposit into pool (simplified version - direct transfer for now)
+  const depositIntoPool = async () => {
+    if (!client?.chain || client.chain.id !== NETWORKS.SEPOLIA.id || !PYUSD_USDC_POOL) {
+      setPoolData(prev => ({ ...prev, error: 'Must be on Sepolia network with pool available' }));
+      return;
+    }
+
+    const depositAmount = parseFloat(poolData.depositAmount);
+    if (isNaN(depositAmount) || depositAmount <= 0) {
+      setPoolData(prev => ({ ...prev, error: 'Please enter a valid deposit amount' }));
+      return;
+    }
+
+    setPoolData(prev => ({ ...prev, depositStatus: 'Preparing deposit...', error: '' }));
+
+    try {
+      // Get MetaMask wallet
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setPoolData(prev => ({ ...prev, error: 'MetaMask wallet not found' }));
+        return;
+      }
+
+      const metamaskWalletInList = wallets.find(
+        w =>
+          w.address.toLowerCase() === metamaskWallet.address.toLowerCase() &&
+          w.walletClientType !== 'privy'
+      );
+
+      if (!metamaskWalletInList) {
+        setPoolData(prev => ({ ...prev, error: 'MetaMask wallet not found in wallet list' }));
+        return;
+      }
+
+      const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
+      const { encodeFunctionData } = await import('viem');
+
+      // For now, we'll do a simple transfer to the pool address
+      // In a full implementation, you'd use Uniswap's position manager for proper liquidity provision
+      const transferAmount = BigInt(depositAmount * 10 ** PYUSD_TOKEN_CONFIG.decimals);
+
+      const transferData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'transfer',
+        args: [PYUSD_USDC_POOL.address, transferAmount],
+      });
+
+      setPoolData(prev => ({ ...prev, depositStatus: 'Depositing tokens...' }));
+
+      const txHash = await metamaskProvider.request({
+        method: 'eth_sendTransaction',
+        params: [
+          {
+            from: metamaskWallet.address,
+            to: PYUSD_TOKEN_CONFIG.address,
+            data: transferData,
+          },
+        ],
+      });
+
+      setPoolData(prev => ({
+        ...prev,
+        depositStatus: 'Deposit successful!',
+        depositHash: txHash,
+      }));
+
+      // Refresh balances after deposit
+      setTimeout(() => {
+        checkPoolData();
+        checkTokenBalances();
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error depositing:', error);
+      setPoolData(prev => ({
+        ...prev,
+        depositStatus: 'Deposit failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
     }
   };
 
@@ -1127,7 +1390,7 @@ export default function CookbookPage() {
           )}
 
           {/* PYUSD Token Testing Section */}
-          {smartWallet && client?.chain?.id === 11155111 && (
+          {smartWallet && client?.chain?.id === NETWORKS.SEPOLIA.id && PYUSD_TOKEN_CONFIG && (
             <div className='mt-6 rounded-lg border border-gray-200 bg-white p-4'>
               <h3 className='mb-3 text-lg font-semibold text-gray-800'>
                 🪙 PYUSD Token Testing (Sepolia)
@@ -1137,7 +1400,7 @@ export default function CookbookPage() {
                 {/* Token Info */}
                 <div className='rounded bg-gray-50 p-3 text-sm text-gray-600'>
                   <p>
-                    <strong>Token:</strong> PYUSD ({PYUSD_TOKEN_CONFIG.address})
+                    <strong>Token:</strong> PYUSD ({PYUSD_TOKEN_CONFIG?.address || 'Not available on this network'})
                   </p>
                   <p>
                     <strong>Test Flow:</strong> Approve Smart Wallet → Transfer
@@ -1276,6 +1539,205 @@ export default function CookbookPage() {
                   <div className='rounded border border-red-200 bg-red-50 p-3'>
                     <p className='text-sm text-red-600'>
                       <strong>Error:</strong> {tokenTestResults.error}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Pool Deposit Section */}
+          {smartWallet && client?.chain?.id === NETWORKS.SEPOLIA.id && PYUSD_USDC_POOL && (
+            <div className='mt-6 rounded-lg border border-gray-200 bg-white p-4'>
+              <h3 className='mb-3 text-lg font-semibold text-gray-800'>
+                🏊 PYUSD/USDC Pool Deposit (Sepolia)
+              </h3>
+
+              <div className='space-y-4'>
+                {/* Pool Info */}
+                <div className='rounded bg-gray-50 p-3 text-sm text-gray-600'>
+                  <p>
+                    <strong>Pool:</strong> {PYUSD_USDC_POOL.name} ({PYUSD_USDC_POOL.address})
+                  </p>
+                  <p>
+                    <strong>Fee Tier:</strong> {PYUSD_USDC_POOL.fee / 100}%
+                  </p>
+                  <p>
+                    <strong>Note:</strong> This is a simplified implementation. In production, you'd use Uniswap's Position Manager for proper liquidity provision.
+                  </p>
+                </div>
+
+                {/* Check Pool Data */}
+                <div>
+                  <button
+                    type='button'
+                    onClick={checkPoolData}
+                    disabled={poolData.isLoading}
+                    className='rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-400'
+                  >
+                    {poolData.isLoading ? 'Loading...' : 'Check Pool Data'}
+                  </button>
+                </div>
+
+                {/* User Balances */}
+                {poolData.userBalances && (
+                  <div className='rounded border bg-gray-50 p-4'>
+                    <h4 className='mb-3 font-medium text-gray-800'>
+                      💰 Your Balances:
+                    </h4>
+                    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                      <div className='space-y-1'>
+                        <p className='text-sm font-medium text-gray-700'>MetaMask Wallet:</p>
+                        <p className='text-sm text-gray-600'>
+                          PYUSD: <span className='font-medium text-green-600'>{poolData.userBalances.metamaskPYUSD}</span>
+                        </p>
+                        <p className='text-sm text-gray-600'>
+                          USDC: <span className='font-medium text-blue-600'>{poolData.userBalances.metamaskUSDC}</span>
+                        </p>
+                      </div>
+                      <div className='space-y-1'>
+                        <p className='text-sm font-medium text-gray-700'>Smart Wallet:</p>
+                        <p className='text-sm text-gray-600'>
+                          PYUSD: <span className='font-medium text-green-600'>{poolData.userBalances.smartWalletPYUSD}</span>
+                        </p>
+                        <p className='text-sm text-gray-600'>
+                          USDC: <span className='font-medium text-blue-600'>{poolData.userBalances.smartWalletUSDC}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className='mt-3 border-t pt-3'>
+                      <p className='text-sm text-gray-700'>
+                        Pool LP Tokens: <span className='font-medium text-purple-600'>{poolData.userBalances.poolTokens}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Approval Status */}
+                {poolData.approvals && (
+                  <div className='rounded border bg-gray-50 p-4'>
+                    <h4 className='mb-3 font-medium text-gray-800'>
+                      ✅ Approval Status:
+                    </h4>
+                    <div className='space-y-2 text-sm'>
+                      <p className='flex items-center'>
+                        <span className={`mr-2 ${poolData.approvals.pyusdApproved ? 'text-green-600' : 'text-red-600'}`}>
+                          {poolData.approvals.pyusdApproved ? '✅' : '❌'}
+                        </span>
+                        PYUSD approved for Uniswap Router
+                      </p>
+                      <p className='flex items-center'>
+                        <span className={`mr-2 ${poolData.approvals.usdcApproved ? 'text-green-600' : 'text-red-600'}`}>
+                          {poolData.approvals.usdcApproved ? '✅' : '❌'}
+                        </span>
+                        USDC approved for Uniswap Router
+                      </p>
+                      <p className='flex items-center'>
+                        <span className={`mr-2 ${poolData.approvals.routerApproved ? 'text-green-600' : 'text-red-600'}`}>
+                          {poolData.approvals.routerApproved ? '✅' : '❌'}
+                        </span>
+                        Ready for pool deposits
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Approve Tokens */}
+                {poolData.approvals && !poolData.approvals.routerApproved && (
+                  <div className='border-t border-gray-200 pt-4'>
+                    <h4 className='mb-2 font-medium text-gray-800'>
+                      Step 1: Approve Tokens for Router
+                    </h4>
+                    <p className='mb-3 text-sm text-gray-600'>
+                      Approve PYUSD and USDC tokens for the Uniswap Router to enable pool deposits
+                    </p>
+                    <button
+                      type='button'
+                      onClick={approveTokensForRouter}
+                      disabled={!client || client.chain?.id !== NETWORKS.SEPOLIA.id}
+                      className='rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:bg-gray-400'
+                    >
+                      Approve Tokens for Router
+                    </button>
+                  </div>
+                )}
+
+                {/* Deposit Section */}
+                {poolData.approvals?.routerApproved && (
+                  <div className='border-t border-gray-200 pt-4'>
+                    <h4 className='mb-2 font-medium text-gray-800'>
+                      Step 2: Deposit into Pool
+                    </h4>
+                    <p className='mb-3 text-sm text-gray-600'>
+                      Enter the amount of PYUSD to deposit into the pool
+                    </p>
+
+                    <div className='mb-4 flex items-center space-x-3'>
+                      <input
+                        type='number'
+                        value={poolData.depositAmount}
+                        onChange={(e) => setPoolData(prev => ({ ...prev, depositAmount: e.target.value }))}
+                        placeholder='Enter amount (e.g., 5)'
+                        className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none'
+                        min='0'
+                        step='0.01'
+                      />
+                      <span className='text-sm text-gray-600'>PYUSD</span>
+                    </div>
+
+                    <button
+                      type='button'
+                      onClick={depositIntoPool}
+                      disabled={
+                        !client ||
+                        client.chain?.id !== NETWORKS.SEPOLIA.id ||
+                        !poolData.depositAmount ||
+                        parseFloat(poolData.depositAmount) <= 0
+                      }
+                      className='rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:bg-gray-400'
+                    >
+                      Deposit into Pool
+                    </button>
+                  </div>
+                )}
+
+                {/* Status Messages */}
+                {poolData.depositStatus && (
+                  <div className='rounded border bg-gray-50 p-3'>
+                    <p
+                      className={`text-sm font-medium ${
+                        poolData.depositStatus.includes('successful')
+                          ? 'text-green-600'
+                          : poolData.depositStatus.includes('failed')
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
+                      }`}
+                    >
+                      {poolData.depositStatus}
+                    </p>
+                    {poolData.depositHash && (
+                      <div className='mt-2'>
+                        <p className='text-xs text-gray-500'>
+                          Transaction Hash:
+                          <a
+                            href={`https://sepolia.etherscan.io/tx/${poolData.depositHash}`}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='ml-1 font-mono text-blue-600 underline hover:text-blue-800'
+                          >
+                            {poolData.depositHash}
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Error Display */}
+                {poolData.error && (
+                  <div className='rounded border border-red-200 bg-red-50 p-3'>
+                    <p className='text-sm text-red-600'>
+                      <strong>Error:</strong> {poolData.error}
                     </p>
                   </div>
                 )}
