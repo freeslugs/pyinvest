@@ -21,6 +21,8 @@ async function verifyToken() {
 export default function DashboardPage() {
   const [verifyResult, setVerifyResult] = useState();
   const [smartWalletDeploymentStatus, setSmartWalletDeploymentStatus] = useState<{ isDeployed: boolean; isChecking: boolean }>({ isDeployed: false, isChecking: false });
+  const [isNetworkSwitching, setIsNetworkSwitching] = useState(false);
+  const [testResults, setTestResults] = useState<{ message?: string; signature?: string; error?: string }>({});
   const router = useRouter();
   const {
     ready,
@@ -64,6 +66,31 @@ export default function DashboardPage() {
   const twitterSubject = user?.twitter?.subject || null;
   const discordSubject = user?.discord?.subject || null;
 
+  // Available networks for switching
+  const availableNetworks = [
+    { id: 1, name: 'Ethereum Mainnet', rpcUrl: 'https://cloudflare-eth.com' },
+    { id: 11155111, name: 'Sepolia Testnet', rpcUrl: 'https://rpc.sepolia.org' },
+    { id: 8453, name: 'Base', rpcUrl: 'https://mainnet.base.org' },
+    { id: 84532, name: 'Base Sepolia', rpcUrl: 'https://sepolia.base.org' }
+  ];
+
+  // Function to switch networks
+  const switchNetwork = async (chainId: number) => {
+    if (!client) return;
+    
+    setIsNetworkSwitching(true);
+    try {
+      await client.switchChain({ id: chainId });
+      // Clear test results when switching networks
+      setTestResults({});
+      setSmartWalletDeploymentStatus({ isDeployed: false, isChecking: false });
+    } catch (error) {
+      console.error('Error switching network:', error);
+    } finally {
+      setIsNetworkSwitching(false);
+    }
+  };
+
   // Function to check if smart wallet is deployed
   const checkSmartWalletDeployment = async () => {
     if (!smartWallet?.address || !client?.chain) return;
@@ -90,6 +117,33 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error checking deployment:', error);
       setSmartWalletDeploymentStatus({ isDeployed: false, isChecking: false });
+    }
+  };
+
+  // Function to test smart wallet with message signing
+  const testSmartWallet = async () => {
+    if (!client || !smartWallet) return;
+    
+    setTestResults({ message: 'Testing...', signature: '', error: '' });
+    
+    try {
+      const message = `Hello from Smart Wallet! Timestamp: ${Date.now()}`;
+      const signature = await client.signMessage({
+        message
+      });
+      
+      setTestResults({ 
+        message, 
+        signature, 
+        error: '' 
+      });
+    } catch (error) {
+      console.error('Error testing smart wallet:', error);
+      setTestResults({ 
+        message: '', 
+        signature: '', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   };
 
@@ -336,6 +390,92 @@ export default function DashboardPage() {
                   <p>✅ Batch transactions supported</p>
                   <p>✅ EVM compatible</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Network Switching Section */}
+          {client && (
+            <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Network Controls</h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Current Network: <span className="text-blue-600">{client.chain?.name || 'Unknown'} (ID: {client.chain?.id})</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Switch Network:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableNetworks.map((network) => (
+                      <button
+                        key={network.id}
+                        type="button"
+                        onClick={() => switchNetwork(network.id)}
+                        disabled={isNetworkSwitching || client.chain?.id === network.id}
+                        className={`text-sm px-3 py-2 rounded-md border transition-colors ${
+                          client.chain?.id === network.id
+                            ? 'bg-blue-100 border-blue-300 text-blue-700 cursor-not-allowed'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                        } disabled:opacity-50`}
+                      >
+                        {isNetworkSwitching ? '...' : network.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Smart Wallet Testing Section */}
+          {smartWallet && client && (
+            <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Smart Wallet Testing</h3>
+              <div className="space-y-4">
+                <div>
+                  <button
+                    type="button"
+                    onClick={testSmartWallet}
+                    disabled={testResults.message === 'Testing...'}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:bg-green-400 disabled:cursor-not-allowed"
+                  >
+                    {testResults.message === 'Testing...' ? 'Testing...' : '🧪 Test Smart Wallet (Sign Message)'}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    This will sign a message using your smart wallet to verify it's working
+                  </p>
+                </div>
+
+                {/* Test Results */}
+                {(testResults.message || testResults.error) && (
+                  <div className="bg-gray-50 p-3 rounded border">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Test Results:</h4>
+                    
+                    {testResults.error ? (
+                      <div className="text-red-600 text-sm">
+                        <p className="font-medium">❌ Error:</p>
+                        <p className="mt-1">{testResults.error}</p>
+                      </div>
+                    ) : testResults.signature ? (
+                      <div className="text-green-600 text-sm space-y-2">
+                        <p className="font-medium">✅ Success! Smart wallet is working:</p>
+                        <div>
+                          <p className="font-medium">Message:</p>
+                          <p className="font-mono text-xs bg-white p-2 rounded border break-all">{testResults.message}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium">Signature:</p>
+                          <p className="font-mono text-xs bg-white p-2 rounded border break-all">{testResults.signature}</p>
+                        </div>
+                      </div>
+                    ) : testResults.message === 'Testing...' ? (
+                      <div className="text-yellow-600 text-sm">
+                        <p>🔄 Testing smart wallet functionality...</p>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </div>
           )}
