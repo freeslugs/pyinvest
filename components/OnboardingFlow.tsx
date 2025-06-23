@@ -24,6 +24,8 @@ interface OnboardingFlowProps {
 export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const { user, linkWallet } = usePrivy();
 
   // Get smart wallet address
@@ -31,11 +33,22 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
     account => account.type === 'smart_wallet'
   ) as { address: string } | undefined;
 
+  // Helper function to transition between steps with animation
+  const transitionToStep = (newStep: OnboardingStep, direction: 'left' | 'right' = 'right') => {
+    setIsTransitioning(true);
+    setSlideDirection(direction);
+
+    setTimeout(() => {
+      setCurrentStep(newStep);
+      setIsTransitioning(false);
+    }, 150); // Half of the transition duration
+  };
+
   const handlePyusdSource = (source: 'traditional' | 'crypto') => {
     if (source === 'traditional') {
-      setCurrentStep('traditional-deposit');
+      transitionToStep('traditional-deposit', 'right');
     } else {
-      setCurrentStep('crypto-wallet');
+      transitionToStep('crypto-wallet', 'right');
     }
   };
 
@@ -44,7 +57,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
     try {
       await linkWallet();
       // After successful wallet connection, check if they have a balance
-      setCurrentStep('waiting-deposit');
+      transitionToStep('waiting-deposit', 'right');
     } catch (error) {
       console.error('Error connecting wallet:', error);
     } finally {
@@ -53,7 +66,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   };
 
   const handleContinueToDeposit = () => {
-    setCurrentStep('waiting-deposit');
+    transitionToStep('waiting-deposit', 'right');
   };
 
   const handleCompleteOnboarding = () => {
@@ -79,7 +92,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
             unoptimized
           />
         </div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-2xl font-normal text-gray-900 mb-2">
           Welcome to PyInvest!
         </h2>
         <p className="text-gray-600">
@@ -88,7 +101,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
       </div>
 
       <button
-        onClick={() => setCurrentStep('pyusd-source')}
+        onClick={() => transitionToStep('pyusd-source', 'right')}
         className="w-full flex items-center justify-center space-x-2 rounded-xl bg-blue-600 px-6 py-4 text-white hover:bg-blue-700 transition-colors"
       >
         <span>Get Started</span>
@@ -100,7 +113,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   const renderPyusdSourceStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-xl font-normal text-gray-900 mb-2">
           Do you already have PYUSD?
         </h2>
         <p className="text-sm text-gray-600">
@@ -114,13 +127,32 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
           className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors"
         >
           <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <Image src="/assets/Venmo-icon.png" alt="Venmo" width={20} height={20} />
-              <Image src="/assets/pyusd_logo.png" alt="PayPal" width={20} height={20} />
-              <Image src="/assets/coinbase-icon.png" alt="Coinbase" width={20} height={20} />
+                                    <div className="relative flex items-center">
+              {/* Stacked/overlapped logos */}
+              <Image
+                src="/assets/Venmo-icon.png"
+                alt="Venmo"
+                width={20}
+                height={20}
+                className="relative z-30 rounded-full shadow-sm"
+              />
+              <Image
+                src="/assets/pyusd_logo.png"
+                alt="PayPal"
+                width={20}
+                height={20}
+                className="relative z-20 -ml-2 rounded-full shadow-sm"
+              />
+              <Image
+                src="/assets/coinbase-icon.png"
+                alt="Coinbase"
+                width={20}
+                height={20}
+                className="relative z-10 -ml-2 rounded-full shadow-sm"
+              />
             </div>
             <div className="text-left">
-              <p className="font-medium text-gray-900">Venmo, PayPal, or Coinbase</p>
+              <p className="font-normal text-gray-900">Venmo, PayPal, or Coinbase</p>
               <p className="text-sm text-gray-500">Transfer to your smart wallet</p>
             </div>
           </div>
@@ -134,7 +166,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
           <div className="flex items-center space-x-3">
             <Wallet className="h-5 w-5 text-gray-600" />
             <div className="text-left">
-              <p className="font-medium text-gray-900">Crypto Wallet</p>
+              <p className="font-normal text-gray-900">Crypto Wallet</p>
               <p className="text-sm text-gray-500">Connect your MetaMask or other wallet</p>
             </div>
           </div>
@@ -154,9 +186,9 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   );
 
   const renderTraditionalDepositStep = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <h2 className="text-xl font-normal text-gray-900 mb-2">
           Transfer PYUSD to Your Smart Wallet
         </h2>
         <p className="text-sm text-gray-600">
@@ -168,10 +200,10 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
         <div className="space-y-4">
           {/* QR Code */}
           <div className="flex justify-center">
-            <div className="p-4 bg-white border border-gray-200 rounded-xl">
+            <div className="p-3 bg-white border border-gray-200 rounded-xl">
               <QRCodeComponent
                 value={smartWallet.address}
-                size={192}
+                size={160}
                 className="rounded-lg"
               />
             </div>
@@ -179,7 +211,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
           {/* Wallet Address */}
           <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Smart Wallet Address:</p>
+            <p className="text-sm font-normal text-gray-700 mb-2">Smart Wallet Address:</p>
             <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
               <code className="text-sm font-mono text-gray-800 flex-1 mr-2 break-all">
                 {smartWallet.address}
@@ -193,24 +225,24 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
             </div>
           </div>
 
-          {/* Instructions */}
-          <div className="bg-blue-50 rounded-xl p-4">
-            <h3 className="font-medium text-blue-900 mb-2">How to send PYUSD:</h3>
-            <div className="space-y-2 text-sm text-blue-800">
+                    {/* Instructions */}
+          <div className="bg-blue-50 rounded-xl p-3">
+            <h3 className="font-normal text-blue-900 mb-2 text-sm">How to send PYUSD:</h3>
+            <div className="space-y-1 text-xs text-blue-800">
               <div className="flex items-start space-x-2">
-                <span className="font-semibold">1.</span>
+                <span className="font-medium">1.</span>
                 <p>Open your Venmo, PayPal, or Coinbase app</p>
               </div>
               <div className="flex items-start space-x-2">
-                <span className="font-semibold">2.</span>
+                <span className="font-medium">2.</span>
                 <p>Go to your PYUSD balance or crypto section</p>
               </div>
               <div className="flex items-start space-x-2">
-                <span className="font-semibold">3.</span>
+                <span className="font-medium">3.</span>
                 <p>Choose &quot;Send&quot; or &quot;Transfer&quot; and scan the QR code above</p>
               </div>
               <div className="flex items-start space-x-2">
-                <span className="font-semibold">4.</span>
+                <span className="font-medium">4.</span>
                 <p>Or copy and paste the wallet address</p>
               </div>
             </div>
@@ -239,7 +271,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   const renderCryptoWalletStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-xl font-normal text-gray-900 mb-2">
           Connect Your Crypto Wallet
         </h2>
         <p className="text-sm text-gray-600">
@@ -280,7 +312,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-xl font-normal text-gray-900 mb-2">
           Waiting for your PYUSD deposit
         </h2>
         <p className="text-sm text-gray-600">
@@ -323,8 +355,8 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {}} // Prevent closing during onboarding
-      title="Getting Started"
+      onClose={onComplete}
+      title=""
     >
       {renderCurrentStep()}
     </Modal>

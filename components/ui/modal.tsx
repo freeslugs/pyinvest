@@ -40,11 +40,11 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   if (!shouldRender) return null;
 
-  return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center'>
+    return (
+    <div className='fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 pb-8 sm:p-4'>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black transition-opacity duration-200 ${
+        className={`fixed inset-0 bg-black transition-opacity duration-300 ${
           isVisible ? 'opacity-50' : 'opacity-0'
         }`}
         onClick={onClose}
@@ -52,20 +52,31 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
       {/* Modal */}
       <div
-        className={`relative z-10 mx-4 w-full max-w-md rounded-3xl bg-white shadow-xl transition-all duration-200 ${
-          isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        className={`relative z-10 w-full max-w-md max-h-[85vh] sm:max-h-[90vh] rounded-3xl bg-white shadow-xl transition-all duration-300 overflow-hidden ${
+          isVisible
+            ? 'translate-y-0 opacity-100 sm:scale-100'
+            : 'translate-y-full opacity-100 sm:translate-y-0 sm:opacity-0 sm:scale-95'
         }`}
       >
-        <div className='flex items-center justify-between border-b border-gray-200 p-6'>
-          <h2 className='text-lg font-semibold text-gray-900'>{title}</h2>
+        {title ? (
+          <div className='flex items-center justify-between border-b border-gray-200 p-4 sm:p-6'>
+            <h2 className='text-lg font-semibold text-gray-900'>{title}</h2>
+            <button
+              onClick={onClose}
+              className='p-1 text-gray-400 transition-colors hover:text-gray-600'
+            >
+              <X className='h-5 w-5' />
+            </button>
+          </div>
+        ) : (
           <button
             onClick={onClose}
-            className='p-1 text-gray-400 transition-colors hover:text-gray-600'
+            className='absolute top-4 right-4 z-10 p-2 text-gray-400 transition-colors hover:text-gray-600 hover:bg-gray-100 rounded-full'
           >
             <X className='h-5 w-5' />
           </button>
-        </div>
-        <div className='p-6'>{children}</div>
+        )}
+        <div className={`overflow-y-auto ${title ? 'p-4 sm:p-6 max-h-[calc(85vh-80px)] sm:max-h-[calc(90vh-80px)]' : 'p-4 sm:p-6 pt-12 sm:pt-14 max-h-[85vh] sm:max-h-[90vh]'}`}>{children}</div>
       </div>
     </div>
   );

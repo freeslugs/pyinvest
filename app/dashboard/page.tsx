@@ -115,16 +115,43 @@ export default function PyUSDYieldSelector() {
 
   // Check onboarding status and load saved data
   useEffect(() => {
-    if (!ready || !authenticated || onboardingChecked) return;
+    console.log('🔍 ONBOARDING CHECK EFFECT RUNNING:');
+    console.log('- ready:', ready);
+    console.log('- authenticated:', authenticated);
+    console.log('- onboardingChecked:', onboardingChecked);
+
+    if (!ready || !authenticated || onboardingChecked) {
+      console.log('❌ Early return from onboarding check');
+      return;
+    }
 
     const onboardingCompleted = localStorage.getItem('onboarding_completed');
     const hasConnectedWallet = user?.linkedAccounts?.some(
       (account: any) => account.type === 'wallet' && account.walletClientType !== 'privy'
     );
 
-    // Show onboarding if not completed and user doesn't have significant setup
-    if (!onboardingCompleted && !hasConnectedWallet) {
+    console.log('📊 ONBOARDING DECISION FACTORS:');
+    console.log('- onboardingCompleted (localStorage):', onboardingCompleted);
+    console.log('- hasConnectedWallet:', hasConnectedWallet);
+    console.log('- user?.linkedAccounts:', user?.linkedAccounts);
+    console.log('- user?.linkedAccounts length:', user?.linkedAccounts?.length || 0);
+
+    // More aggressive onboarding logic - show modal unless explicitly completed
+    // Check if user has any meaningful balance or setup
+    const hasSmartWalletWithBalance = smartWallet && smartWalletBalance && parseFloat(smartWalletBalance) > 0;
+    const shouldShowOnboarding = !onboardingCompleted && !hasSmartWalletWithBalance;
+
+    console.log('🎯 ENHANCED ONBOARDING LOGIC:');
+    console.log('- hasSmartWalletWithBalance:', hasSmartWalletWithBalance);
+    console.log('- shouldShowOnboarding:', shouldShowOnboarding);
+
+    if (shouldShowOnboarding) {
+      console.log('✅ CONDITIONS MET - SHOWING ONBOARDING MODAL');
       setShowOnboarding(true);
+    } else {
+      console.log('❌ CONDITIONS NOT MET - NOT SHOWING ONBOARDING MODAL');
+      console.log('  - onboarding completed?', !!onboardingCompleted);
+      console.log('  - has smart wallet with balance?', hasSmartWalletWithBalance);
     }
 
     // Mark onboarding check as completed
@@ -158,7 +185,7 @@ export default function PyUSDYieldSelector() {
       setShowSmartWallet(true);
     }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ready, authenticated, user, smartWallet, onboardingChecked]);
+    }, [ready, authenticated, user, smartWallet, onboardingChecked, smartWalletBalance]);
 
   // Separate effect to handle smart wallet balance updates
   useEffect(() => {
@@ -168,6 +195,29 @@ export default function PyUSDYieldSelector() {
       setShowOnboarding(false);
     }
   }, [smartWalletBalance]);
+
+  // Fallback effect to ensure onboarding shows for new users
+  useEffect(() => {
+    // Only run this fallback after everything is ready and we've checked once
+    if (!ready || !authenticated || !onboardingChecked) return;
+
+    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    // Calculate total balance inline to avoid function reference issues
+    const smartWalletNum = parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
+    const metaMaskNum = parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
+    const totalBalanceNum = smartWalletNum + metaMaskNum;
+
+    console.log('🔄 FALLBACK ONBOARDING CHECK:');
+    console.log('- onboardingCompleted:', onboardingCompleted);
+    console.log('- totalBalanceNum:', totalBalanceNum);
+    console.log('- showOnboarding current state:', showOnboarding);
+
+    // If no onboarding completed, no balance, and modal isn't showing, force it open
+    if (!onboardingCompleted && totalBalanceNum === 0 && !showOnboarding) {
+      console.log('🚀 FALLBACK: Forcing onboarding modal open');
+      setShowOnboarding(true);
+    }
+  }, [ready, authenticated, onboardingChecked, balances, showOnboarding]);
 
   // Debug effect to track balance state changes
   useEffect(() => {
@@ -495,6 +545,29 @@ export default function PyUSDYieldSelector() {
                   <div>Smart Wallet Balance State: &quot;{smartWalletBalance}&quot;</div>
                   <div>Show Smart Wallet: {showSmartWallet ? 'true' : 'false'}</div>
                   <div>Is Loading: {isLoading ? 'true' : 'false'}</div>
+                  <div className='mt-2 border-t border-red-200 pt-2'>
+                    <div>🎯 MODAL DEBUG:</div>
+                    <div>Show Onboarding: {showOnboarding ? 'true' : 'false'}</div>
+                    <div>Ready: {ready ? 'true' : 'false'}</div>
+                    <div>Authenticated: {authenticated ? 'true' : 'false'}</div>
+                    <div>Onboarding Checked: {onboardingChecked ? 'true' : 'false'}</div>
+                    <div>Onboarding Completed (localStorage): {typeof window !== 'undefined' ? localStorage.getItem('onboarding_completed') || 'null' : 'SSR'}</div>
+                    <button
+                      onClick={() => setShowOnboarding(true)}
+                      className='mt-2 px-2 py-1 bg-blue-600 text-white text-xs rounded'
+                    >
+                      Test Open Modal
+                    </button>
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem('onboarding_completed');
+                        setOnboardingChecked(false);
+                      }}
+                      className='mt-2 ml-2 px-2 py-1 bg-red-600 text-white text-xs rounded'
+                    >
+                      Clear Onboarding Flag
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
