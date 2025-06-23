@@ -30,16 +30,16 @@ export const NETWORKS = {
 export const TOKENS = {
   [NETWORKS.SEPOLIA.id]: {
     PYUSD: {
-      address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
-      decimals: 6,
+      address: '0x2d5fA65fd978E4533FE6876cc19A26A285e81f72' as const,
+      decimals: 18, // Most testnet tokens use 18 decimals
       symbol: 'PYUSD',
-      name: 'PayPal USD',
+      name: 'PayPal USD (Testnet)',
     },
     USDC: {
-      address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238' as const,
-      decimals: 6,
+      address: '0x703bd35f91bc3947aaC70B4b0c560Bee5F06F84c' as const,
+      decimals: 6, // USDC typically uses 6 decimals
       symbol: 'USDC',
-      name: 'USD Coin',
+      name: 'USD Coin (Testnet)',
     },
   },
 } as const;
