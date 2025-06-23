@@ -30,7 +30,7 @@ export const NETWORKS = {
 export const TOKENS = {
   [NETWORKS.SEPOLIA.id]: {
     PYUSD: {
-      address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
+      address: '0x669e9c75c6aebba41f86d39e727fcedd89d5ea53' as const,
       decimals: 6,
       symbol: 'PYUSD',
       name: 'PayPal USD',
@@ -45,16 +45,17 @@ export const TOKENS = {
 } as const;
 
 // Pool configurations
+// Note: The PYUSD/USDC pool address needs to be determined
+// The original address was invalid (32 bytes instead of 20 bytes for Ethereum addresses)
 export const POOLS = {
   [NETWORKS.SEPOLIA.id]: {
-    PYUSD_USDC: {
-      address:
-        '0x812386b8094518e5d9da06d93bcc9b7eb796a1fa2cc82119700d887266a0d2d9' as const,
-      token0: TOKENS[NETWORKS.SEPOLIA.id].PYUSD,
-      token1: TOKENS[NETWORKS.SEPOLIA.id].USDC,
-      fee: 500, // 0.05%
-      name: 'PYUSD/USDC',
-    },
+    // PYUSD_USDC: {
+    //   address: 'POOL_ADDRESS_NEEDS_TO_BE_FOUND' as const,
+    //   token0: TOKENS[NETWORKS.SEPOLIA.id].PYUSD,
+    //   token1: TOKENS[NETWORKS.SEPOLIA.id].USDC,
+    //   fee: 500, // 0.05%
+    //   name: 'PYUSD/USDC',
+    // },
   },
 } as const;
 
