@@ -8,13 +8,13 @@ import { encodeFunctionData } from 'viem';
 
 import WalletList from '../../components/WalletList';
 import {
-    NETWORKS,
-    UNISWAP_V3_POSITION_MANAGER_ABI,
-    UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-    UNISWAP_V3_ROUTER_ABI,
-    UNISWAP_V3_ROUTER_ADDRESS,
-    getPoolsForNetwork,
-    getTokensForNetwork,
+  NETWORKS,
+  UNISWAP_V3_POSITION_MANAGER_ABI,
+  UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+  UNISWAP_V3_ROUTER_ABI,
+  UNISWAP_V3_ROUTER_ADDRESS,
+  getSepoliaPools,
+  getSepoliaTokens,
 } from '../../lib/constants';
 
 // Types for our pool data
@@ -321,8 +321,8 @@ export default function CookbookPage() {
   const [liquidityAmount, setLiquidityAmount] = useState<string>('2');
 
   // Get token and pool configurations for Sepolia
-  const SEPOLIA_TOKENS = getTokensForNetwork(NETWORKS.SEPOLIA.id);
-  const SEPOLIA_POOLS = getPoolsForNetwork(NETWORKS.SEPOLIA.id);
+  const SEPOLIA_TOKENS = getSepoliaTokens();
+  const SEPOLIA_POOLS = getSepoliaPools();
   const PYUSD_TOKEN = SEPOLIA_TOKENS.PYUSD;
   const USDC_TOKEN = SEPOLIA_TOKENS.USDC;
   const PYUSD_USDC_POOL = SEPOLIA_POOLS.PYUSD_USDC;
@@ -1658,12 +1658,12 @@ export default function CookbookPage() {
         const { createPublicClient, http } = await import('viem');
         const { sepolia } = await import('viem/chains');
 
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(
-          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
-        ),
-      });
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(
+            'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+          ),
+        });
 
         const allowanceData = (await publicClient.readContract({
           address: PERMIT2_CONFIG.ADDRESS,
@@ -4513,8 +4513,10 @@ export default function CookbookPage() {
             </button>
             <div className='mt-2'>
               <p className='text-sm text-purple-700'>
-                Status: {poolData.swapStatus.includes('Tx: ') ?
-                  poolData.swapStatus.split('Tx: ')[0] : poolData.swapStatus}
+                Status:{' '}
+                {poolData.swapStatus.includes('Tx: ')
+                  ? poolData.swapStatus.split('Tx: ')[0]
+                  : poolData.swapStatus}
               </p>
               {poolData.swapStatus.includes('Tx: ') && (
                 <div className='mt-1'>
@@ -4573,8 +4575,10 @@ export default function CookbookPage() {
             </button>
             <div className='mt-2'>
               <p className='text-sm text-red-700'>
-                Status: {poolData.liquidityStatus.includes('Tx: ') ?
-                  poolData.liquidityStatus.split('Tx: ')[0] : poolData.liquidityStatus}
+                Status:{' '}
+                {poolData.liquidityStatus.includes('Tx: ')
+                  ? poolData.liquidityStatus.split('Tx: ')[0]
+                  : poolData.liquidityStatus}
               </p>
               {poolData.liquidityStatus.includes('Tx: ') && (
                 <div className='mt-1'>
