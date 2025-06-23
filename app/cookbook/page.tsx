@@ -54,6 +54,19 @@ export default function CookbookPage() {
     error?: string;
     balances?: { metamask: string; smartWallet: string };
   }>({});
+
+  const [comprehensiveBalances, setComprehensiveBalances] = useState<{
+    ethBalances?: { eoaEth: string; smartWalletEth: string };
+    usdcBalances?: { eoaUsdc: string; smartWalletUsdc: string };
+    aavePositions?: {
+      eoaAweth: string;
+      smartWalletAweth: string;
+      eoaAusdc: string;
+      smartWalletAusdc: string;
+    };
+    error?: string;
+    loading?: boolean;
+  }>({});
   const router = useRouter();
   const {
     ready,
@@ -132,6 +145,7 @@ export default function CookbookPage() {
     WETH_GATEWAY: '0x387d311e47e80b498169e6fb51d3193167d89f7d' as const,
     WETH: '0xc558dbdd856501fcd9aaf1e62eae57a9f0629a3c' as const,
     AWETH: '0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830' as const,
+    AUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80' as const, // aUSDC token address
     MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11' as const,
   };
 
@@ -1364,6 +1378,130 @@ export default function CookbookPage() {
     }
   };
 
+  // Comprehensive balance checking function
+  const checkComprehensiveBalances = async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      setComprehensiveBalances({
+        error: 'Must be on Sepolia network with smart wallet',
+        loading: false,
+      });
+      return;
+    }
+
+    setComprehensiveBalances({ loading: true, error: '' });
+
+    try {
+      const { createPublicClient, http, formatEther } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com', {
+          timeout: 10_000,
+          retryCount: 2,
+        }),
+      });
+
+      // Get EOA wallet address
+      const eoaWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!eoaWallet) {
+        throw new Error('EOA wallet not found');
+      }
+
+      console.log('Checking comprehensive balances for:');
+      console.log('EOA:', eoaWallet.address);
+      console.log('Smart Wallet:', smartWallet.address);
+
+      // Check ETH balances
+      const [eoaEthBalance, smartWalletEthBalance] = await Promise.all([
+        publicClient.getBalance({ address: eoaWallet.address as `0x${string}` }),
+        publicClient.getBalance({ address: smartWallet.address as `0x${string}` }),
+      ]);
+
+      // Check USDC balances
+      const [eoaUsdcBalance, smartWalletUsdcBalance] = await Promise.all([
+        publicClient.readContract({
+          address: USDC_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [eoaWallet.address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: USDC_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet.address as `0x${string}`],
+        }),
+      ]);
+
+      // Check AAVE positions (aTokens)
+      const [eoaAwethBalance, smartWalletAwethBalance, eoaAusdcBalance, smartWalletAusdcBalance] = await Promise.all([
+        publicClient.readContract({
+          address: AAVE_CONFIG.AWETH,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [eoaWallet.address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: AAVE_CONFIG.AWETH,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet.address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: AAVE_CONFIG.AUSDC,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [eoaWallet.address as `0x${string}`],
+        }),
+        publicClient.readContract({
+          address: AAVE_CONFIG.AUSDC,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet.address as `0x${string}`],
+        }),
+      ]);
+
+      // Format balances
+      const formatTokenBalance = (balance: bigint, decimals: number) => {
+        const divisor = BigInt(10 ** decimals);
+        const formatted = Number(balance) / Number(divisor);
+        return formatted.toFixed(6);
+      };
+
+      setComprehensiveBalances({
+        ethBalances: {
+          eoaEth: formatEther(eoaEthBalance),
+          smartWalletEth: formatEther(smartWalletEthBalance),
+        },
+        usdcBalances: {
+          eoaUsdc: formatTokenBalance(eoaUsdcBalance as bigint, USDC_TOKEN_CONFIG.decimals),
+          smartWalletUsdc: formatTokenBalance(smartWalletUsdcBalance as bigint, USDC_TOKEN_CONFIG.decimals),
+        },
+        aavePositions: {
+          eoaAweth: formatEther(eoaAwethBalance as bigint),
+          smartWalletAweth: formatEther(smartWalletAwethBalance as bigint),
+          eoaAusdc: formatTokenBalance(eoaAusdcBalance as bigint, USDC_TOKEN_CONFIG.decimals),
+          smartWalletAusdc: formatTokenBalance(smartWalletAusdcBalance as bigint, USDC_TOKEN_CONFIG.decimals),
+        },
+        loading: false,
+        error: '',
+      });
+
+      console.log('✅ Comprehensive balance check completed');
+    } catch (error) {
+      console.error('Comprehensive balance check failed:', error);
+      setComprehensiveBalances({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
   return (
     <main className='flex min-h-screen flex-col bg-privy-light-blue px-4 py-6 sm:px-20 sm:py-10'>
       {ready && authenticated ? (
@@ -1637,6 +1775,180 @@ export default function CookbookPage() {
                   <p>✅ Batch transactions supported</p>
                   <p>✅ EVM compatible</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Comprehensive Balance Dashboard */}
+          {smartWallet && client?.chain?.id === 11155111 && (
+            <div className='mt-6 rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-6'>
+              <div className='mb-4 flex items-center justify-between'>
+                <h2 className='text-xl font-bold text-green-900'>
+                  💰 Balance & AAVE Positions Dashboard
+                </h2>
+                <button
+                  type='button'
+                  onClick={checkComprehensiveBalances}
+                  disabled={comprehensiveBalances.loading}
+                  className='rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:bg-green-400'
+                >
+                  {comprehensiveBalances.loading ? '🔄 Loading...' : '🔍 Check All Balances'}
+                </button>
+              </div>
+
+              {comprehensiveBalances.error && (
+                <div className='mb-4 rounded border border-red-200 bg-red-50 p-3'>
+                  <p className='text-sm text-red-600'>
+                    <strong>Error:</strong> {comprehensiveBalances.error}
+                  </p>
+                </div>
+              )}
+
+              {comprehensiveBalances.loading && (
+                <div className='mb-4 rounded border border-yellow-200 bg-yellow-50 p-3'>
+                  <p className='text-sm text-yellow-700'>
+                    🔄 Loading balances and AAVE positions...
+                  </p>
+                </div>
+              )}
+
+              {(comprehensiveBalances.ethBalances || comprehensiveBalances.usdcBalances || comprehensiveBalances.aavePositions) && (
+                <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+                  {/* ETH Balances */}
+                  {comprehensiveBalances.ethBalances && (
+                    <div className='rounded-lg border border-blue-200 bg-white p-4'>
+                      <h3 className='mb-3 text-lg font-semibold text-blue-800'>
+                        💎 ETH Balances
+                      </h3>
+                      <div className='space-y-2'>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-sm font-medium text-gray-600'>EOA Wallet:</span>
+                          <span className='font-mono text-sm font-semibold text-blue-600'>
+                            {parseFloat(comprehensiveBalances.ethBalances.eoaEth).toFixed(6)} ETH
+                          </span>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-sm font-medium text-gray-600'>Smart Wallet:</span>
+                          <span className='font-mono text-sm font-semibold text-purple-600'>
+                            {parseFloat(comprehensiveBalances.ethBalances.smartWalletEth).toFixed(6)} ETH
+                          </span>
+                        </div>
+                        <div className='mt-2 pt-2 border-t border-gray-200'>
+                          <div className='flex justify-between items-center'>
+                            <span className='text-sm font-medium text-gray-800'>Total:</span>
+                            <span className='font-mono text-sm font-bold text-green-600'>
+                              {(parseFloat(comprehensiveBalances.ethBalances.eoaEth) + parseFloat(comprehensiveBalances.ethBalances.smartWalletEth)).toFixed(6)} ETH
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* USDC Balances */}
+                  {comprehensiveBalances.usdcBalances && (
+                    <div className='rounded-lg border border-green-200 bg-white p-4'>
+                      <h3 className='mb-3 text-lg font-semibold text-green-800'>
+                        💵 USDC Balances
+                      </h3>
+                      <div className='space-y-2'>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-sm font-medium text-gray-600'>EOA Wallet:</span>
+                          <span className='font-mono text-sm font-semibold text-blue-600'>
+                            {comprehensiveBalances.usdcBalances.eoaUsdc} USDC
+                          </span>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-sm font-medium text-gray-600'>Smart Wallet:</span>
+                          <span className='font-mono text-sm font-semibold text-purple-600'>
+                            {comprehensiveBalances.usdcBalances.smartWalletUsdc} USDC
+                          </span>
+                        </div>
+                        <div className='mt-2 pt-2 border-t border-gray-200'>
+                          <div className='flex justify-between items-center'>
+                            <span className='text-sm font-medium text-gray-800'>Total:</span>
+                            <span className='font-mono text-sm font-bold text-green-600'>
+                              {(parseFloat(comprehensiveBalances.usdcBalances.eoaUsdc) + parseFloat(comprehensiveBalances.usdcBalances.smartWalletUsdc)).toFixed(6)} USDC
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AAVE Positions */}
+                  {comprehensiveBalances.aavePositions && (
+                    <div className='rounded-lg border border-purple-200 bg-white p-4'>
+                      <h3 className='mb-3 text-lg font-semibold text-purple-800'>
+                        🏦 AAVE Positions
+                      </h3>
+                      <div className='space-y-3'>
+                        {/* aWETH Positions */}
+                        <div>
+                          <h4 className='mb-2 text-sm font-medium text-purple-700'>aWETH Holdings:</h4>
+                          <div className='space-y-1'>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-xs text-gray-600'>EOA:</span>
+                              <span className='font-mono text-xs font-semibold text-blue-600'>
+                                {parseFloat(comprehensiveBalances.aavePositions.eoaAweth).toFixed(6)} aWETH
+                              </span>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-xs text-gray-600'>Smart:</span>
+                              <span className='font-mono text-xs font-semibold text-purple-600'>
+                                {parseFloat(comprehensiveBalances.aavePositions.smartWalletAweth).toFixed(6)} aWETH
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* aUSDC Positions */}
+                        <div>
+                          <h4 className='mb-2 text-sm font-medium text-purple-700'>aUSDC Holdings:</h4>
+                          <div className='space-y-1'>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-xs text-gray-600'>EOA:</span>
+                              <span className='font-mono text-xs font-semibold text-blue-600'>
+                                {comprehensiveBalances.aavePositions.eoaAusdc} aUSDC
+                              </span>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-xs text-gray-600'>Smart:</span>
+                              <span className='font-mono text-xs font-semibold text-purple-600'>
+                                {comprehensiveBalances.aavePositions.smartWalletAusdc} aUSDC
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Total AAVE Value */}
+                        <div className='mt-2 pt-2 border-t border-gray-200'>
+                          <div className='text-center'>
+                            <span className='text-xs font-medium text-gray-700'>Total AAVE Deposits</span>
+                            <div className='mt-1 space-y-1'>
+                              <div className='text-xs font-semibold text-green-600'>
+                                {(parseFloat(comprehensiveBalances.aavePositions.eoaAweth) + parseFloat(comprehensiveBalances.aavePositions.smartWalletAweth)).toFixed(6)} aWETH
+                              </div>
+                              <div className='text-xs font-semibold text-green-600'>
+                                {(parseFloat(comprehensiveBalances.aavePositions.eoaAusdc) + parseFloat(comprehensiveBalances.aavePositions.smartWalletAusdc)).toFixed(6)} aUSDC
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Helpful Info */}
+              <div className='mt-4 rounded bg-green-100 p-3 text-sm text-green-700'>
+                <p className='font-medium'>💡 What this shows:</p>
+                <ul className='mt-1 list-disc list-inside space-y-1 text-xs'>
+                  <li><strong>ETH & USDC:</strong> Native balances in both your EOA and Smart Wallet</li>
+                  <li><strong>aTokens:</strong> Your AAVE positions representing deposited assets earning yield</li>
+                  <li><strong>EOA vs Smart:</strong> Compare holdings across both wallet types</li>
+                </ul>
               </div>
             </div>
           )}
