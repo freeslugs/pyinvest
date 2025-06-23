@@ -1119,9 +1119,16 @@ export default function CookbookPage() {
       console.log('Swap parameters:', {
         ...swapParams,
         amountIn: swapAmount.toString(),
+        amountInPYUSD: `${Number(swapAmount) / 1e6} PYUSD`,
         deadline: deadline.toString(),
         router: UNISWAP_V3_ROUTER_ADDRESS,
       });
+
+      console.log('💡 Swap context:');
+      console.log(`  📊 User deposit amount: ${depositAmount} PYUSD`);
+      console.log(`  🔗 Total deposit wei: ${totalDepositAmount} (${Number(totalDepositAmount) / 1e6} PYUSD)`);
+      console.log(`  ↔️ Swap amount: ${swapAmount} (${Number(swapAmount) / 1e6} PYUSD)`);
+      console.log(`  💰 Remaining PYUSD: ${remainingPYUSD} (${Number(remainingPYUSD) / 1e6} PYUSD)`);
 
       const swapData = encodeFunctionData({
         abi: UNISWAP_V3_ROUTER_ABI,
@@ -1129,28 +1136,185 @@ export default function CookbookPage() {
         args: [swapParams],
       });
 
-            console.log('Swap call data:', swapData);
+                  console.log('Swap call data:', swapData);
+
+            // 🔍 EXTENSIVE PRE-SWAP DEBUGGING
+      console.log('=== 🔍 PRE-SWAP DEBUGGING ===');
 
       try {
-        // First, let's check if we can simulate this transaction to get better error info
-        console.log('Attempting swap transaction...');
+        // Create publicClient for debugging
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
+
+        const debugPublicClient = createPublicClient({
+          chain: sepolia,
+          transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        });
+
+        // Step 2.1: Verify smart wallet has enough PYUSD
+        console.log('📍 Checking smart wallet PYUSD balance before swap...');
+                const smartWalletPYUSDBalance = await debugPublicClient.readContract({
+          address: PYUSD_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet!.address as `0x${string}`],
+        }) as bigint;
+
+        console.log(`💰 Smart wallet PYUSD balance: ${smartWalletPYUSDBalance} (${Number(smartWalletPYUSDBalance) / 1e6} PYUSD)`);
+        console.log(`💸 Trying to swap: ${swapAmount} (${Number(swapAmount) / 1e6} PYUSD)`);
+
+        if (smartWalletPYUSDBalance < swapAmount) {
+          throw new Error(`Insufficient PYUSD balance in smart wallet: has ${Number(smartWalletPYUSDBalance) / 1e6}, need ${Number(swapAmount) / 1e6}`);
+        }
+
+        // Step 2.2: Check router approval
+        console.log('📍 Checking router approval allowance...');
+        const routerAllowance = await debugPublicClient.readContract({
+          address: PYUSD_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [smartWallet!.address as `0x${string}`, UNISWAP_V3_ROUTER_ADDRESS],
+        }) as bigint;
+
+        console.log(`✅ Router allowance: ${routerAllowance} (${Number(routerAllowance) / 1e6} PYUSD)`);
+
+        if (routerAllowance < swapAmount) {
+          throw new Error(`Insufficient router allowance: has ${Number(routerAllowance) / 1e6}, need ${Number(swapAmount) / 1e6}`);
+        }
+
+        // Step 2.3: Verify router contract exists
+        console.log('📍 Verifying Uniswap V3 Router contract...');
+        const routerCode = await debugPublicClient.getBytecode({
+          address: UNISWAP_V3_ROUTER_ADDRESS,
+        });
+
+        if (!routerCode || routerCode === '0x') {
+          throw new Error(`Uniswap V3 Router contract not found at ${UNISWAP_V3_ROUTER_ADDRESS}`);
+        }
+                console.log('✅ Router contract verified');
+
+        // Step 2.4: Check pool liquidity and state
+        console.log('📍 Checking pool liquidity and state...');
+        try {
+          // Check pool token balances
+                    const poolPYUSDBalance = await debugPublicClient.readContract({
+            address: PYUSD_TOKEN_CONFIG.address,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [PYUSD_USDC_POOL.address],
+          }) as bigint;
+
+          const poolUSDCBalance = await debugPublicClient.readContract({
+            address: USDC_TOKEN_CONFIG!.address,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [PYUSD_USDC_POOL.address],
+          }) as bigint;
+
+          console.log(`🏊 Pool PYUSD balance: ${poolPYUSDBalance} (${Number(poolPYUSDBalance) / 1e6} PYUSD)`);
+          console.log(`🏊 Pool USDC balance: ${poolUSDCBalance} (${Number(poolUSDCBalance) / 1e6} USDC)`);
+
+          if (poolPYUSDBalance === 0n || poolUSDCBalance === 0n) {
+            console.log('⚠️ WARNING: Pool appears to have very low or zero liquidity!');
+          }
+
+        } catch (poolCheckError) {
+          console.log('⚠️ Could not check pool liquidity:', poolCheckError);
+        }
+
+        // Step 2.5: Try a very small test swap first (0.01 PYUSD)
+        const testSwapAmount = BigInt(0.01 * 1e6); // 0.01 PYUSD
+        console.log('📍 Attempting small test swap first...');
+        console.log(`🔬 Test swap amount: ${testSwapAmount} (${Number(testSwapAmount) / 1e6} PYUSD)`);
+
+        // Create test swap params
+        const testSwapParams = {
+          tokenIn: PYUSD_TOKEN_CONFIG.address,
+          tokenOut: USDC_TOKEN_CONFIG.address,
+          fee: PYUSD_USDC_POOL.fee,
+          recipient: smartWallet!.address as `0x${string}`,
+          deadline,
+          amountIn: testSwapAmount,
+          amountOutMinimum: 0n,
+          sqrtPriceLimitX96: 0n,
+        };
+
+        console.log('🔬 Test swap parameters:', {
+          ...testSwapParams,
+          amountIn: testSwapParams.amountIn.toString(),
+          deadline: testSwapParams.deadline.toString(),
+        });
+
+        const testSwapData = encodeFunctionData({
+          abi: UNISWAP_V3_ROUTER_ABI,
+          functionName: 'exactInputSingle',
+          args: [testSwapParams],
+        });
+
+        console.log('🔬 Test swap call data:', testSwapData);
+
+        // Try the test swap
+        console.log('🚀 Executing test swap...');
+
+        const testSwapTxHash = await client.sendTransaction({
+          to: UNISWAP_V3_ROUTER_ADDRESS,
+          data: testSwapData,
+          gas: 300000n, // Lower gas for test
+        });
+
+        console.log('✅ Test swap succeeded:', testSwapTxHash);
+        console.log('📍 Now proceeding with full swap...');
+
+      } catch (testError) {
+        console.error('❌ Test swap failed:', testError);
+        console.log('🔍 Test swap error details:', testError instanceof Error ? testError.message : String(testError));
+
+        // If test swap fails, don't proceed with full swap
+        throw new Error(`Test swap failed: ${testError instanceof Error ? testError.message : String(testError)}`);
+      }
+
+      // Now proceed with the full swap
+      console.log('=== 🚀 FULL SWAP EXECUTION ===');
+
+      try {
+        console.log('🔄 Executing full swap transaction...');
 
         const swapTxHash = await client.sendTransaction({
           to: UNISWAP_V3_ROUTER_ADDRESS,
           data: swapData,
-          // Add gas limit for complex transactions
           gas: 500000n,
         });
 
         console.log('✅ Step 2b completed - PYUSD → USDC swap:', swapTxHash);
         swapSuccessful = true;
 
-      } catch (swapError) {
-        console.error('Swap failed:', swapError);
+        // Verify swap results
+        console.log('📍 Verifying swap results...');
+        setTimeout(async () => {
+          try {
+            const { createPublicClient, http } = await import('viem');
+            const { sepolia } = await import('viem/chains');
 
-        // Check if it's a liquidity issue by looking at the error
-        const errorMessage = swapError instanceof Error ? swapError.message : String(swapError);
-        console.log('Swap error details:', errorMessage);
+            const verifyPublicClient = createPublicClient({
+              chain: sepolia,
+              transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+            });
+
+            const newUSDCBalance = await verifyPublicClient.readContract({
+              address: USDC_TOKEN_CONFIG!.address,
+              abi: ERC20_ABI,
+              functionName: 'balanceOf',
+              args: [smartWallet!.address as `0x${string}`],
+            }) as bigint;
+            console.log(`💰 Smart wallet USDC balance after swap: ${newUSDCBalance} (${Number(newUSDCBalance) / 1e6} USDC)`);
+          } catch (verifyError) {
+            console.log('⚠️ Could not verify swap results:', verifyError);
+          }
+        }, 3000);
+
+      } catch (swapError) {
+        console.error('❌ Full swap failed:', swapError);
+        console.log('🔍 Full swap error details:', swapError instanceof Error ? swapError.message : String(swapError));
 
         // Common reasons for swap failure on testnets:
         // 1. Insufficient liquidity in the pool
