@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  ArrowRight,
-  CheckCircle,
-  Copy,
-  Edit3,
-  Globe,
-  Zap
-} from 'lucide-react';
+import { ArrowRight, CheckCircle, Copy, Edit3, Globe, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -295,7 +288,7 @@ export default function PyUSDYieldSelector() {
               </h1>
             </div>
           </div>
-          <div className='mt-2 mb-2 border-t border-gray-200'></div>
+          <div className='mb-2 mt-2 border-t border-gray-200'></div>
           <p className='text-base leading-relaxed text-gray-600'>
             Easily & securely put digital money to work in 1 click
           </p>
@@ -484,8 +477,6 @@ export default function PyUSDYieldSelector() {
           <h2 className='px-2 text-2xl font-medium text-gray-900'>
             Earn Strategies
           </h2>
-
-
 
           {/* Conservative Vault */}
           <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>

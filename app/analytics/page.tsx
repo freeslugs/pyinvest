@@ -40,15 +40,17 @@ const vaultOptions: VaultOption[] = [
 ];
 
 export default function AnalyticsPage() {
-  const [selectedVault, setSelectedVault] = useState<VaultOption>(vaultOptions[0] || {
-    id: 'conservative',
-    name: 'Conservative Vault',
-    apy: 4.2,
-    risk: 'Low' as const,
-    symbol: 'PYUSD',
-    description: 'Conservative stablecoin strategy with consistent returns',
-    color: 'from-blue-50 to-blue-100',
-  });
+  const [selectedVault, setSelectedVault] = useState<VaultOption>(
+    vaultOptions[0] || {
+      id: 'conservative',
+      name: 'Conservative Vault',
+      apy: 4.2,
+      risk: 'Low' as const,
+      symbol: 'PYUSD',
+      description: 'Conservative stablecoin strategy with consistent returns',
+      color: 'from-blue-50 to-blue-100',
+    }
+  );
   const [depositAmount, setDepositAmount] = useState<number>(1000);
   const [customAmount, setCustomAmount] = useState<string>('1000');
   const router = useRouter();
@@ -62,8 +64,8 @@ export default function AnalyticsPage() {
 
   if (!ready || !authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className='flex min-h-screen items-center justify-center bg-white'>
+        <div className='h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600'></div>
       </div>
     );
   }
@@ -99,42 +101,50 @@ export default function AnalyticsPage() {
   return (
     <motion.div
       variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="min-h-screen bg-white p-4"
+      initial='hidden'
+      animate='visible'
+      className='min-h-screen bg-white p-4'
     >
-      <div className="mx-auto max-w-md space-y-8">
+      <div className='mx-auto max-w-md space-y-8'>
         {/* Header */}
-        <motion.div variants={itemVariants} className="px-2 pb-4 pt-12">
-          <div className="mb-6 flex items-center">
+        <motion.div variants={itemVariants} className='px-2 pb-4 pt-12'>
+          <div className='mb-6 flex items-center'>
             <a
-              href="/dashboard"
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              href='/dashboard'
+              className='flex items-center text-gray-600 transition-colors hover:text-gray-900'
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              <span className="text-base font-medium">Back to Dashboard</span>
+              <ArrowLeft className='mr-2 h-5 w-5' />
+              <span className='text-base font-medium'>Back to Dashboard</span>
             </a>
           </div>
           <div>
-            <h1 className="text-3xl font-medium leading-tight tracking-tight text-gray-900 mb-2">
+            <h1 className='mb-2 text-3xl font-medium leading-tight tracking-tight text-gray-900'>
               Investment Analytics
             </h1>
-            <p className="text-base leading-relaxed text-gray-600">
-              Visualize your potential returns with interactive yield projections.
+            <p className='text-base leading-relaxed text-gray-600'>
+              Visualize your potential returns with interactive yield
+              projections.
             </p>
           </div>
         </motion.div>
 
         {/* Amount Selection */}
-        <motion.div variants={itemVariants} className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="p-6">
-            <h2 className="text-xl font-medium text-gray-900 mb-5">Initial Deposit Amount</h2>
+        <motion.div
+          variants={itemVariants}
+          className='rounded-xl border border-gray-200 bg-white shadow-sm'
+        >
+          <div className='p-6'>
+            <h2 className='mb-5 text-xl font-medium text-gray-900'>
+              Initial Deposit Amount
+            </h2>
 
             {/* Quick Amount Buttons */}
-            <div className="mb-4 space-y-3">
-              <div className="text-base font-medium text-gray-900">Select amount</div>
-              <div className="flex flex-wrap gap-2">
-                {quickAmounts.map((amount) => (
+            <div className='mb-4 space-y-3'>
+              <div className='text-base font-medium text-gray-900'>
+                Select amount
+              </div>
+              <div className='flex flex-wrap gap-2'>
+                {quickAmounts.map(amount => (
                   <button
                     key={amount}
                     onClick={() => {
@@ -154,20 +164,22 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Custom Amount Input */}
-            <div className="space-y-3">
-              <div className="text-base font-medium text-gray-900">Custom amount</div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+            <div className='space-y-3'>
+              <div className='text-base font-medium text-gray-900'>
+                Custom amount
+              </div>
+              <div className='relative'>
+                <span className='absolute left-3 top-1/2 -translate-y-1/2 transform font-medium text-gray-500'>
                   $
                 </span>
                 <input
-                  type="number"
+                  type='number'
                   value={customAmount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  placeholder="Enter custom amount"
-                  className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                  min="0"
-                  step="100"
+                  onChange={e => handleAmountChange(e.target.value)}
+                  placeholder='Enter custom amount'
+                  className='w-full rounded-lg border border-gray-300 py-3 pl-8 pr-4 text-base text-gray-700 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600'
+                  min='0'
+                  step='100'
                 />
               </div>
             </div>
@@ -175,12 +187,12 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* Vault Selection */}
-        <motion.div variants={itemVariants} className="space-y-4">
-          <h2 className="px-2 text-2xl font-medium text-gray-900">
+        <motion.div variants={itemVariants} className='space-y-4'>
+          <h2 className='px-2 text-2xl font-medium text-gray-900'>
             Select Vault Strategy
           </h2>
 
-          {vaultOptions.map((vault) => (
+          {vaultOptions.map(vault => (
             <div
               key={vault.id}
               onClick={() => setSelectedVault(vault)}
@@ -190,30 +202,34 @@ export default function AnalyticsPage() {
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
-              <div className="p-6">
+              <div className='p-6'>
                 {/* Header Bar */}
-                <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
-                  <div className="flex items-center space-x-2">
-                    <Globe className="h-4 w-4 text-gray-400" />
-                    <span className="text-base font-medium text-gray-700">
+                <div className='mb-5 flex items-center justify-between border-b border-gray-100 pb-4'>
+                  <div className='flex items-center space-x-2'>
+                    <Globe className='h-4 w-4 text-gray-400' />
+                    <span className='text-base font-medium text-gray-700'>
                       {vault.name}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <CheckCircle className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-medium text-blue-600">
+                  <div className='flex items-center space-x-1'>
+                    <CheckCircle className='h-4 w-4 text-blue-500' />
+                    <span className='text-sm font-medium text-blue-600'>
                       {vault.apy}% APY
                     </span>
                   </div>
                 </div>
 
                 {/* Risk and Description */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-medium text-gray-600">Risk level</span>
-                    <span className="text-base font-medium text-gray-900">{vault.risk}</span>
+                <div className='space-y-3'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-base font-medium text-gray-600'>
+                      Risk level
+                    </span>
+                    <span className='text-base font-medium text-gray-900'>
+                      {vault.risk}
+                    </span>
                   </div>
-                  <p className="text-base text-gray-600">{vault.description}</p>
+                  <p className='text-base text-gray-600'>{vault.description}</p>
                 </div>
               </div>
             </div>
@@ -227,40 +243,42 @@ export default function AnalyticsPage() {
             apy={selectedVault.apy}
             symbol={selectedVault.symbol}
             title={`${selectedVault.name} - Yield Projection`}
-            className="rounded-xl border border-gray-200 bg-white shadow-sm"
+            className='rounded-xl border border-gray-200 bg-white shadow-sm'
           />
         </motion.div>
 
         {/* Summary Cards */}
-        <motion.div variants={itemVariants} className="space-y-4">
-          <h2 className="px-2 text-2xl font-medium text-gray-900">
+        <motion.div variants={itemVariants} className='space-y-4'>
+          <h2 className='px-2 text-2xl font-medium text-gray-900'>
             Projected Returns
           </h2>
 
-          <div className="grid grid-cols-2 gap-4">
-            {[1, 2, 3, 5].map((years) => {
+          <div className='grid grid-cols-2 gap-4'>
+            {[1, 2, 3, 5].map(years => {
               const monthlyRate = selectedVault.apy / 100 / 12;
               const totalMonths = years * 12;
-              const finalAmount = depositAmount * Math.pow(1 + monthlyRate, totalMonths);
+              const finalAmount =
+                depositAmount * Math.pow(1 + monthlyRate, totalMonths);
               const totalInterest = finalAmount - depositAmount;
 
               return (
                 <div
                   key={years}
-                  className="rounded-xl border border-gray-200 bg-white shadow-sm p-4"
+                  className='rounded-xl border border-gray-200 bg-white p-4 shadow-sm'
                 >
-                  <div className="text-center space-y-2">
-                    <h3 className="text-base font-medium text-gray-900">
+                  <div className='space-y-2 text-center'>
+                    <h3 className='text-base font-medium text-gray-900'>
                       {years} Year{years > 1 ? 's' : ''}
                     </h3>
-                    <p className="text-xl font-medium text-gray-900">
+                    <p className='text-xl font-medium text-gray-900'>
                       ${Math.round(finalAmount).toLocaleString()}
                     </p>
-                    <p className="text-sm font-medium text-green-600">
+                    <p className='text-sm font-medium text-green-600'>
                       +${Math.round(totalInterest).toLocaleString()}
                     </p>
-                    <p className="text-sm text-gray-500">
-                      {((totalInterest / depositAmount) * 100).toFixed(1)}% growth
+                    <p className='text-sm text-gray-500'>
+                      {((totalInterest / depositAmount) * 100).toFixed(1)}%
+                      growth
                     </p>
                   </div>
                 </div>
@@ -270,15 +288,19 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* Disclaimer */}
-        <motion.div variants={itemVariants} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            <span className="font-medium">Disclaimer:</span> These projections are estimates based on current APY rates and assume compound growth.
+        <motion.div
+          variants={itemVariants}
+          className='rounded-xl border border-gray-200 bg-gray-50 p-4'
+        >
+          <p className='text-sm leading-relaxed text-gray-600'>
+            <span className='font-medium'>Disclaimer:</span> These projections
+            are estimates based on current APY rates and assume compound growth.
             Actual returns may vary due to market conditions and other factors.
           </p>
         </motion.div>
 
         {/* Footer spacing */}
-        <div className="pb-8"></div>
+        <div className='pb-8'></div>
       </div>
     </motion.div>
   );
