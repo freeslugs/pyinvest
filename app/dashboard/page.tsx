@@ -5,14 +5,18 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 export default function PyUSDYieldSelector() {
-  const [conservativeAmount, setConservativeAmount] = useState('250');
-  const [growthAmount, setGrowthAmount] = useState('250');
+  const [conservativeAmount, setConservativeAmount] = useState('');
+  const [growthAmount, setGrowthAmount] = useState('');
 
   // Custom input states
   const [showConservativeCustom, setShowConservativeCustom] = useState(false);
   const [showGrowthCustom, setShowGrowthCustom] = useState(false);
   const [conservativeCustomValue, setConservativeCustomValue] = useState('');
   const [growthCustomValue, setGrowthCustomValue] = useState('');
+
+  // Slide to confirm states
+  const [conservativeSliding, setConservativeSliding] = useState(false);
+  const [growthSliding, setGrowthSliding] = useState(false);
 
   const handleConservativeCustomSubmit = () => {
     if (conservativeCustomValue && parseFloat(conservativeCustomValue) > 0) {
@@ -40,17 +44,35 @@ export default function PyUSDYieldSelector() {
     setGrowthCustomValue('');
   };
 
+  const handleConservativeSlideComplete = () => {
+    // Investment logic would go here
+    console.log(`Investing ${conservativeAmount} in Conservative Vault`);
+    setConservativeSliding(false);
+  };
+
+  const handleGrowthSlideComplete = () => {
+    // Investment logic would go here
+    console.log(`Investing ${growthAmount} in Growth Vault`);
+    setGrowthSliding(false);
+  };
+
   return (
     <div className='min-h-screen bg-gray-50 p-4'>
       <div className='mx-auto max-w-md space-y-6'>
         {/* Header */}
         <div className='pb-4 pt-8'>
           <div className='mb-4 flex items-center'>
-            <div className='mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-600'>
-              <span className='text-lg font-bold text-white'>py</span>
+            <div className='mr-3 flex h-10 w-10 items-center justify-center'>
+              <Image
+                src='/assets/PyInvest-logomark.png'
+                alt='PyInvest logo'
+                width={40}
+                height={40}
+                className='h-10 w-10'
+              />
             </div>
             <div>
-              <h1 className='text-2xl font-semibold text-gray-900'>PyInvest</h1>
+              <h1 className='text-2xl font-medium text-gray-900'>PyInvest</h1>
               <p className='text-sm text-gray-600'>
                 Easily securely put digital money to work in 1 click
               </p>
@@ -110,12 +132,12 @@ export default function PyUSDYieldSelector() {
 
         {/* Investment Options */}
         <div className='space-y-4'>
-          <h2 className='px-2 text-xl font-semibold text-gray-900'>
+          <h2 className='px-2 text-xl font-medium text-gray-900'>
             Earn Strategies
           </h2>
 
           {/* Conservative Vault */}
-          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md'>
+          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white transition-all duration-200'>
             <div className='p-5'>
               <div className='mb-4 flex items-center justify-between'>
                 <div className='flex items-center space-x-3'>
@@ -123,7 +145,7 @@ export default function PyUSDYieldSelector() {
                     <Shield className='h-5 w-5 text-green-600' />
                   </div>
                   <div>
-                    <h3 className='text-base font-semibold text-gray-900'>
+                    <h3 className='text-base font-medium text-gray-900'>
                       Conservative Vault
                     </h3>
                     <p className='text-sm text-gray-500'>
@@ -141,7 +163,7 @@ export default function PyUSDYieldSelector() {
                   <span className='text-sm font-medium text-gray-600'>
                     Expected APY
                   </span>
-                  <span className='text-base font-semibold text-green-600'>
+                  <span className='text-base font-medium text-green-600'>
                     4.2% - 5.8%
                   </span>
                 </div>
@@ -156,88 +178,126 @@ export default function PyUSDYieldSelector() {
               {/* Amount Selection */}
               <div className='mb-4 space-y-3'>
                 <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
-                <div className='flex w-full gap-2'>
-                  {!showConservativeCustom ? (
-                    <>
-                      <div role="radiogroup" className='flex w-full gap-2 transition-all duration-300 ease-in-out'>
-                        {['25', '50', '100', '250'].map((amount) => (
-                          <label
-                            key={amount}
-                            className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
-                              conservativeAmount === amount
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-300 text-gray-600'
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              value={amount}
-                              checked={conservativeAmount === amount}
-                              onChange={(e) => setConservativeAmount(e.target.value)}
-                              className="sr-only"
-                            />
-                            ${amount}
-                          </label>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowConservativeCustom(true)}
-                        className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                    </>
-                  ) : (
-                    <div className='flex w-full gap-2 animate-in slide-in-from-right-5 duration-300'>
-                      <div className='flex w-full gap-2'>
-                        <input
-                          type="number"
-                          value={conservativeCustomValue}
-                          onChange={(e) => setConservativeCustomValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleConservativeCustomSubmit();
-                            } else if (e.key === 'Escape') {
-                              handleConservativeCustomCancel();
-                            }
-                          }}
-                          placeholder="Enter amount"
-                          className="flex-1 rounded-[10px] border-[1.5px] border-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-700 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={handleConservativeCustomSubmit}
-                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleConservativeCustomCancel}
-                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                                 <div className='flex w-full gap-2'>
+                   <div className="relative w-full overflow-hidden">
+                     <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                       showConservativeCustom ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
+                     }`}>
+                       <div role="radiogroup" className='flex w-full gap-2'>
+                         {['25', '50', '100', '250'].map((amount) => (
+                           <button
+                             key={amount}
+                             type="button"
+                             onClick={() => {
+                               if (conservativeAmount === amount) {
+                                 setConservativeAmount('');
+                               } else {
+                                 setConservativeAmount(amount);
+                               }
+                             }}
+                             className={`flex w-full cursor-pointer justify-center rounded-md border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                               conservativeAmount === amount
+                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                 : 'border-gray-300 text-gray-600'
+                             }`}
+                           >
+                             ${amount}
+                           </button>
+                         ))}
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => setShowConservativeCustom(true)}
+                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                       >
+                         <Edit3 className="h-4 w-4" />
+                       </button>
+                     </div>
+                     <div className={`absolute inset-0 flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                       showConservativeCustom ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'
+                     }`}>
+                       <input
+                         type="number"
+                         value={conservativeCustomValue}
+                         onChange={(e) => setConservativeCustomValue(e.target.value)}
+                         onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             handleConservativeCustomSubmit();
+                           } else if (e.key === 'Escape') {
+                             handleConservativeCustomCancel();
+                           }
+                         }}
+                         placeholder="Enter amount"
+                         className="flex-1 rounded-md border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                         autoFocus={showConservativeCustom}
+                       />
+                       <button
+                         type="button"
+                         onClick={handleConservativeCustomSubmit}
+                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                       >
+                         ✓
+                       </button>
+                       <button
+                         type="button"
+                         onClick={handleConservativeCustomCancel}
+                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                       >
+                         ✕
+                       </button>
+                     </div>
+                   </div>
+                 </div>
               </div>
 
-              <button
-                type='button'
-                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
-              >
-                <span>Invest ${conservativeAmount}</span>
-                <ArrowRight className='ml-2 h-4 w-4' />
-              </button>
+                                          {/* Press to Confirm Button */}
+              <div className={`relative h-11 w-full overflow-hidden rounded-md transition-all duration-500 ease-in-out ${
+                conservativeAmount ? 'bg-blue-600' : 'bg-blue-600/30'
+              }`}>
+                <div
+                  className={`absolute inset-0 flex items-center justify-center text-sm font-medium transition-all duration-500 ease-in-out ${
+                    conservativeAmount ? 'text-white' : 'text-white/80'
+                  } ${conservativeSliding ? 'opacity-0' : 'opacity-100'}`}
+                >
+                  <span>{conservativeAmount ? `Invest $${conservativeAmount}` : 'Select amount to invest'}</span>
+                  {conservativeAmount && <ArrowRight className='ml-2 h-4 w-4' />}
+                </div>
+                                {/* Explosion animation */}
+                <div
+                  className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-sm font-medium text-white transition-all duration-200 ease-out ${
+                    conservativeSliding
+                      ? 'w-[120%] h-[120%] -translate-x-1/2 -translate-y-1/2 opacity-100'
+                      : 'w-0 h-0 -translate-x-1/2 -translate-y-1/2 opacity-0'
+                  }`}
+                  style={{ backgroundColor: '#10B981' }}
+                >
+                  <span className={conservativeSliding ? 'opacity-100' : 'opacity-0'}>✓ Confirmed!</span>
+                </div>
+                {conservativeAmount && (
+                  <button
+                    type="button"
+                    onMouseDown={() => setConservativeSliding(true)}
+                    onMouseUp={() => {
+                      if (conservativeSliding) {
+                        setTimeout(() => handleConservativeSlideComplete(), 1200);
+                      }
+                    }}
+                    onMouseLeave={() => setConservativeSliding(false)}
+                    onTouchStart={() => setConservativeSliding(true)}
+                    onTouchEnd={() => {
+                      if (conservativeSliding) {
+                        setTimeout(() => handleConservativeSlideComplete(), 1200);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full bg-transparent cursor-pointer"
+                  />
+                )}
+              </div>
             </div>
           </div>
 
           {/* Growth Vault */}
-          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md'>
+          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white transition-all duration-200'>
             <div className='p-5'>
               <div className='mb-4 flex items-center justify-between'>
                 <div className='flex items-center space-x-3'>
@@ -245,7 +305,7 @@ export default function PyUSDYieldSelector() {
                     <TrendingUp className='h-5 w-5 text-blue-600' />
                   </div>
                   <div>
-                    <h3 className='text-base font-semibold text-gray-900'>
+                    <h3 className='text-base font-medium text-gray-900'>
                       Growth Vault
                     </h3>
                     <p className='text-sm text-gray-500'>
@@ -263,7 +323,7 @@ export default function PyUSDYieldSelector() {
                   <span className='text-sm font-medium text-gray-600'>
                     Expected APY
                   </span>
-                  <span className='text-base font-semibold text-blue-600'>
+                  <span className='text-base font-medium text-blue-600'>
                     8.5% - 12.3%
                   </span>
                 </div>
@@ -280,83 +340,121 @@ export default function PyUSDYieldSelector() {
               {/* Amount Selection */}
               <div className='mb-4 space-y-3'>
                 <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
-                <div className='flex w-full gap-2'>
-                  {!showGrowthCustom ? (
-                    <>
-                      <div role="radiogroup" className='flex w-full gap-2 transition-all duration-300 ease-in-out'>
-                        {['25', '50', '100', '250'].map((amount) => (
-                          <label
-                            key={amount}
-                            className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
-                              growthAmount === amount
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-300 text-gray-600'
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              value={amount}
-                              checked={growthAmount === amount}
-                              onChange={(e) => setGrowthAmount(e.target.value)}
-                              className="sr-only"
-                            />
-                            ${amount}
-                          </label>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowGrowthCustom(true)}
-                        className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                    </>
-                  ) : (
-                    <div className='flex w-full gap-2 animate-in slide-in-from-right-5 duration-300'>
-                      <div className='flex w-full gap-2'>
-                        <input
-                          type="number"
-                          value={growthCustomValue}
-                          onChange={(e) => setGrowthCustomValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleGrowthCustomSubmit();
-                            } else if (e.key === 'Escape') {
-                              handleGrowthCustomCancel();
-                            }
-                          }}
-                          placeholder="Enter amount"
-                          className="flex-1 rounded-[10px] border-[1.5px] border-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-700 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={handleGrowthCustomSubmit}
-                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleGrowthCustomCancel}
-                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                                 <div className='flex w-full gap-2'>
+                   <div className="relative w-full overflow-hidden">
+                     <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                       showGrowthCustom ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
+                     }`}>
+                       <div role="radiogroup" className='flex w-full gap-2'>
+                         {['25', '50', '100', '250'].map((amount) => (
+                           <button
+                             key={amount}
+                             type="button"
+                             onClick={() => {
+                               if (growthAmount === amount) {
+                                 setGrowthAmount('');
+                               } else {
+                                 setGrowthAmount(amount);
+                               }
+                             }}
+                             className={`flex w-full cursor-pointer justify-center rounded-md border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                               growthAmount === amount
+                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                 : 'border-gray-300 text-gray-600'
+                             }`}
+                           >
+                             ${amount}
+                           </button>
+                         ))}
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => setShowGrowthCustom(true)}
+                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                       >
+                         <Edit3 className="h-4 w-4" />
+                       </button>
+                     </div>
+                     <div className={`absolute inset-0 flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                       showGrowthCustom ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'
+                     }`}>
+                       <input
+                         type="number"
+                         value={growthCustomValue}
+                         onChange={(e) => setGrowthCustomValue(e.target.value)}
+                         onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             handleGrowthCustomSubmit();
+                           } else if (e.key === 'Escape') {
+                             handleGrowthCustomCancel();
+                           }
+                         }}
+                         placeholder="Enter amount"
+                         className="flex-1 rounded-md border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                         autoFocus={showGrowthCustom}
+                       />
+                       <button
+                         type="button"
+                         onClick={handleGrowthCustomSubmit}
+                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                       >
+                         ✓
+                       </button>
+                       <button
+                         type="button"
+                         onClick={handleGrowthCustomCancel}
+                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                       >
+                         ✕
+                       </button>
+                     </div>
+                   </div>
+                 </div>
               </div>
 
-              <button
-                type='button'
-                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
-              >
-                <span>Invest ${growthAmount}</span>
-                <ArrowRight className='ml-2 h-4 w-4' />
-              </button>
+                                          {/* Press to Confirm Button */}
+              <div className={`relative h-11 w-full overflow-hidden rounded-md transition-all duration-500 ease-in-out ${
+                growthAmount ? 'bg-blue-600' : 'bg-blue-600/30'
+              }`}>
+                <div
+                  className={`absolute inset-0 flex items-center justify-center text-sm font-medium transition-all duration-500 ease-in-out ${
+                    growthAmount ? 'text-white' : 'text-white/80'
+                  } ${growthSliding ? 'opacity-0' : 'opacity-100'}`}
+                >
+                  <span>{growthAmount ? `Invest $${growthAmount}` : 'Select amount to invest'}</span>
+                  {growthAmount && <ArrowRight className='ml-2 h-4 w-4' />}
+                </div>
+                                {/* Explosion animation */}
+                <div
+                  className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-sm font-medium text-white transition-all duration-200 ease-out ${
+                    growthSliding
+                      ? 'w-[120%] h-[120%] -translate-x-1/2 -translate-y-1/2 opacity-100'
+                      : 'w-0 h-0 -translate-x-1/2 -translate-y-1/2 opacity-0'
+                  }`}
+                  style={{ backgroundColor: '#10B981' }}
+                >
+                  <span className={growthSliding ? 'opacity-100' : 'opacity-0'}>✓ Confirmed!</span>
+                </div>
+                {growthAmount && (
+                  <button
+                    type="button"
+                    onMouseDown={() => setGrowthSliding(true)}
+                    onMouseUp={() => {
+                      if (growthSliding) {
+                        setTimeout(() => handleGrowthSlideComplete(), 1200);
+                      }
+                    }}
+                    onMouseLeave={() => setGrowthSliding(false)}
+                    onTouchStart={() => setGrowthSliding(true)}
+                    onTouchEnd={() => {
+                      if (growthSliding) {
+                        setTimeout(() => handleGrowthSlideComplete(), 1200);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full bg-transparent cursor-pointer"
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -366,7 +464,7 @@ export default function PyUSDYieldSelector() {
           <div className='p-6 text-white'>
             <div className='mb-3 flex items-center space-x-2'>
               <Zap className='h-5 w-5' />
-              <h3 className='font-semibold'>Instant Deployment</h3>
+              <h3 className='font-medium'>Instant Deployment</h3>
             </div>
             <p className='mb-4 text-sm text-blue-100'>
               Your pyUSD starts earning yield immediately after investment
