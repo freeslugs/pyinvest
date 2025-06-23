@@ -329,6 +329,10 @@ export default function CookbookPage() {
   // Form state
   const [swapAmount, setSwapAmount] = useState<string>('1');
   const [liquidityAmount, setLiquidityAmount] = useState<string>('2');
+  const [swapDirection, setSwapDirection] = useState<
+    'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'
+  >('PYUSD_TO_USDC');
+  const [slippageTolerance, setSlippageTolerance] = useState<string>('15'); // Default to 15% for more flexibility
 
   // Get token and pool configurations for Sepolia
   const SEPOLIA_TOKENS = getSepoliaTokens();
@@ -2320,21 +2324,27 @@ export default function CookbookPage() {
     }
   };
 
-  // Perform swap: PYUSD → USDC
+  // Perform swap: PYUSD ↔ USDC (bidirectional)
   const performSwap = async () => {
     if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN || !PYUSD_USDC_POOL) {
       console.log('❌ Missing requirements for swap');
       return;
     }
 
+    // Determine tokens based on swap direction
+    const isUSDCToPYUSD = swapDirection === 'USDC_TO_PYUSD';
+    const inputToken = isUSDCToPYUSD ? USDC_TOKEN : PYUSD_TOKEN;
+    const outputToken = isUSDCToPYUSD ? PYUSD_TOKEN : USDC_TOKEN;
+    const swapLabel = isUSDCToPYUSD ? 'USDC → PYUSD' : 'PYUSD → USDC';
+
     try {
-      console.log('🔄 === STARTING PYUSD → USDC SWAP ===');
+      console.log(`🔄 === STARTING ${swapLabel} SWAP ===`);
       setPoolData(prev => ({ ...prev, swapStatus: 'Swapping...' }));
 
       // Check Permit2 allowance first
       console.log('🔍 Checking Permit2 allowance before swap...');
       const permit2Check = await checkPermit2Allowance(
-        PYUSD_TOKEN.address,
+        inputToken.address,
         metamaskWallet.address
       );
 
@@ -2348,7 +2358,7 @@ export default function CookbookPage() {
         }));
 
         try {
-          await approvePermit2(PYUSD_TOKEN.address);
+          await approvePermit2(inputToken.address);
           console.log('✅ Permit2 approved, waiting for confirmation...');
           setPoolData(prev => ({
             ...prev,
@@ -2360,7 +2370,7 @@ export default function CookbookPage() {
 
           // Recheck the allowance
           const recheckPermit2 = await checkPermit2Allowance(
-            PYUSD_TOKEN.address,
+            inputToken.address,
             metamaskWallet.address
           );
           if (!recheckPermit2.isValid) {
@@ -2398,32 +2408,59 @@ export default function CookbookPage() {
 
       // Calculate swap amount in wei
       const swapAmountWei = BigInt(
-        Number(swapAmount) * Math.pow(10, PYUSD_TOKEN.decimals)
+        Number(swapAmount) * Math.pow(10, inputToken.decimals)
       );
       console.log(
-        `💱 Swapping ${swapAmount} PYUSD (${swapAmountWei} wei) for USDC`
+        `💱 Swapping ${swapAmount} ${inputToken.symbol} (${swapAmountWei} wei) for ${outputToken.symbol}`
       );
 
       // Create deadline (20 minutes from now)
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
       console.log(`⏰ Deadline: ${deadline}`);
 
-      // Calculate minimum output amount with 5% slippage tolerance
+      // Calculate minimum output amount with configurable slippage tolerance
       // Based on rough price ratio from successful txs: ~70 PYUSD per USDC
-      const estimatedOutputWei = swapAmountWei / 70n; // Rough estimate
-      const slippageToleranceBps = 500n; // 5% = 500 basis points
-      const amountOutMinimum =
-        (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
+      // Use more conservative estimates and higher slippage for USDC->PYUSD
+      let estimatedOutputWei: bigint;
+      if (isUSDCToPYUSD) {
+        // USDC to PYUSD: use a more conservative rate (65 instead of 70 for safety)
+        estimatedOutputWei = swapAmountWei * 65n;
+      } else {
+        // PYUSD to USDC: use a more conservative rate (divide by 75 instead of 70)
+        estimatedOutputWei = swapAmountWei / 75n;
+      }
 
-      console.log(`📊 Estimated output: ${estimatedOutputWei} wei USDC`);
+      const slippageToleranceBps = BigInt(Number(slippageTolerance) * 100); // Convert percentage to basis points
+
+      // Calculate minimum output amount with safety checks
+      let amountOutMinimum: bigint;
+      if (Number(slippageTolerance) >= 25) {
+        // For very high slippage (25%+), use minimal protection to avoid failures
+        amountOutMinimum = 1n; // Accept any amount > 0
+        console.log(
+          '⚠️ Using minimal slippage protection due to high tolerance'
+        );
+      } else {
+        amountOutMinimum =
+          (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
+      }
+
+      // Ensure minimum is never 0
+      if (amountOutMinimum === 0n) {
+        amountOutMinimum = 1n;
+      }
+
       console.log(
-        `📊 Minimum output (5% slippage): ${amountOutMinimum} wei USDC`
+        `📊 Estimated output: ${estimatedOutputWei} wei ${outputToken.symbol}`
+      );
+      console.log(
+        `📊 Minimum output (${slippageTolerance}% slippage): ${amountOutMinimum} wei ${outputToken.symbol}`
       );
 
       // Construct swap parameters
       const swapParams = {
-        tokenIn: PYUSD_TOKEN.address as `0x${string}`,
-        tokenOut: USDC_TOKEN.address as `0x${string}`,
+        tokenIn: inputToken.address as `0x${string}`,
+        tokenOut: outputToken.address as `0x${string}`,
         fee: PYUSD_USDC_POOL.fee,
         recipient: metamaskWallet.address as `0x${string}`,
         deadline,
@@ -2446,10 +2483,10 @@ export default function CookbookPage() {
       console.log(`  - Fee: ${swapParams.fee}`);
       console.log(`  - Recipient: ${swapParams.recipient}`);
       console.log(
-        `  - Amount In: ${swapParams.amountIn.toString()} wei (${Number(swapParams.amountIn) / Math.pow(10, PYUSD_TOKEN.decimals)} tokens)`
+        `  - Amount In: ${swapParams.amountIn.toString()} wei (${Number(swapParams.amountIn) / Math.pow(10, inputToken.decimals)} tokens)`
       );
       console.log(
-        `  - Min Amount Out: ${swapParams.amountOutMinimum.toString()} wei (${Number(swapParams.amountOutMinimum) / Math.pow(10, USDC_TOKEN.decimals)} tokens)`
+        `  - Min Amount Out: ${swapParams.amountOutMinimum.toString()} wei (${Number(swapParams.amountOutMinimum) / Math.pow(10, outputToken.decimals)} tokens)`
       );
 
       // Encode V3_SWAP_EXACT_IN command (0x00) for Universal Router
@@ -2471,8 +2508,8 @@ export default function CookbookPage() {
           metamaskWallet.address as `0x${string}`,
           swapAmountWei,
           amountOutMinimum,
-          // Encode path: token0 + fee + token1 (packed format)
-          `0x${PYUSD_TOKEN.address.slice(2)}${PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${USDC_TOKEN.address.slice(2)}` as `0x${string}`,
+          // Encode path: inputToken + fee + outputToken (packed format)
+          `0x${inputToken.address.slice(2)}${PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${outputToken.address.slice(2)}` as `0x${string}`,
           true, // User pays input token
         ]
       );
@@ -2538,6 +2575,12 @@ export default function CookbookPage() {
         ) {
           errorMessage =
             '🔒 Permit2 allowance has expired. The token approval to Permit2 needs to be renewed. Please approve Permit2 again.';
+        } else if (
+          error.message.includes('V3TooLittleReceived') ||
+          error.message.includes('TooLittleReceived') ||
+          error.message.includes('slippage')
+        ) {
+          errorMessage = `💱 Slippage Error: The swap failed because the price moved too much during execution. Current slippage tolerance: ${slippageTolerance}%. Try increasing the slippage tolerance above (recommend 15-25% for volatile pairs) or wait for better market conditions.`;
         } else if (error.message.includes('execution reverted')) {
           errorMessage =
             'Transaction reverted - check slippage/liquidity or token approvals';
@@ -4389,34 +4432,153 @@ export default function CookbookPage() {
           {/* Swap Section */}
           <div className='mt-8 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-6'>
             <h2 className='mb-4 text-xl font-bold text-purple-900'>
-              Step 2: Swap PYUSD → USDC
+              Step 2: Swap{' '}
+              {swapDirection === 'PYUSD_TO_USDC'
+                ? 'PYUSD → USDC'
+                : 'USDC → PYUSD'}
             </h2>
             <p className='mb-4 text-sm text-purple-700'>
-              Test the Uniswap V3 swap functionality by converting PYUSD to
-              USDC.
+              Test the Uniswap V3 swap functionality by converting between PYUSD
+              and USDC in both directions.
+              <br />
+              <strong>Note:</strong> USDC→PYUSD swaps may need higher slippage
+              tolerance (15%+) due to price volatility and liquidity
+              differences.
             </p>
+
+            {/* Direction Selector */}
             <div className='mb-4'>
-              <label className='block text-sm font-medium text-purple-800'>
-                Amount to Swap (PYUSD)
+              <label className='mb-2 block text-sm font-medium text-purple-800'>
+                Swap Direction
               </label>
-              <input
-                type='number'
-                value={swapAmount}
-                onChange={e => setSwapAmount(e.target.value)}
-                className='mt-1 block w-32 rounded-md border-gray-300 px-3 py-2 text-sm'
-                step='0.1'
-                min='0'
-              />
+              <div className='flex gap-4'>
+                <label className='flex items-center'>
+                  <input
+                    type='radio'
+                    name='swapDirection'
+                    value='PYUSD_TO_USDC'
+                    checked={swapDirection === 'PYUSD_TO_USDC'}
+                    onChange={e =>
+                      setSwapDirection(
+                        e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'
+                      )
+                    }
+                    className='mr-2'
+                  />
+                  <span className='text-sm text-purple-700'>PYUSD → USDC</span>
+                </label>
+                <label className='flex items-center'>
+                  <input
+                    type='radio'
+                    name='swapDirection'
+                    value='USDC_TO_PYUSD'
+                    checked={swapDirection === 'USDC_TO_PYUSD'}
+                    onChange={e =>
+                      setSwapDirection(
+                        e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'
+                      )
+                    }
+                    className='mr-2'
+                  />
+                  <span className='text-sm text-purple-700'>USDC → PYUSD</span>
+                </label>
+              </div>
+            </div>
+
+            <div className='mb-4 space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-purple-800'>
+                  Amount to Swap (
+                  {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD' : 'USDC'})
+                </label>
+                <input
+                  type='number'
+                  value={swapAmount}
+                  onChange={e => setSwapAmount(e.target.value)}
+                  className='mt-1 block w-32 rounded-md border-gray-300 px-3 py-2 text-sm'
+                  step='0.1'
+                  min='0'
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-purple-800'>
+                  Slippage Tolerance (%)
+                </label>
+                <div className='mt-1 flex items-center gap-2'>
+                  <input
+                    type='number'
+                    value={slippageTolerance}
+                    onChange={e => setSlippageTolerance(e.target.value)}
+                    className='block w-20 rounded-md border-gray-300 px-3 py-2 text-sm'
+                    step='0.5'
+                    min='0.1'
+                    max='50'
+                  />
+                  <div className='flex gap-1'>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('5')}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '5' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    >
+                      5%
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('10')}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '10' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    >
+                      10%
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('15')}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '15' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    >
+                      15%
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('50')}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '50' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}
+                      title='Disables slippage protection - use with caution!'
+                    >
+                      Max
+                    </button>
+                  </div>
+                </div>
+                <p className='mt-1 text-xs text-purple-600'>
+                  Higher slippage = more likely to succeed but potentially worse
+                  price.
+                  {slippageTolerance && Number(slippageTolerance) > 10 && (
+                    <span className='font-medium text-yellow-600'>
+                      {' '}
+                      ⚠️ High slippage warning!
+                    </span>
+                  )}
+                  {swapDirection === 'USDC_TO_PYUSD' &&
+                    Number(slippageTolerance) < 15 && (
+                      <span className='font-medium text-blue-600'>
+                        {' '}
+                        💡 Tip: USDC→PYUSD often needs 15%+ slippage
+                      </span>
+                    )}
+                </p>
+              </div>
             </div>
             <button
               onClick={performSwap}
               className='rounded bg-purple-600 px-4 py-2 text-white hover:bg-purple-700'
               disabled={
                 poolData.routerAllowance < 1 ||
-                poolData.metaMaskPYUSDBalance < Number(swapAmount)
+                (swapDirection === 'PYUSD_TO_USDC'
+                  ? poolData.metaMaskPYUSDBalance < Number(swapAmount)
+                  : poolData.metaMaskUSDCBalance < Number(swapAmount))
               }
             >
-              🔄 Swap PYUSD → USDC
+              🔄 Swap{' '}
+              {swapDirection === 'PYUSD_TO_USDC'
+                ? 'PYUSD → USDC'
+                : 'USDC → PYUSD'}
             </button>
             <div className='mt-2'>
               <p className='text-sm text-purple-700'>
