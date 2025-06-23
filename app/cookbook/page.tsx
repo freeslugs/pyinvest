@@ -43,6 +43,17 @@ export default function CookbookPage() {
     error?: string;
     balances?: { metamask: string; smartWallet: string };
   }>({});
+
+  const [usdcTestResults, setUsdcTestResults] = useState<{
+    approveStatus?: string;
+    transferStatus?: string;
+    aaveDepositStatus?: string;
+    approveHash?: string;
+    transferHash?: string;
+    aaveDepositHash?: string;
+    error?: string;
+    balances?: { metamask: string; smartWallet: string };
+  }>({});
   const router = useRouter();
   const {
     ready,
@@ -108,6 +119,22 @@ export default function CookbookPage() {
     symbol: 'PYUSD',
   };
 
+  // USDC Token Configuration (Sepolia)
+  const USDC_TOKEN_CONFIG = {
+    address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as const,
+    decimals: 6,
+    symbol: 'USDC',
+  };
+
+  // AAVE Configuration (Sepolia)
+  const AAVE_CONFIG = {
+    POOL: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951' as const,
+    WETH_GATEWAY: '0x387d311e47e80b498169e6fb51d3193167d89f7d' as const,
+    WETH: '0xc558dbdd856501fcd9aaf1e62eae57a9f0629a3c' as const,
+    AWETH: '0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830' as const,
+    MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11' as const,
+  };
+
   // ERC20 ABI for approve and transfer functions
   const ERC20_ABI = [
     {
@@ -157,6 +184,66 @@ export default function CookbookPage() {
       name: 'allowance',
       outputs: [{ name: '', type: 'uint256' }],
       type: 'function',
+    },
+  ] as const;
+
+  // AAVE Pool ABI
+  const AAVE_POOL_ABI = [
+    {
+      name: 'supply',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [
+        { name: 'asset', type: 'address' },
+        { name: 'amount', type: 'uint256' },
+        { name: 'onBehalfOf', type: 'address' },
+        { name: 'referralCode', type: 'uint16' },
+      ],
+      outputs: [],
+    },
+  ] as const;
+
+  // WETH Gateway ABI for depositing ETH
+  const WETH_GATEWAY_ABI = [
+    {
+      name: 'depositETH',
+      type: 'function',
+      stateMutability: 'payable',
+      inputs: [
+        { name: 'lendingPool', type: 'address' },
+        { name: 'onBehalfOf', type: 'address' },
+        { name: 'referralCode', type: 'uint16' },
+      ],
+      outputs: [],
+    },
+  ] as const;
+
+  // Multicall3 contract ABI for batch transactions
+  const MULTICALL3_ABI = [
+    {
+      name: 'aggregate3',
+      type: 'function',
+      inputs: [
+        {
+          name: 'calls',
+          type: 'tuple[]',
+          components: [
+            { name: 'target', type: 'address' },
+            { name: 'allowFailure', type: 'bool' },
+            { name: 'callData', type: 'bytes' },
+          ],
+        },
+      ],
+      outputs: [
+        {
+          name: 'returnData',
+          type: 'tuple[]',
+          components: [
+            { name: 'success', type: 'bool' },
+            { name: 'returnData', type: 'bytes' },
+          ],
+        },
+      ],
     },
   ] as const;
 
@@ -666,6 +753,634 @@ export default function CookbookPage() {
       setTokenTestResults({
         ...tokenTestResults,
         transferStatus: 'Transfer failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  // USDC Functions - duplicated from PYUSD functions
+  // Function to check USDC token balances
+  const checkUsdcBalances = async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      console.log('Must be on Sepolia network with smart wallet');
+      setUsdcTestResults({
+        error: 'Must be on Sepolia network with smart wallet',
+      });
+      return;
+    }
+
+    setUsdcTestResults(prev => ({ ...prev, error: '', balances: undefined }));
+
+    try {
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      console.log('Creating public client for Sepolia...');
+
+      // Use multiple RPC endpoints for better reliability
+      const rpcUrls = [
+        'https://ethereum-sepolia-rpc.publicnode.com',
+        'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+        'https://rpc.sepolia.org',
+        'https://rpc2.sepolia.org',
+      ];
+
+      let publicClient;
+      let workingRpc = '';
+
+      // Try different RPC endpoints
+      for (const rpcUrl of rpcUrls) {
+        try {
+          console.log(`Trying RPC: ${rpcUrl}`);
+          publicClient = createPublicClient({
+            chain: sepolia,
+            transport: http(rpcUrl),
+          });
+
+          // Test the connection with a simple call
+          await publicClient.getBlockNumber();
+          workingRpc = rpcUrl;
+          console.log(`Successfully connected to ${rpcUrl}`);
+          break;
+        } catch (rpcError) {
+          console.log(`Failed to connect to ${rpcUrl}:`, rpcError);
+          continue;
+        }
+      }
+
+      if (!publicClient || !workingRpc) {
+        throw new Error('Failed to connect to any RPC endpoint');
+      }
+
+      console.log(`Using RPC: ${workingRpc}`);
+
+      // Get MetaMask wallet address
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setUsdcTestResults({ error: 'MetaMask wallet not found' });
+        return;
+      }
+
+      console.log('MetaMask wallet address:', metamaskWallet.address);
+      console.log('Smart wallet address:', smartWallet.address);
+      console.log('USDC token address:', USDC_TOKEN_CONFIG.address);
+
+      // Check MetaMask wallet USDC balance
+      console.log('Checking MetaMask USDC balance...');
+      const metamaskBalanceRaw = await publicClient.readContract({
+        address: USDC_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [metamaskWallet.address as `0x${string}`],
+      });
+
+      console.log('MetaMask balance raw:', metamaskBalanceRaw);
+      const metamaskBalance = (
+        Number(metamaskBalanceRaw) /
+        10 ** USDC_TOKEN_CONFIG.decimals
+      ).toFixed(6);
+
+      // Check Smart Wallet USDC balance
+      console.log('Checking Smart Wallet USDC balance...');
+      const smartWalletBalanceRaw = await publicClient.readContract({
+        address: USDC_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [smartWallet.address as `0x${string}`],
+      });
+
+      console.log('Smart Wallet balance raw:', smartWalletBalanceRaw);
+      const smartWalletBalance = (
+        Number(smartWalletBalanceRaw) /
+        10 ** USDC_TOKEN_CONFIG.decimals
+      ).toFixed(6);
+
+      console.log('Balances calculated successfully:', {
+        metamask: metamaskBalance,
+        smartWallet: smartWalletBalance,
+      });
+
+      setUsdcTestResults({
+        error: '',
+        balances: {
+          metamask: metamaskBalance,
+          smartWallet: smartWalletBalance,
+        },
+      });
+    } catch (error) {
+      console.error('Error checking USDC balances:', error);
+      setUsdcTestResults({
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  // Function to approve smart wallet to spend USDC from MetaMask
+  const approveSmartWalletUsdc = async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      setUsdcTestResults({
+        error: 'Must be on Sepolia network with smart wallet',
+      });
+      return;
+    }
+
+    setUsdcTestResults({ approveStatus: 'Requesting approval...', error: '' });
+
+    try {
+      // Get MetaMask wallet address to ensure we're approving from the right wallet
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setUsdcTestResults({ error: 'MetaMask wallet not found' });
+        return;
+      }
+
+      console.log('Approving from MetaMask wallet:', metamaskWallet.address);
+      console.log('Approving smart wallet to spend:', smartWallet.address);
+
+      // Switch to the MetaMask wallet first, then send the approval transaction
+      const metamaskWalletInList = wallets.find(
+        w =>
+          w.address.toLowerCase() === metamaskWallet.address.toLowerCase() &&
+          w.walletClientType !== 'privy'
+      );
+
+      if (!metamaskWalletInList) {
+        setUsdcTestResults({
+          error: 'MetaMask wallet not found in wallet list',
+        });
+        return;
+      }
+
+      // Get the MetaMask wallet's provider directly
+      const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
+
+      // Check if MetaMask is on Sepolia network (chainId 11155111 = 0xaa36a7 in hex)
+      const currentChainId = await metamaskProvider.request({
+        method: 'eth_chainId',
+      });
+      const sepoliaChainId = '0xaa36a7'; // 11155111 in hex
+
+      if (currentChainId !== sepoliaChainId) {
+        setUsdcTestResults({
+          approveStatus: 'Switching MetaMask to Sepolia...',
+          error: '',
+        });
+
+        try {
+          // Request to switch to Sepolia
+          await metamaskProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: sepoliaChainId }],
+          });
+
+          // Wait a moment for the switch to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (switchError: any) {
+          // If the network doesn't exist, try to add it
+          if (switchError.code === 4902) {
+            try {
+              await metamaskProvider.request({
+                method: 'wallet_addEthereumChain',
+                params: [
+                  {
+                    chainId: sepoliaChainId,
+                    chainName: 'Sepolia Testnet',
+                    nativeCurrency: {
+                      name: 'Sepolia ETH',
+                      symbol: 'SEP',
+                      decimals: 18,
+                    },
+                    rpcUrls: ['https://rpc.sepolia.org'],
+                    blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                  },
+                ],
+              });
+            } catch (addError) {
+              setUsdcTestResults({
+                error: 'Failed to add Sepolia network to MetaMask',
+              });
+              return;
+            }
+          } else {
+            setUsdcTestResults({
+              error: 'Failed to switch MetaMask to Sepolia network',
+            });
+            return;
+          }
+        }
+      }
+
+      setUsdcTestResults({
+        approveStatus: 'Preparing approval transaction...',
+        error: '',
+      });
+
+      const { encodeFunctionData } = await import('viem');
+
+      // Approve 100 USDC (with 6 decimals)
+      const approveAmount = BigInt(100 * 10 ** USDC_TOKEN_CONFIG.decimals);
+
+      const data = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [smartWallet.address as `0x${string}`, approveAmount],
+      });
+
+      // Send transaction directly through MetaMask provider
+      const txHash = await metamaskProvider.request({
+        method: 'eth_sendTransaction',
+        params: [
+          {
+            from: metamaskWallet.address,
+            to: USDC_TOKEN_CONFIG.address,
+            data,
+          },
+        ],
+      });
+
+      setUsdcTestResults({
+        approveStatus: 'Approval successful!',
+        approveHash: txHash,
+        error: '',
+      });
+
+      // Refresh balances after approval
+      setTimeout(() => {
+        checkUsdcBalances();
+      }, 2000);
+    } catch (error) {
+      console.error('Error approving:', error);
+      setUsdcTestResults({
+        approveStatus: 'Approval failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  // Function to transfer USDC using smart wallet
+  const transferWithSmartWalletUsdc = async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      setUsdcTestResults({
+        error: 'Must be on Sepolia network with smart wallet',
+      });
+      return;
+    }
+
+    setUsdcTestResults({ transferStatus: 'Preparing transfer...', error: '' });
+
+    try {
+      // Get MetaMask wallet address
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setUsdcTestResults({ error: 'MetaMask wallet not found' });
+        return;
+      }
+
+      console.log('Transferring from MetaMask:', metamaskWallet.address);
+      console.log('Using smart wallet:', smartWallet.address);
+
+      // Transfer 1 USDC (with 6 decimals)
+      const transferAmount = BigInt(1 * 10 ** USDC_TOKEN_CONFIG.decimals);
+
+      const recipientAddress = '0x7A33615d12A12f58b25c653dc5E44188D44f6898'; // freeslugs.eth
+
+      const { encodeFunctionData } = await import('viem');
+
+      const data = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'transferFrom',
+        args: [
+          metamaskWallet.address as `0x${string}`,
+          recipientAddress as `0x${string}`,
+          transferAmount,
+        ],
+      });
+
+      console.log('Sending transferFrom transaction...');
+
+      // This will be signed by the smart wallet
+      const txHash = await client.sendTransaction({
+        to: USDC_TOKEN_CONFIG.address,
+        data,
+        value: 0n,
+      });
+
+      console.log('Transfer transaction hash:', txHash);
+
+      setUsdcTestResults({
+        ...usdcTestResults,
+        transferStatus: 'Transfer successful!',
+        transferHash: txHash,
+        error: '',
+      });
+
+      // Refresh balances after transfer
+      setTimeout(() => checkUsdcBalances(), 2000);
+    } catch (error) {
+      console.error('Error transferring:', error);
+      setUsdcTestResults({
+        ...usdcTestResults,
+        transferStatus: 'Transfer failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  // Function to deposit ETH to AAVE using Smart Wallet
+  const depositEthToAave = async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      setUsdcTestResults({
+        error: 'Must be on Sepolia network with smart wallet',
+      });
+      return;
+    }
+
+    setUsdcTestResults({ aaveDepositStatus: 'Preparing ETH deposit to AAVE...', error: '' });
+
+    try {
+      console.log('Starting ETH deposit to AAVE via smart wallet...');
+      console.log('Smart wallet address:', smartWallet.address);
+
+      // Check if smart wallet has enough ETH balance
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+      
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+      });
+      
+      const currentBalanceWei = await publicClient.getBalance({
+        address: smartWallet.address as `0x${string}`,
+      });
+      
+      const currentBalance = Number(currentBalanceWei) / 10 ** 18; // ETH has 18 decimals
+      const requiredAmount = 0.01; // We're depositing 0.01 ETH
+      console.log('Smart wallet ETH balance:', currentBalance);
+      console.log('Required amount:', requiredAmount);
+      
+      if (currentBalance < requiredAmount) {
+        setUsdcTestResults({
+          error: `Insufficient ETH balance in smart wallet. Have: ${currentBalance.toFixed(4)}, Need: ${requiredAmount}. Send ETH to smart wallet first.`,
+        });
+        return;
+      }
+
+      // Deposit 0.01 ETH (18 decimals)
+      const depositAmount = BigInt(Math.floor(0.01 * 10 ** 18));
+
+      const { encodeFunctionData } = await import('viem');
+
+      // Deposit ETH directly via WETH Gateway (no approval needed for ETH)
+      setUsdcTestResults({ aaveDepositStatus: 'Depositing ETH to AAVE...', error: '' });
+
+      const depositData = encodeFunctionData({
+        abi: WETH_GATEWAY_ABI,
+        functionName: 'depositETH',
+        args: [AAVE_CONFIG.POOL, smartWallet.address as `0x${string}`, 0],
+      });
+
+      const depositTxHash = await client.sendTransaction({
+        to: AAVE_CONFIG.WETH_GATEWAY,
+        data: depositData,
+        value: depositAmount,
+      });
+
+      console.log('ETH AAVE deposit transaction hash:', depositTxHash);
+
+      setUsdcTestResults({
+        ...usdcTestResults,
+        aaveDepositStatus: 'ETH AAVE deposit successful!',
+        aaveDepositHash: depositTxHash,
+        error: '',
+      });
+
+      // Refresh balances after deposit
+      setTimeout(() => checkUsdcBalances(), 3000);
+    } catch (error) {
+      console.error('Error depositing ETH to AAVE:', error);
+      setUsdcTestResults({
+        ...usdcTestResults,
+        aaveDepositStatus: 'ETH AAVE deposit failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  // Function to deposit ETH to AAVE using EOA/MetaMask
+  const depositEthToAaveEOA = async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      setUsdcTestResults({
+        error: 'Must be on Sepolia network with smart wallet',
+      });
+      return;
+    }
+
+    setUsdcTestResults({ aaveDepositStatus: 'Preparing EOA AAVE deposit...', error: '' });
+
+    try {
+      // Get MetaMask wallet address
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        setUsdcTestResults({ error: 'MetaMask wallet not found' });
+        return;
+      }
+
+      // Find the MetaMask wallet in the wallets list
+      const metamaskWalletInList = wallets.find(
+        w =>
+          w.address.toLowerCase() === metamaskWallet.address.toLowerCase() &&
+          w.walletClientType !== 'privy'
+      );
+
+      if (!metamaskWalletInList) {
+        setUsdcTestResults({
+          error: 'MetaMask wallet not found in wallet list',
+        });
+        return;
+      }
+
+      // Get the MetaMask wallet's provider
+      const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
+
+      // Check if MetaMask is on Sepolia network
+      const currentChainId = await metamaskProvider.request({
+        method: 'eth_chainId',
+      });
+      const sepoliaChainId = '0xaa36a7'; // 11155111 in hex
+
+      if (currentChainId !== sepoliaChainId) {
+        await metamaskProvider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: sepoliaChainId }],
+        });
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      console.log('Starting ETH deposit to AAVE via EOA/MetaMask...');
+      console.log('MetaMask address:', metamaskWallet.address);
+      console.log('WETH Gateway:', AAVE_CONFIG.WETH_GATEWAY);
+      console.log('AAVE Pool contract:', AAVE_CONFIG.POOL);
+
+      // Deposit 0.01 ETH (18 decimals)
+      const depositAmount = BigInt(Math.floor(0.01 * 10 ** 18));
+      console.log('Deposit amount (wei):', depositAmount.toString());
+
+      // Check if user has enough ETH balance
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+      
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+      });
+      
+      const currentBalanceWei = await publicClient.getBalance({
+        address: metamaskWallet.address as `0x${string}`,
+      });
+      
+      const currentBalance = Number(currentBalanceWei) / 10 ** 18;
+      const requiredAmount = 0.01; // We're depositing 0.01 ETH
+      console.log('Current ETH balance:', currentBalance);
+      console.log('Required amount:', requiredAmount);
+      
+      if (currentBalance < requiredAmount) {
+        setUsdcTestResults({
+          error: `Insufficient ETH balance. Have: ${currentBalance.toFixed(4)}, Need: ${requiredAmount}`,
+        });
+        return;
+      }
+
+      const { encodeFunctionData } = await import('viem');
+
+      // Deposit ETH directly via WETH Gateway (no approval needed for ETH)
+      setUsdcTestResults({ aaveDepositStatus: 'EOA: Depositing ETH to AAVE...', error: '' });
+
+      const depositData = encodeFunctionData({
+        abi: WETH_GATEWAY_ABI,
+        functionName: 'depositETH',
+        args: [AAVE_CONFIG.POOL, metamaskWallet.address as `0x${string}`, 0],
+      });
+
+      console.log('Deposit calldata:', depositData);
+      console.log('About to send ETH deposit transaction with params:', {
+        from: metamaskWallet.address,
+        to: AAVE_CONFIG.WETH_GATEWAY,
+        data: depositData,
+        value: `0x${depositAmount.toString(16)}`,
+      });
+
+      const depositTxHash = await metamaskProvider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: metamaskWallet.address,
+          to: AAVE_CONFIG.WETH_GATEWAY,
+          data: depositData,
+          value: `0x${depositAmount.toString(16)}`,
+        }],
+      });
+
+      console.log('EOA ETH AAVE deposit transaction hash:', depositTxHash);
+
+      setUsdcTestResults({
+        ...usdcTestResults,
+        aaveDepositStatus: 'EOA ETH AAVE deposit successful!',
+        aaveDepositHash: depositTxHash,
+        error: '',
+      });
+
+      // Refresh balances after deposit
+      setTimeout(() => checkUsdcBalances(), 3000);
+    } catch (error) {
+      console.error('Error depositing to AAVE via EOA:', error);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      
+      // Try to extract more specific error information
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        if (error.message.includes('execution reverted')) {
+          errorMessage = `Transaction reverted: ${error.message}`;
+        }
+      }
+      
+      setUsdcTestResults({
+        ...usdcTestResults,
+        aaveDepositStatus: 'EOA AAVE deposit failed',
+        error: errorMessage,
+      });
+    }
+  };
+
+  // Simple test function to verify USDC contract works
+  const testUsdcContract = async () => {
+    try {
+      console.log('Testing USDC contract...');
+      
+      const metamaskWallet = user?.linkedAccounts?.find(
+        account => account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
+
+      if (!metamaskWallet) {
+        console.error('MetaMask wallet not found');
+        return;
+      }
+
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+      });
+
+      // Test: Get USDC balance
+      const balance = await publicClient.readContract({
+        address: USDC_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [metamaskWallet.address as `0x${string}`],
+      });
+
+      console.log('USDC balance (raw):', balance.toString());
+      console.log('USDC balance (formatted):', (Number(balance) / 10**6).toFixed(6));
+
+      // Test: Get current allowance for AAVE Pool
+      const allowance = await publicClient.readContract({
+        address: USDC_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [metamaskWallet.address as `0x${string}`, AAVE_CONFIG.POOL],
+      });
+
+      console.log('Current AAVE allowance (raw):', allowance.toString());
+      console.log('Current AAVE allowance (formatted):', (Number(allowance) / 10**6).toFixed(6));
+
+      setUsdcTestResults({
+        aaveDepositStatus: `USDC Contract Test: Balance=${(Number(balance) / 10**6).toFixed(6)}, Allowance=${(Number(allowance) / 10**6).toFixed(6)}`,
+        error: '',
+      });
+
+    } catch (error) {
+      console.error('USDC contract test failed:', error);
+      setUsdcTestResults({
+        aaveDepositStatus: 'USDC contract test failed',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -1276,6 +1991,238 @@ export default function CookbookPage() {
                   <div className='rounded border border-red-200 bg-red-50 p-3'>
                     <p className='text-sm text-red-600'>
                       <strong>Error:</strong> {tokenTestResults.error}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* USDC Token Testing Section */}
+          {smartWallet && client?.chain?.id === 11155111 && (
+            <div className='mt-6 rounded-lg border border-gray-200 bg-white p-4'>
+              <h3 className='mb-3 text-lg font-semibold text-gray-800'>
+                🪙 USDC Token Testing (Sepolia)
+              </h3>
+
+              <div className='space-y-4'>
+                {/* Token Info */}
+                <div className='rounded bg-gray-50 p-3 text-sm text-gray-600'>
+                  <p>
+                    <strong>Token:</strong> USDC ({USDC_TOKEN_CONFIG.address})
+                  </p>
+                  <p>
+                    <strong>Test Flow:</strong> Approve Smart Wallet → Transfer
+                    with Smart Wallet → Deposit to AAVE (Smart Wallet OR EOA)
+                  </p>
+                </div>
+
+                {/* Check Balances */}
+                <div className="flex gap-3">
+                  <button
+                    type='button'
+                    onClick={checkUsdcBalances}
+                    className='rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700'
+                  >
+                    Check USDC Balances
+                  </button>
+                  <button
+                    type='button'
+                    onClick={testUsdcContract}
+                    className='rounded-md bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700'
+                  >
+                    🧪 Test USDC Contract
+                  </button>
+                </div>
+
+                {/* Balance Display */}
+                {usdcTestResults.balances && (
+                  <div className='rounded border bg-gray-50 p-4'>
+                    <h4 className='mb-2 font-medium text-gray-800'>
+                      Current USDC Balances:
+                    </h4>
+                    <p className='text-gray-700'>
+                      MetaMask Wallet:{' '}
+                      <span className='font-medium text-green-600'>
+                        {usdcTestResults.balances.metamask} USDC
+                      </span>
+                    </p>
+                    <p className='text-gray-700'>
+                      Smart Wallet:{' '}
+                      <span className='font-medium text-blue-600'>
+                        {usdcTestResults.balances.smartWallet} USDC
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Step 1: Approve */}
+                <div className='border-t border-gray-200 pt-4'>
+                  <h4 className='mb-2 font-medium text-gray-800'>
+                    Step 1: Approve Smart Wallet
+                  </h4>
+                  <p className='mb-3 text-sm text-gray-600'>
+                    Allow your smart wallet to spend up to 100 USDC from your
+                    MetaMask wallet
+                  </p>
+                  <button
+                    type='button'
+                    onClick={approveSmartWalletUsdc}
+                    disabled={!client || client.chain?.id !== 11155111}
+                    className='rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:bg-gray-400'
+                  >
+                    Approve Smart Wallet (MetaMask Signs)
+                  </button>
+                  {usdcTestResults.approveStatus && (
+                    <p
+                      className={`mt-2 text-sm font-medium ${
+                        usdcTestResults.approveStatus.includes('successful')
+                          ? 'text-green-600'
+                          : usdcTestResults.approveStatus.includes('failed')
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
+                      }`}
+                    >
+                      {usdcTestResults.approveStatus}
+                    </p>
+                  )}
+                  {usdcTestResults.approveHash && (
+                    <div className='mt-2'>
+                      <p className='text-xs text-gray-500'>
+                        Transaction Hash:
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${usdcTestResults.approveHash}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='ml-1 font-mono text-blue-600 underline hover:text-blue-800'
+                        >
+                          {usdcTestResults.approveHash}
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Step 2: Transfer */}
+                <div className='border-t border-gray-200 pt-4'>
+                  <h4 className='mb-2 font-medium text-gray-800'>
+                    Step 2: Transfer with Smart Wallet
+                  </h4>
+                  <p className='mb-3 text-sm text-gray-600'>
+                    Use your smart wallet to transfer 1 USDC from MetaMask to
+                    freeslugs.eth
+                  </p>
+                  <button
+                    type='button'
+                    onClick={transferWithSmartWalletUsdc}
+                    disabled={!client || client.chain?.id !== 11155111}
+                    className='rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:bg-gray-400'
+                  >
+                    Transfer 1 USDC (Smart Wallet Signs)
+                  </button>
+                  {usdcTestResults.transferStatus && (
+                    <p
+                      className={`mt-2 text-sm font-medium ${
+                        usdcTestResults.transferStatus.includes('successful')
+                          ? 'text-green-600'
+                          : usdcTestResults.transferStatus.includes('failed')
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
+                      }`}
+                    >
+                      {usdcTestResults.transferStatus}
+                    </p>
+                  )}
+                  {usdcTestResults.transferHash && (
+                    <div className='mt-2'>
+                      <p className='text-xs text-gray-500'>
+                        Transaction Hash:
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${usdcTestResults.transferHash}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='ml-1 font-mono text-blue-600 underline hover:text-blue-800'
+                        >
+                          {usdcTestResults.transferHash}
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Step 3A: Deposit ETH to AAVE with Smart Wallet */}
+                <div className='border-t border-gray-200 pt-4'>
+                  <h4 className='mb-2 font-medium text-gray-800'>
+                    Step 3A: Deposit ETH to AAVE (Smart Wallet)
+                  </h4>
+                  <p className='mb-3 text-sm text-gray-600'>
+                    Use your smart wallet to deposit 0.01 ETH to AAVE v3 via WETH Gateway (no approval needed)
+                  </p>
+                  <button
+                    type='button'
+                    onClick={depositEthToAave}
+                    disabled={!client || client.chain?.id !== 11155111}
+                    className='rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:bg-gray-400'
+                  >
+                    Deposit 0.01 ETH to AAVE (Smart Wallet Signs)
+                  </button>
+                </div>
+
+                {/* Step 3B: Deposit ETH to AAVE with EOA */}
+                <div className='border-t border-gray-200 pt-4'>
+                  <h4 className='mb-2 font-medium text-gray-800'>
+                    Step 3B: Deposit ETH to AAVE (EOA/MetaMask)
+                  </h4>
+                  <p className='mb-3 text-sm text-gray-600'>
+                    Use your MetaMask wallet to deposit 0.01 ETH to AAVE v3 via WETH Gateway (no approval needed)
+                  </p>
+                  <button
+                    type='button'
+                    onClick={depositEthToAaveEOA}
+                    disabled={!client || client.chain?.id !== 11155111}
+                    className='rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400'
+                  >
+                    Deposit 0.01 ETH to AAVE (MetaMask Signs)
+                  </button>
+                </div>
+
+                {/* Status Display (shared) */}
+                <div>
+                  {usdcTestResults.aaveDepositStatus && (
+                    <p
+                      className={`mt-2 text-sm font-medium ${
+                        usdcTestResults.aaveDepositStatus.includes('successful')
+                          ? 'text-green-600'
+                          : usdcTestResults.aaveDepositStatus.includes('failed')
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
+                      }`}
+                    >
+                      {usdcTestResults.aaveDepositStatus}
+                    </p>
+                  )}
+                  {usdcTestResults.aaveDepositHash && (
+                    <div className='mt-2'>
+                      <p className='text-xs text-gray-500'>
+                        Transaction Hash:
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${usdcTestResults.aaveDepositHash}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='ml-1 font-mono text-blue-600 underline hover:text-blue-800'
+                        >
+                          {usdcTestResults.aaveDepositHash}
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Error Display */}
+                {usdcTestResults.error && (
+                  <div className='rounded border border-red-200 bg-red-50 p-3'>
+                    <p className='text-sm text-red-600'>
+                      <strong>Error:</strong> {usdcTestResults.error}
                     </p>
                   </div>
                 )}

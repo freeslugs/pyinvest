@@ -1,10 +1,42 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://rsms.me/inter/inter.css');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* Ensure Inter is applied to all text */
+  body {
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+  }
+
+  /* Force Inter on all elements except those with font-adelle */
+  * {
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+  }
+
+  /* Ensure Adelle Sans overrides for balance numbers */
+  .font-adelle {
+    font-family: 'Adelle Sans', serif !important;
+  }
+
   /* Keep Adelle Sans for balance numbers only */
   @font-face {
     font-family: 'Adelle Sans';
