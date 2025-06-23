@@ -317,6 +317,7 @@ export default function CookbookPage() {
   // Form state
   const [swapAmount, setSwapAmount] = useState<string>('1');
   const [liquidityAmount, setLiquidityAmount] = useState<string>('2');
+  const [swapDirection, setSwapDirection] = useState<'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'>('PYUSD_TO_USDC');
 
   // Get token and pool configurations for Sepolia
   const SEPOLIA_TOKENS = getTokensForNetwork(NETWORKS.SEPOLIA.id);
@@ -2371,21 +2372,27 @@ export default function CookbookPage() {
     }
   };
 
-  // Perform swap: PYUSD → USDC
+  // Perform swap: PYUSD ↔ USDC (bidirectional)
   const performSwap = async () => {
     if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN || !PYUSD_USDC_POOL) {
       console.log('❌ Missing requirements for swap');
       return;
     }
 
+    // Determine tokens based on swap direction
+    const isUSDCToPYUSD = swapDirection === 'USDC_TO_PYUSD';
+    const inputToken = isUSDCToPYUSD ? USDC_TOKEN : PYUSD_TOKEN;
+    const outputToken = isUSDCToPYUSD ? PYUSD_TOKEN : USDC_TOKEN;
+    const swapLabel = isUSDCToPYUSD ? 'USDC → PYUSD' : 'PYUSD → USDC';
+
     try {
-      console.log('🔄 === STARTING PYUSD → USDC SWAP ===');
+      console.log(`🔄 === STARTING ${swapLabel} SWAP ===`);
       setPoolData(prev => ({ ...prev, swapStatus: 'Swapping...' }));
 
       // Check Permit2 allowance first
       console.log('🔍 Checking Permit2 allowance before swap...');
       const permit2Check = await checkPermit2Allowance(
-        PYUSD_TOKEN.address,
+        inputToken.address,
         metamaskWallet.address
       );
 
@@ -2399,7 +2406,7 @@ export default function CookbookPage() {
         }));
 
         try {
-          await approvePermit2(PYUSD_TOKEN.address);
+          await approvePermit2(inputToken.address);
           console.log('✅ Permit2 approved, waiting for confirmation...');
           setPoolData(prev => ({
             ...prev,
@@ -2411,7 +2418,7 @@ export default function CookbookPage() {
 
           // Recheck the allowance
           const recheckPermit2 = await checkPermit2Allowance(
-            PYUSD_TOKEN.address,
+            inputToken.address,
             metamaskWallet.address
           );
           if (!recheckPermit2.isValid) {
@@ -2449,10 +2456,10 @@ export default function CookbookPage() {
 
       // Calculate swap amount in wei
       const swapAmountWei = BigInt(
-        Number(swapAmount) * Math.pow(10, PYUSD_TOKEN.decimals)
+        Number(swapAmount) * Math.pow(10, inputToken.decimals)
       );
       console.log(
-        `💱 Swapping ${swapAmount} PYUSD (${swapAmountWei} wei) for USDC`
+        `💱 Swapping ${swapAmount} ${inputToken.symbol} (${swapAmountWei} wei) for ${outputToken.symbol}`
       );
 
       // Create deadline (20 minutes from now)
@@ -2461,20 +2468,22 @@ export default function CookbookPage() {
 
       // Calculate minimum output amount with 5% slippage tolerance
       // Based on rough price ratio from successful txs: ~70 PYUSD per USDC
-      const estimatedOutputWei = swapAmountWei / 70n; // Rough estimate
+      const estimatedOutputWei = isUSDCToPYUSD
+        ? swapAmountWei * 70n  // USDC to PYUSD: multiply by 70
+        : swapAmountWei / 70n; // PYUSD to USDC: divide by 70
       const slippageToleranceBps = 500n; // 5% = 500 basis points
       const amountOutMinimum =
         (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
 
-      console.log(`📊 Estimated output: ${estimatedOutputWei} wei USDC`);
+      console.log(`📊 Estimated output: ${estimatedOutputWei} wei ${outputToken.symbol}`);
       console.log(
-        `📊 Minimum output (5% slippage): ${amountOutMinimum} wei USDC`
+        `📊 Minimum output (5% slippage): ${amountOutMinimum} wei ${outputToken.symbol}`
       );
 
       // Construct swap parameters
       const swapParams = {
-        tokenIn: PYUSD_TOKEN.address as `0x${string}`,
-        tokenOut: USDC_TOKEN.address as `0x${string}`,
+        tokenIn: inputToken.address as `0x${string}`,
+        tokenOut: outputToken.address as `0x${string}`,
         fee: PYUSD_USDC_POOL.fee,
         recipient: metamaskWallet.address as `0x${string}`,
         deadline,
@@ -2497,10 +2506,10 @@ export default function CookbookPage() {
       console.log(`  - Fee: ${swapParams.fee}`);
       console.log(`  - Recipient: ${swapParams.recipient}`);
       console.log(
-        `  - Amount In: ${swapParams.amountIn.toString()} wei (${Number(swapParams.amountIn) / Math.pow(10, PYUSD_TOKEN.decimals)} tokens)`
+        `  - Amount In: ${swapParams.amountIn.toString()} wei (${Number(swapParams.amountIn) / Math.pow(10, inputToken.decimals)} tokens)`
       );
       console.log(
-        `  - Min Amount Out: ${swapParams.amountOutMinimum.toString()} wei (${Number(swapParams.amountOutMinimum) / Math.pow(10, USDC_TOKEN.decimals)} tokens)`
+        `  - Min Amount Out: ${swapParams.amountOutMinimum.toString()} wei (${Number(swapParams.amountOutMinimum) / Math.pow(10, outputToken.decimals)} tokens)`
       );
 
       // Encode V3_SWAP_EXACT_IN command (0x00) for Universal Router
@@ -2522,8 +2531,8 @@ export default function CookbookPage() {
           metamaskWallet.address as `0x${string}`,
           swapAmountWei,
           amountOutMinimum,
-          // Encode path: token0 + fee + token1 (packed format)
-          `0x${PYUSD_TOKEN.address.slice(2)}${PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${USDC_TOKEN.address.slice(2)}` as `0x${string}`,
+          // Encode path: inputToken + fee + outputToken (packed format)
+          `0x${inputToken.address.slice(2)}${PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${outputToken.address.slice(2)}` as `0x${string}`,
           true, // User pays input token
         ]
       );
@@ -4438,15 +4447,46 @@ export default function CookbookPage() {
           {/* Swap Section */}
           <div className='mt-8 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-6'>
             <h2 className='mb-4 text-xl font-bold text-purple-900'>
-              Step 2: Swap PYUSD → USDC
+              Step 2: Swap {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD → USDC' : 'USDC → PYUSD'}
             </h2>
             <p className='mb-4 text-sm text-purple-700'>
-              Test the Uniswap V3 swap functionality by converting PYUSD to
-              USDC.
+              Test the Uniswap V3 swap functionality by converting between PYUSD and USDC in both directions.
             </p>
+
+            {/* Direction Selector */}
+            <div className='mb-4'>
+              <label className='block text-sm font-medium text-purple-800 mb-2'>
+                Swap Direction
+              </label>
+              <div className='flex gap-4'>
+                <label className='flex items-center'>
+                  <input
+                    type='radio'
+                    name='swapDirection'
+                    value='PYUSD_TO_USDC'
+                    checked={swapDirection === 'PYUSD_TO_USDC'}
+                    onChange={(e) => setSwapDirection(e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD')}
+                    className='mr-2'
+                  />
+                  <span className='text-sm text-purple-700'>PYUSD → USDC</span>
+                </label>
+                <label className='flex items-center'>
+                  <input
+                    type='radio'
+                    name='swapDirection'
+                    value='USDC_TO_PYUSD'
+                    checked={swapDirection === 'USDC_TO_PYUSD'}
+                    onChange={(e) => setSwapDirection(e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD')}
+                    className='mr-2'
+                  />
+                  <span className='text-sm text-purple-700'>USDC → PYUSD</span>
+                </label>
+              </div>
+            </div>
+
             <div className='mb-4'>
               <label className='block text-sm font-medium text-purple-800'>
-                Amount to Swap (PYUSD)
+                Amount to Swap ({swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD' : 'USDC'})
               </label>
               <input
                 type='number'
@@ -4462,10 +4502,12 @@ export default function CookbookPage() {
               className='rounded bg-purple-600 px-4 py-2 text-white hover:bg-purple-700'
               disabled={
                 poolData.routerAllowance < 1 ||
-                poolData.metaMaskPYUSDBalance < Number(swapAmount)
+                (swapDirection === 'PYUSD_TO_USDC'
+                  ? poolData.metaMaskPYUSDBalance < Number(swapAmount)
+                  : poolData.metaMaskUSDCBalance < Number(swapAmount))
               }
             >
-              🔄 Swap PYUSD → USDC
+              🔄 Swap {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD → USDC' : 'USDC → PYUSD'}
             </button>
             <p className='mt-2 text-sm text-purple-700'>
               Status: {poolData.swapStatus}
