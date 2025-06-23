@@ -287,7 +287,17 @@ export function getTokensForNetwork(chainId: number) {
   return TOKENS[chainId as keyof typeof TOKENS] || {};
 }
 
+// Specific helper for Sepolia tokens to ensure proper typing
+export function getSepoliaTokens() {
+  return TOKENS[NETWORKS.SEPOLIA.id];
+}
+
 // Helper function to get pools for a network
 export function getPoolsForNetwork(chainId: number) {
   return POOLS[chainId as keyof typeof POOLS] || {};
+}
+
+// Specific helper for Sepolia pools to ensure proper typing
+export function getSepoliaPools() {
+  return POOLS[NETWORKS.SEPOLIA.id];
 }

@@ -3,18 +3,18 @@
 import { getAccessToken, usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { encodeFunctionData } from 'viem';
 
 import WalletList from '../../components/WalletList';
 import {
-    NETWORKS,
-    UNISWAP_V3_POSITION_MANAGER_ABI,
-    UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-    UNISWAP_V3_ROUTER_ABI,
-    UNISWAP_V3_ROUTER_ADDRESS,
-    getPoolsForNetwork,
-    getTokensForNetwork,
+  NETWORKS,
+  UNISWAP_V3_POSITION_MANAGER_ABI,
+  UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+  UNISWAP_V3_ROUTER_ABI,
+  UNISWAP_V3_ROUTER_ADDRESS,
+  getSepoliaPools,
+  getSepoliaTokens,
 } from '../../lib/constants';
 
 // Types for our pool data
@@ -30,6 +30,8 @@ interface PoolData {
   nftPositionCount: number;
   totalPoolValueUSD: number;
   error?: string;
+  isLoading?: boolean;
+  lastFetched?: number;
 }
 
 async function verifyToken() {
@@ -92,6 +94,12 @@ export default function CookbookPage() {
     error?: string;
     loading?: boolean;
   }>({});
+
+  // Add refs to prevent multiple simultaneous calls
+  const isLoadingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const FETCH_COOLDOWN = 5000; // 5 seconds minimum between fetches
+
   const router = useRouter();
   const {
     ready,
@@ -285,7 +293,7 @@ export default function CookbookPage() {
     wallet => wallet.walletClientType === 'metamask'
   );
 
-  // Pool data state
+  // Pool data state with loading and caching
   const [poolData, setPoolData] = useState<PoolData>({
     metaMaskPYUSDBalance: 0,
     metaMaskUSDCBalance: 0,
@@ -297,6 +305,8 @@ export default function CookbookPage() {
     liquidityStatus: 'Ready',
     nftPositionCount: 0,
     totalPoolValueUSD: 0,
+    isLoading: false,
+    lastFetched: 0,
   });
 
   // Add state for Permit2 allowances
@@ -322,8 +332,8 @@ export default function CookbookPage() {
   const [swapDirection, setSwapDirection] = useState<'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'>('PYUSD_TO_USDC');
 
   // Get token and pool configurations for Sepolia
-  const SEPOLIA_TOKENS = getTokensForNetwork(NETWORKS.SEPOLIA.id);
-  const SEPOLIA_POOLS = getPoolsForNetwork(NETWORKS.SEPOLIA.id);
+  const SEPOLIA_TOKENS = getSepoliaTokens();
+  const SEPOLIA_POOLS = getSepoliaPools();
   const PYUSD_TOKEN = SEPOLIA_TOKENS.PYUSD;
   const USDC_TOKEN = SEPOLIA_TOKENS.USDC;
   const PYUSD_USDC_POOL = SEPOLIA_POOLS.PYUSD_USDC;
@@ -1659,12 +1669,12 @@ export default function CookbookPage() {
         const { createPublicClient, http } = await import('viem');
         const { sepolia } = await import('viem/chains');
 
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(
-          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
-        ),
-      });
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(
+            'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+          ),
+        });
 
         const allowanceData = (await publicClient.readContract({
           address: PERMIT2_CONFIG.ADDRESS,
@@ -1866,417 +1876,314 @@ export default function CookbookPage() {
     }
   };
 
-  // Check token balances and allowances
-  const checkBalancesAndAllowances = useCallback(async () => {
-    if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN) {
-      console.log('❌ Missing requirements for balance check');
-      return;
-    }
-
-    try {
-      console.log('🔍 === STARTING BALANCE & ALLOWANCE CHECK ===');
-      console.log('📍 MetaMask address:', metamaskWallet.address);
-      console.log('📍 PYUSD token:', PYUSD_TOKEN.address);
-      console.log('📍 USDC token:', USDC_TOKEN.address);
-      console.log('📍 Universal Router address:', UNISWAP_V3_ROUTER_ADDRESS);
-      console.log('📍 Position Manager:', UNISWAP_V3_POSITION_MANAGER_ADDRESS);
-
-      // Create viem public client
-      const { createPublicClient, http } = await import('viem');
-      const { sepolia } = await import('viem/chains');
-
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(
-          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
-        ),
-      });
-
-      // Check PYUSD balance
-      console.log('💰 Checking PYUSD balance...');
-      const pyusdBalance = (await publicClient.readContract({
-        address: PYUSD_TOKEN.address as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [metamaskWallet.address as `0x${string}`],
-      })) as bigint;
-
-      const pyusdBalanceFormatted =
-        Number(pyusdBalance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      console.log(`✅ PYUSD Balance: ${pyusdBalanceFormatted} PYUSD`);
-
-      // Check USDC balance
-      console.log('💰 Checking USDC balance...');
-      const usdcBalance = (await publicClient.readContract({
-        address: USDC_TOKEN.address as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [metamaskWallet.address as `0x${string}`],
-      })) as bigint;
-
-      const usdcBalanceFormatted =
-        Number(usdcBalance) / Math.pow(10, USDC_TOKEN.decimals);
-      console.log(`✅ USDC Balance: ${usdcBalanceFormatted} USDC`);
-
-      // Check Universal Router allowance for PYUSD
-      console.log('🔐 Checking Universal Router allowance for PYUSD...');
-      const routerAllowance = (await publicClient.readContract({
-        address: PYUSD_TOKEN.address as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'allowance',
-        args: [
-          metamaskWallet.address as `0x${string}`,
-          UNISWAP_V3_ROUTER_ADDRESS,
-        ],
-      })) as bigint;
-
-      const routerAllowanceFormatted =
-        Number(routerAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      console.log(`✅ Router Allowance: ${routerAllowanceFormatted} PYUSD`);
-
-      // Check position manager allowances for BOTH tokens
-      console.log('🔐 Checking position manager allowances...');
-      const pyusdPMAllowance = (await publicClient.readContract({
-        address: PYUSD_TOKEN.address as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'allowance',
-        args: [
-          metamaskWallet.address as `0x${string}`,
-          UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-        ],
-      })) as bigint;
-
-      const usdcPMAllowance = (await publicClient.readContract({
-        address: USDC_TOKEN.address as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'allowance',
-        args: [
-          metamaskWallet.address as `0x${string}`,
-          UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-        ],
-      })) as bigint;
-
-      const pyusdPMAllowanceFormatted =
-        Number(pyusdPMAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      const usdcPMAllowanceFormatted =
-        Number(usdcPMAllowance) / Math.pow(10, USDC_TOKEN.decimals);
-      console.log(
-        `✅ Position Manager PYUSD Allowance: ${pyusdPMAllowanceFormatted} PYUSD`
-      );
-      console.log(
-        `✅ Position Manager USDC Allowance: ${usdcPMAllowanceFormatted} USDC`
-      );
-
-      // Check Uniswap V3 NFT positions
-      console.log('🎯 Checking Uniswap V3 positions...');
-      let nftCount = 0;
-      let totalValueUSD = 0;
-
+  // Helper function to process a single position
+  const processPosition = useCallback(
+    async (
+      publicClient: any,
+      walletAddress: string,
+      index: number
+    ): Promise<number> => {
       try {
-        // Get NFT balance (number of positions)
-        const nftBalance = (await publicClient.readContract({
+        // Get token ID by index
+        const tokenId = (await publicClient.readContract({
           address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
           abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-          functionName: 'balanceOf',
-          args: [metamaskWallet.address as `0x${string}`],
+          functionName: 'tokenOfOwnerByIndex',
+          args: [walletAddress as `0x${string}`, BigInt(index)],
         })) as bigint;
 
-        nftCount = Number(nftBalance);
-        console.log(`💎 NFT Positions owned: ${nftCount}`);
+        // Get position details
+        const position = (await publicClient.readContract({
+          address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+          abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+          functionName: 'positions',
+          args: [tokenId],
+        })) as readonly [
+          bigint,
+          `0x${string}`,
+          `0x${string}`,
+          `0x${string}`,
+          number,
+          number,
+          number,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+        ];
 
-        if (nftCount > 0) {
-          // For each NFT, get position details and calculate value
-          for (let i = 0; i < nftCount; i++) {
-            try {
-              // Get token ID by index
-              const tokenId = (await publicClient.readContract({
-                address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
-                abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-                functionName: 'tokenOfOwnerByIndex',
-                args: [metamaskWallet.address as `0x${string}`, BigInt(i)],
-              })) as bigint;
+        const [
+          ,
+          ,
+          token0Address,
+          token1Address,
+          fee,
+          tickLower,
+          tickUpper,
+          liquidity,
+        ] = position;
 
-              console.log(`📍 Position ${i + 1} - Token ID: ${tokenId}`);
+        // Check if this is our PYUSD/USDC pool
+        const isOurPool =
+          ((token0Address.toLowerCase() === USDC_TOKEN.address.toLowerCase() &&
+            token1Address.toLowerCase() ===
+              PYUSD_TOKEN.address.toLowerCase()) ||
+            (token0Address.toLowerCase() ===
+              PYUSD_TOKEN.address.toLowerCase() &&
+              token1Address.toLowerCase() ===
+                USDC_TOKEN.address.toLowerCase())) &&
+          fee === PYUSD_USDC_POOL.fee;
 
-              // Get position details
-              const position = (await publicClient.readContract({
-                address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
-                abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-                functionName: 'positions',
-                args: [tokenId],
-              })) as readonly [
-                bigint,
-                `0x${string}`,
-                `0x${string}`,
-                `0x${string}`,
-                number,
-                number,
-                number,
-                bigint,
-                bigint,
-                bigint,
-                bigint,
-                bigint,
-              ];
+        if (!isOurPool || Number(liquidity) === 0) {
+          return 0; // Skip non-relevant or empty positions
+        }
 
-              // Position data structure: [nonce, operator, token0, token1, fee, tickLower, tickUpper, liquidity, feeGrowthInside0LastX128, feeGrowthInside1LastX128, tokensOwed0, tokensOwed1]
-              const token0Address = position[2];
-              const token1Address = position[3];
-              const fee = position[4];
-              const tickLower = position[5];
-              const tickUpper = position[6];
-              const liquidity = position[7];
-              const tokensOwed0 = position[10];
-              const tokensOwed1 = position[11];
+        // Simplified value calculation to avoid heavy RPC calls
+        const liquidityValue = Number(liquidity);
+        const tickRange = Math.abs(tickUpper - tickLower);
 
-              console.log(`🔍 Position ${i + 1} Details:`);
-              console.log(`   Token0: ${token0Address}`);
-              console.log(`   Token1: ${token1Address}`);
-              console.log(`   Fee: ${fee}`);
-              console.log(
-                `   TickLower: ${tickLower}, TickUpper: ${tickUpper}`
+        let estimatedValue: number;
+        if (tickRange <= 1000) {
+          // Narrow range - more concentrated
+          estimatedValue = (liquidityValue / 83587747) * 2; // Rough approximation
+        } else {
+          // Full range - spread across entire range
+          estimatedValue = (liquidityValue / 500000) * 2; // Rough approximation
+        }
+
+        return Math.max(0, estimatedValue);
+      } catch (error) {
+        console.warn(`⚠️ Error processing position ${index + 1}:`, error);
+        return 0;
+      }
+    },
+    [USDC_TOKEN, PYUSD_TOKEN, PYUSD_USDC_POOL]
+  );
+
+  // Optimized function to check balances and allowances with throttling and caching
+  const checkBalancesAndAllowances = useCallback(
+    async (forceRefresh = false) => {
+      if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN) {
+        console.log('❌ Missing requirements for balance check');
+        return;
+      }
+
+      // Throttling: prevent multiple simultaneous calls
+      if (isLoadingRef.current && !forceRefresh) {
+        console.log('⏳ Balance check already in progress, skipping...');
+        return;
+      }
+
+      // Rate limiting: minimum time between fetches
+      const now = Date.now();
+      if (now - lastFetchTimeRef.current < FETCH_COOLDOWN && !forceRefresh) {
+        console.log(
+          `⏳ Rate limited: ${Math.ceil((FETCH_COOLDOWN - (now - lastFetchTimeRef.current)) / 1000)}s until next allowed fetch`
+        );
+        return;
+      }
+
+      isLoadingRef.current = true;
+      lastFetchTimeRef.current = now;
+
+      setPoolData(prev => ({ ...prev, isLoading: true, error: undefined }));
+
+      try {
+        console.log('🔍 === STARTING BALANCE & ALLOWANCE CHECK ===');
+        console.log('📍 MetaMask address:', metamaskWallet.address);
+
+        // Create viem public client with retry logic
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
+
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(
+            'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+          ),
+        });
+
+        // Batch basic balance and allowance checks
+        console.log('💰 Fetching balances and allowances...');
+        const [
+          pyusdBalance,
+          usdcBalance,
+          routerAllowance,
+          pyusdPMAllowance,
+          usdcPMAllowance,
+        ] = await Promise.all([
+          publicClient.readContract({
+            address: PYUSD_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [metamaskWallet.address as `0x${string}`],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: USDC_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [metamaskWallet.address as `0x${string}`],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: PYUSD_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [
+              metamaskWallet.address as `0x${string}`,
+              UNISWAP_V3_ROUTER_ADDRESS,
+            ],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: PYUSD_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [
+              metamaskWallet.address as `0x${string}`,
+              UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+            ],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: USDC_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [
+              metamaskWallet.address as `0x${string}`,
+              UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+            ],
+          }) as Promise<bigint>,
+        ]);
+
+        const pyusdBalanceFormatted =
+          Number(pyusdBalance) / Math.pow(10, PYUSD_TOKEN.decimals);
+        const usdcBalanceFormatted =
+          Number(usdcBalance) / Math.pow(10, USDC_TOKEN.decimals);
+        const routerAllowanceFormatted =
+          Number(routerAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
+        const pyusdPMAllowanceFormatted =
+          Number(pyusdPMAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
+        const usdcPMAllowanceFormatted =
+          Number(usdcPMAllowance) / Math.pow(10, USDC_TOKEN.decimals);
+
+        console.log(`✅ PYUSD Balance: ${pyusdBalanceFormatted} PYUSD`);
+        console.log(`✅ USDC Balance: ${usdcBalanceFormatted} USDC`);
+        console.log(`✅ Router Allowance: ${routerAllowanceFormatted} PYUSD`);
+
+        // Optimized NFT position checking with limits
+        console.log('🎯 Checking Uniswap V3 positions...');
+        let nftCount = 0;
+        let totalValueUSD = 0;
+
+        try {
+          // Get NFT balance (number of positions)
+          const nftBalance = (await publicClient.readContract({
+            address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+            abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+            functionName: 'balanceOf',
+            args: [metamaskWallet.address as `0x${string}`],
+          })) as bigint;
+
+          nftCount = Number(nftBalance);
+          console.log(`💎 NFT Positions owned: ${nftCount}`);
+
+          // Limit the number of positions we process to prevent RPC spam
+          const MAX_POSITIONS_TO_PROCESS = 10;
+          const positionsToProcess = Math.min(
+            nftCount,
+            MAX_POSITIONS_TO_PROCESS
+          );
+
+          if (positionsToProcess > 0) {
+            console.log(
+              `📊 Processing ${positionsToProcess} positions (max ${MAX_POSITIONS_TO_PROCESS})`
+            );
+
+            // Process positions in parallel with limits
+            const positionPromises = [];
+            for (let i = 0; i < positionsToProcess; i++) {
+              positionPromises.push(
+                processPosition(publicClient, metamaskWallet.address, i)
               );
-              console.log(`   Liquidity: ${liquidity.toString()}`);
-              console.log(`   TokensOwed0 (fees): ${tokensOwed0.toString()}`);
-              console.log(`   TokensOwed1 (fees): ${tokensOwed1.toString()}`);
+            }
 
-              // Check if this is our PYUSD/USDC pool
-              const isOurPool =
-                ((token0Address.toLowerCase() ===
-                  USDC_TOKEN.address.toLowerCase() &&
-                  token1Address.toLowerCase() ===
-                    PYUSD_TOKEN.address.toLowerCase()) ||
-                  (token0Address.toLowerCase() ===
-                    PYUSD_TOKEN.address.toLowerCase() &&
-                    token1Address.toLowerCase() ===
-                      USDC_TOKEN.address.toLowerCase())) &&
-                fee === PYUSD_USDC_POOL.fee;
+            const positionResults = await Promise.allSettled(positionPromises);
 
-              console.log(`   Is our PYUSD/USDC pool: ${isOurPool}`);
-
-              if (isOurPool && Number(liquidity) > 0) {
-                try {
-                  // Get current pool state to calculate position value
-                  const poolSlot0 = (await publicClient.readContract({
-                    address: PYUSD_USDC_POOL.address as `0x${string}`,
-                    abi: [
-                      {
-                        inputs: [],
-                        name: 'slot0',
-                        outputs: [
-                          { name: 'sqrtPriceX96', type: 'uint160' },
-                          { name: 'tick', type: 'int24' },
-                          { name: 'observationIndex', type: 'uint16' },
-                          { name: 'observationCardinality', type: 'uint16' },
-                          {
-                            name: 'observationCardinalityNext',
-                            type: 'uint16',
-                          },
-                          { name: 'feeProtocol', type: 'uint8' },
-                          { name: 'unlocked', type: 'bool' },
-                        ],
-                        stateMutability: 'view',
-                        type: 'function',
-                      },
-                    ],
-                    functionName: 'slot0',
-                  })) as readonly [
-                    bigint,
-                    number,
-                    number,
-                    number,
-                    number,
-                    number,
-                    boolean,
-                  ];
-
-                  const currentTick = poolSlot0[1];
-                  const sqrtPriceX96 = poolSlot0[0];
-
-                  console.log(`   Current pool tick: ${currentTick}`);
-                  console.log(
-                    `   Current sqrtPriceX96: ${sqrtPriceX96.toString()}`
-                  );
-
-                  // Calculate position value using proper Uniswap V3 math approximation
-                  // For stablecoin pairs, use a more realistic conversion factor
-                  const liquidityNum = Number(liquidity);
-                  console.log(`   Raw liquidity: ${liquidityNum}`);
-
-                  // For stablecoin pairs, use a simpler approach that matches Uniswap interface
-                  // Since we can see the actual values in Uniswap, let's use empirical calculation
-                  // that reflects the balanced nature of these positions
-
-                  const liquidityValue = Number(liquidity);
-                  const tickRange = Math.abs(tickUpper - tickLower);
-
-                  let token0Amount = 0; // USDC
-                  let token1Amount = 0; // PYUSD
-
-                  if (liquidityValue === 0) {
-                    // Empty position
-                    token0Amount = 0;
-                    token1Amount = 0;
-                  } else if (tickRange <= 1000) {
-                    // Narrow range position (like -120 to 120)
-                    // Based on Uniswap showing 88.54 USDC + 111.46 PYUSD for 16,717,549,482 liquidity
-                    const totalValue = liquidityValue / 83587747; // This gives us ~$200 for the main position
-
-                    // For narrow ranges near current price, split roughly 44% USDC, 56% PYUSD
-                    // (based on the 88.54/111.46 ratio we see in Uniswap)
-                    token0Amount = totalValue * 0.44; // USDC
-                    token1Amount = totalValue * 0.56; // PYUSD
-                  } else {
-                    // Full range position (like -887220 to 887220)
-                    // These should be more balanced since they span the entire range
-                    const totalValue = liquidityValue / 500000; // This gives us ~$2-4 for smaller positions
-
-                    // For full range, split roughly 50/50
-                    token0Amount = totalValue * 0.5; // USDC
-                    token1Amount = totalValue * 0.5; // PYUSD
-                  }
-
-                  // Total value assuming 1:1 USD parity
-                  const approxTotalValue = token0Amount + token1Amount;
-
-                  console.log(
-                    `   Liquidity: ${liquidityValue.toString()} units`
-                  );
-                  console.log(
-                    `   Token amounts: ${token0Amount.toFixed(6)} USDC + ${token1Amount.toFixed(6)} PYUSD`
-                  );
-                  console.log(
-                    `   Total value: $${approxTotalValue.toFixed(6)} USD`
-                  );
-
-                  if (currentTick >= tickLower && currentTick <= tickUpper) {
-                    console.log(
-                      `   Position is IN RANGE (current tick ${currentTick} between ${tickLower} and ${tickUpper})`
-                    );
-                    console.log(
-                      `   💰 Position has both PYUSD and USDC tokens`
-                    );
-                  } else {
-                    console.log(
-                      `   Position is OUT OF RANGE (current tick ${currentTick} not between ${tickLower} and ${tickUpper})`
-                    );
-                    console.log(`   💰 Position is entirely in one token`);
-                  }
-
-                  totalValueUSD += approxTotalValue;
-                  console.log(
-                    `💰 Position ${i + 1} value: ~$${approxTotalValue.toFixed(2)} USD`
-                  );
-
-                  // Also check unclaimed fees
-                  const feeAmount0 = Number(tokensOwed0) / Math.pow(10, 6);
-                  const feeAmount1 = Number(tokensOwed1) / Math.pow(10, 6);
-                  const totalFees = feeAmount0 + feeAmount1;
-
-                  if (totalFees > 0) {
-                    console.log(
-                      `💸 Position ${i + 1} unclaimed fees: $${totalFees.toFixed(4)} USD`
-                    );
-                    totalValueUSD += totalFees; // Add fees to total value
-                  }
-                } catch (poolStateError) {
-                  console.warn(
-                    `⚠️ Could not read pool state for position ${i + 1}:`,
-                    poolStateError
-                  );
-
-                  // Fallback: use simplified calculation assuming current price ~1:1
-                  const liquidityNum = BigInt(liquidity);
-                  if (liquidityNum > 0n) {
-                    // For stablecoin pairs near 1:1, approximate both tokens equally
-                    // This is a rough fallback when we can't read pool state
-                    const tickRange = Math.abs(tickUpper - tickLower);
-                    let roughValue: number;
-
-                    if (tickRange > 1000000) {
-                      // Full range position - liquidity spread across entire range
-                      roughValue = (Number(liquidityNum) / 10 ** 6) * 2; // Rough approximation
-                    } else {
-                      // Concentrated position - higher value per liquidity unit
-                      roughValue = (Number(liquidityNum) / 10 ** 5) * 2; // Rough approximation
-                    }
-
-                    totalValueUSD += roughValue;
-                    console.log(
-                      `💰 Position ${i + 1} (fallback) value: ~$${roughValue.toFixed(2)} USD`
-                    );
-                  }
-                }
-              } else if (!isOurPool) {
+            positionResults.forEach((result, index) => {
+              if (result.status === 'fulfilled' && result.value) {
+                totalValueUSD += result.value;
                 console.log(
-                  `   Skipping position ${i + 1} - not our PYUSD/USDC pool`
+                  `💰 Position ${index + 1} value: ~$${result.value.toFixed(2)} USD`
                 );
-              } else {
-                console.log(`   Skipping position ${i + 1} - no liquidity`);
+              } else if (result.status === 'rejected') {
+                console.warn(`⚠️ Position ${index + 1} failed:`, result.reason);
               }
-            } catch (positionError) {
-              console.warn(
-                `⚠️ Could not read position ${i + 1}:`,
-                positionError
+            });
+
+            if (nftCount > MAX_POSITIONS_TO_PROCESS) {
+              console.log(
+                `⚠️ Only processed ${MAX_POSITIONS_TO_PROCESS} of ${nftCount} positions to prevent RPC overload`
               );
             }
           }
+
+          console.log(`💰 Total pool value: ~$${totalValueUSD.toFixed(2)} USD`);
+        } catch (nftError) {
+          console.warn('⚠️ Could not read NFT positions:', nftError);
         }
 
-        console.log(`💎 Total NFT positions: ${nftCount}`);
-        console.log(`💰 Total pool value: ~$${totalValueUSD.toFixed(2)} USD`);
-      } catch (nftError) {
-        console.warn('⚠️ Could not read NFT positions:', nftError);
+        // Update state with all the fetched data
+        setPoolData(prev => ({
+          ...prev,
+          metaMaskPYUSDBalance: pyusdBalanceFormatted,
+          metaMaskUSDCBalance: usdcBalanceFormatted,
+          routerAllowance: routerAllowanceFormatted,
+          positionManagerAllowance: pyusdPMAllowanceFormatted,
+          positionManagerUSDCAllowance: usdcPMAllowanceFormatted,
+          nftPositionCount: nftCount,
+          totalPoolValueUSD: totalValueUSD,
+          isLoading: false,
+          lastFetched: now,
+          error: undefined,
+        }));
+
+        // Check Permit2 allowances separately (less critical)
+        try {
+          const [pyusdPermit2, usdcPermit2] = await Promise.all([
+            checkPermit2Allowance(PYUSD_TOKEN.address, metamaskWallet.address),
+            checkPermit2Allowance(USDC_TOKEN.address, metamaskWallet.address),
+          ]);
+
+          setPermit2Data({
+            pyusdPermit2,
+            usdcPermit2,
+          });
+
+          console.log('✅ Permit2 allowances checked');
+        } catch (permit2Error) {
+          console.warn('⚠️ Could not check Permit2 allowances:', permit2Error);
+        }
+
+        console.log('✅ === BALANCE & ALLOWANCE CHECK COMPLETED ===\n');
+      } catch (error) {
+        console.error('❌ Error checking balances:', error);
+        setPoolData(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }));
+      } finally {
+        isLoadingRef.current = false;
       }
-
-      // Update state
-      setPoolData(prev => ({
-        ...prev,
-        metaMaskPYUSDBalance: pyusdBalanceFormatted,
-        metaMaskUSDCBalance: usdcBalanceFormatted,
-        routerAllowance: routerAllowanceFormatted,
-        positionManagerAllowance: pyusdPMAllowanceFormatted,
-        positionManagerUSDCAllowance: usdcPMAllowanceFormatted,
-        nftPositionCount: nftCount,
-        totalPoolValueUSD: totalValueUSD,
-        error: undefined,
-      }));
-
-      // Check Permit2 allowances
-      console.log('🔍 Checking Permit2 allowances...');
-      try {
-        const [pyusdPermit2, usdcPermit2] = await Promise.all([
-          checkPermit2Allowance(PYUSD_TOKEN.address, metamaskWallet.address),
-          checkPermit2Allowance(USDC_TOKEN.address, metamaskWallet.address),
-        ]);
-
-        setPermit2Data({
-          pyusdPermit2,
-          usdcPermit2,
-        });
-
-        console.log('✅ Permit2 allowances checked');
-      } catch (permit2Error) {
-        console.warn('⚠️ Could not check Permit2 allowances:', permit2Error);
-      }
-
-      console.log('✅ === BALANCE & ALLOWANCE CHECK COMPLETED ===\n');
-    } catch (error) {
-      console.error('❌ Error checking balances:', error);
-      setPoolData(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
-    }
-  }, [
-    metamaskWallet,
-    PYUSD_TOKEN,
-    USDC_TOKEN,
-    ERC20_ABI,
-    PYUSD_USDC_POOL.address,
-    PYUSD_USDC_POOL.fee,
-    checkPermit2Allowance,
-  ]);
+    },
+    [
+      metamaskWallet,
+      PYUSD_TOKEN,
+      USDC_TOKEN,
+      checkPermit2Allowance,
+      ERC20_ABI,
+      processPosition,
+    ]
+  );
 
   // Load data on component mount and when wallet changes
   useEffect(() => {
@@ -2327,10 +2234,10 @@ export default function CookbookPage() {
 
       console.log(`✅ Router approval transaction sent: ${approveTx}`);
 
-      // Wait a bit then refresh balances
+      // Wait a bit then refresh balances with force refresh
       setTimeout(() => {
-        checkBalancesAndAllowances();
-      }, 3000);
+        checkBalancesAndAllowances(true);
+      }, 5000);
     } catch (error) {
       console.error('❌ Router approval failed:', error);
       setPoolData(prev => ({
@@ -2398,10 +2305,10 @@ export default function CookbookPage() {
       });
       console.log(`✅ USDC approval: ${usdcApproval}`);
 
-      // Wait then refresh balances
+      // Wait then refresh balances with force refresh
       setTimeout(() => {
-        checkBalancesAndAllowances();
-      }, 5000);
+        checkBalancesAndAllowances(true);
+      }, 8000);
     } catch (error) {
       console.error('❌ Position manager approval failed:', error);
       setPoolData(prev => ({
@@ -2619,10 +2526,10 @@ export default function CookbookPage() {
         swapStatus: `Swap completed! Tx: ${swapTx}`,
       }));
 
-      // Refresh balances after swap
+      // Refresh balances after swap with force refresh
       setTimeout(() => {
-        checkBalancesAndAllowances();
-      }, 5000);
+        checkBalancesAndAllowances(true);
+      }, 8000);
     } catch (error) {
       console.error('❌ Swap failed:', error);
       console.error('❌ Error details:', {
@@ -3021,10 +2928,10 @@ export default function CookbookPage() {
         liquidityStatus: `Liquidity added! Tx: ${mintTx}`,
       }));
 
-      // Refresh balances
+      // Refresh balances with force refresh
       setTimeout(() => {
-        checkBalancesAndAllowances();
-      }, 5000);
+        checkBalancesAndAllowances(true);
+      }, 8000);
     } catch (error) {
       console.error('❌ === LIQUIDITY ADDITION FAILED ===');
       console.error('❌ Error details:', error);
@@ -4333,7 +4240,7 @@ export default function CookbookPage() {
             <div className='mt-4 flex flex-wrap gap-2'>
               <button
                 type='button'
-                onClick={checkBalancesAndAllowances}
+                onClick={() => checkBalancesAndAllowances()}
                 className='rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700'
               >
                 🔄 Refresh Data
@@ -4555,8 +4462,10 @@ export default function CookbookPage() {
             </button>
             <div className='mt-2'>
               <p className='text-sm text-purple-700'>
-                Status: {poolData.swapStatus.includes('Tx: ') ?
-                  poolData.swapStatus.split('Tx: ')[0] : poolData.swapStatus}
+                Status:{' '}
+                {poolData.swapStatus.includes('Tx: ')
+                  ? poolData.swapStatus.split('Tx: ')[0]
+                  : poolData.swapStatus}
               </p>
               {poolData.swapStatus.includes('Tx: ') && (
                 <div className='mt-1'>
@@ -4615,8 +4524,10 @@ export default function CookbookPage() {
             </button>
             <div className='mt-2'>
               <p className='text-sm text-red-700'>
-                Status: {poolData.liquidityStatus.includes('Tx: ') ?
-                  poolData.liquidityStatus.split('Tx: ')[0] : poolData.liquidityStatus}
+                Status:{' '}
+                {poolData.liquidityStatus.includes('Tx: ')
+                  ? poolData.liquidityStatus.split('Tx: ')[0]
+                  : poolData.liquidityStatus}
               </p>
               {poolData.liquidityStatus.includes('Tx: ') && (
                 <div className='mt-1'>
