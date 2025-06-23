@@ -24,6 +24,8 @@ interface PoolData {
   poolLiquidity: string;
   swapStatus: string;
   liquidityStatus: string;
+  nftPositionCount: number;
+  totalPoolValueUSD: number;
   error?: string;
 }
 
@@ -44,6 +46,8 @@ export default function CookbookPage() {
     poolLiquidity: '0',
     swapStatus: 'Ready',
     liquidityStatus: 'Ready',
+    nftPositionCount: 0,
+    totalPoolValueUSD: 0,
   });
 
   // Form state
@@ -138,6 +142,87 @@ export default function CookbookPage() {
       console.log(`✅ Position Manager PYUSD Allowance: ${pyusdPMAllowanceFormatted} PYUSD`);
       console.log(`✅ Position Manager USDC Allowance: ${usdcPMAllowanceFormatted} USDC`);
 
+      // Check Uniswap V3 NFT positions
+      console.log('🎯 Checking Uniswap V3 positions...');
+      let nftCount = 0;
+      let totalValueUSD = 0;
+
+      try {
+        // Get NFT balance (number of positions)
+        const nftBalance = await publicClient.readContract({
+          address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+          abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+          functionName: 'balanceOf',
+          args: [metamaskWallet.address as `0x${string}`],
+        }) as bigint;
+
+        nftCount = Number(nftBalance);
+        console.log(`💎 NFT Positions owned: ${nftCount}`);
+
+        if (nftCount > 0) {
+          // For each NFT, get position details and calculate value
+          for (let i = 0; i < nftCount; i++) {
+            try {
+              // Get token ID by index
+              const tokenId = await publicClient.readContract({
+                address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+                abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+                functionName: 'tokenOfOwnerByIndex',
+                args: [metamaskWallet.address as `0x${string}`, BigInt(i)],
+              }) as bigint;
+
+              console.log(`📍 Position ${i + 1} - Token ID: ${tokenId}`);
+
+              // Get position details
+              const position = await publicClient.readContract({
+                address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+                abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+                functionName: 'positions',
+                args: [tokenId],
+              }) as readonly [bigint, `0x${string}`, `0x${string}`, `0x${string}`, number, number, number, bigint, bigint, bigint, bigint, bigint];
+
+              // Position data structure: [nonce, operator, token0, token1, fee, tickLower, tickUpper, liquidity, feeGrowthInside0LastX128, feeGrowthInside1LastX128, tokensOwed0, tokensOwed1]
+              const token0Address = position[2];
+              const token1Address = position[3];
+              const fee = position[4];
+              const liquidity = position[7];
+              const tokensOwed0 = position[10];
+              const tokensOwed1 = position[11];
+
+              // Check if this is our PYUSD/USDC pool
+              const isOurPool = (
+                (token0Address.toLowerCase() === USDC_TOKEN.address.toLowerCase() &&
+                 token1Address.toLowerCase() === PYUSD_TOKEN.address.toLowerCase()) ||
+                (token0Address.toLowerCase() === PYUSD_TOKEN.address.toLowerCase() &&
+                 token1Address.toLowerCase() === USDC_TOKEN.address.toLowerCase())
+              ) && fee === PYUSD_USDC_POOL.fee;
+
+              if (isOurPool && Number(liquidity) > 0) {
+                // Calculate approximate position value
+                // For simplicity, assume roughly equal split between tokens
+                const token0Amount = Number(tokensOwed0) / Math.pow(10, 6); // Both tokens have 6 decimals
+                const token1Amount = Number(tokensOwed1) / Math.pow(10, 6);
+
+                // Rough USD value (assuming USDC ≈ $1, PYUSD ≈ $1)
+                const positionValueUSD = token0Amount + token1Amount;
+                totalValueUSD += positionValueUSD;
+
+                console.log(`💰 Position ${i + 1} value: ~$${positionValueUSD.toFixed(2)} USD`);
+                console.log(`   Token0: ${token0Amount.toFixed(4)}, Token1: ${token1Amount.toFixed(4)}`);
+              }
+            } catch (positionError) {
+              console.warn(`⚠️ Could not read position ${i + 1}:`, positionError);
+            }
+          }
+        }
+
+        console.log(`💎 Total NFT positions: ${nftCount}`);
+        console.log(`💰 Total pool value: ~$${totalValueUSD.toFixed(2)} USD`);
+
+      } catch (nftError) {
+        console.warn('⚠️ Could not read NFT positions:', nftError);
+      }
+
       // Update state
       setPoolData(prev => ({
         ...prev,
@@ -146,6 +231,8 @@ export default function CookbookPage() {
         routerAllowance: routerAllowanceFormatted,
         positionManagerAllowance: pyusdPMAllowanceFormatted,
         positionManagerUSDCAllowance: usdcPMAllowanceFormatted,
+        nftPositionCount: nftCount,
+        totalPoolValueUSD: totalValueUSD,
         error: undefined,
       }));
 
@@ -781,6 +868,13 @@ export default function CookbookPage() {
             <h3 className='font-semibold text-green-800'>Balances</h3>
             <p className='text-sm text-green-700'>PYUSD: {poolData.metaMaskPYUSDBalance.toFixed(4)}</p>
             <p className='text-sm text-green-700'>USDC: {poolData.metaMaskUSDCBalance.toFixed(4)}</p>
+            <div className='border-t border-green-300 mt-2 pt-2'>
+              <p className='text-sm text-green-700'>🏊‍♂️ Pool Positions: {poolData.nftPositionCount}</p>
+              <p className='text-sm font-semibold text-green-800'>
+                💰 Pool Value: ${poolData.totalPoolValueUSD.toFixed(2)}
+                {poolData.totalPoolValueUSD > 0 && " 🎉 Earning fees!"}
+              </p>
+            </div>
           </div>
           <div>
             <h3 className='font-semibold text-green-800'>Approvals</h3>
