@@ -18,6 +18,10 @@ export default function PyUSDYieldSelector() {
   const [conservativeSliding, setConservativeSliding] = useState(false);
   const [growthSliding, setGrowthSliding] = useState(false);
 
+  // Yield toggle states
+  const [conservativeYieldEnabled, setConservativeYieldEnabled] = useState(true);
+  const [growthYieldEnabled, setGrowthYieldEnabled] = useState(true);
+
   const handleConservativeCustomSubmit = () => {
     if (conservativeCustomValue && parseFloat(conservativeCustomValue) > 0) {
       setConservativeAmount(conservativeCustomValue);
@@ -60,21 +64,21 @@ export default function PyUSDYieldSelector() {
     <div className='min-h-screen bg-white p-4'>
       <div className='mx-auto max-w-md space-y-6'>
         {/* Header */}
-        <div className='pb-4 pt-8'>
-          <div className='mb-4 flex items-center'>
-            <div className='mr-3 flex h-10 w-10 items-center justify-center'>
+        <div className='pb-4 pt-12 px-2'>
+          <div className='mb-2 flex items-start space-x-5'>
+            <div className='flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-2.5 mt-1'>
               <Image
                 src='/assets/PyInvest-logomark.png'
                 alt='PyInvest logo'
-                width={40}
-                height={40}
-                className='h-10 w-10'
+                width={36}
+                height={36}
+                className='h-9 w-9'
               />
             </div>
-            <div>
-              <h1 className='text-2xl font-medium text-gray-900'>PyInvest</h1>
-              <p className='text-sm text-gray-600'>
-                Easily securely put digital money to work in 1 click
+            <div className='flex-1 pt-1'>
+              <h1 className='text-3xl font-semibold text-gray-900 tracking-tight leading-tight'>PyInvest</h1>
+              <p className='text-base text-gray-600 mt-2 leading-relaxed max-w-sm'>
+                Easily & securely put digital money to work in 1 click
               </p>
             </div>
           </div>
@@ -83,7 +87,7 @@ export default function PyUSDYieldSelector() {
         {/* Balance Display */}
         <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
           <div className='p-6'>
-            <p className='mb-2 text-sm text-gray-500'>Amount</p>
+            <p className='mb-2 text-base text-gray-500'>Amount</p>
             <div className='mb-1 flex items-center space-x-2'>
               <span className='text-4xl font-light text-gray-300 font-adelle'>$</span>
               <p className='text-4xl font-medium text-gray-800 font-adelle'>12,450.00</p>
@@ -97,7 +101,7 @@ export default function PyUSDYieldSelector() {
             </div>
 
             <div className='mt-4 border-t border-gray-100 pt-4'>
-              <p className='mb-2 text-xs text-gray-400'>Balance sources</p>
+              <p className='mb-2 text-sm text-gray-400'>Balance sources</p>
               <div className='space-y-2'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center'>
@@ -108,9 +112,9 @@ export default function PyUSDYieldSelector() {
                       height={16}
                       className='mr-2 h-4 w-4'
                     />
-                    <span className='text-sm text-gray-500'>Venmo</span>
+                    <span className='text-base text-gray-500'>Venmo</span>
                   </div>
-                  <span className='text-sm text-gray-500'>$8,250.00</span>
+                  <span className='text-base text-gray-500'>$8,250.00</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center'>
@@ -121,9 +125,9 @@ export default function PyUSDYieldSelector() {
                       height={16}
                       className='mr-2 h-4 w-4'
                     />
-                    <span className='text-sm text-gray-500'>Coinbase</span>
+                    <span className='text-base text-gray-500'>Coinbase</span>
                   </div>
-                  <span className='text-sm text-gray-500'>$4,200.00</span>
+                  <span className='text-base text-gray-500'>$4,200.00</span>
                 </div>
               </div>
             </div>
@@ -132,52 +136,49 @@ export default function PyUSDYieldSelector() {
 
         {/* Investment Options */}
         <div className='space-y-4'>
-          <h2 className='px-2 text-xl font-medium text-gray-900'>
+          <h2 className='px-2 text-2xl font-medium text-gray-900'>
             Earn Strategies
           </h2>
 
           {/* Conservative Vault */}
           <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
-            <div className='p-5'>
-              <div className='mb-4 flex items-center justify-between'>
-                <div className='flex items-center space-x-3'>
-                  <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-green-50'>
-                    <Shield className='h-5 w-5 text-green-600' />
+            <div className='p-6'>
+              <div className='mb-6 flex items-center justify-between'>
+                <div className='flex items-center space-x-4'>
+                  <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-green-50'>
+                    <Shield className='h-6 w-6 text-green-600' />
                   </div>
                   <div>
-                    <h3 className='text-base font-medium text-gray-900'>
+                    <h3 className='text-xl font-medium text-gray-900'>
                       Conservative Vault
                     </h3>
-                    <p className='text-sm text-gray-500'>
-                      Low risk, stable returns
+                    <p className={`text-lg font-medium mt-1 ${conservativeYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}>
+                      4.2% - 5.8% APY
                     </p>
                   </div>
                 </div>
-                <div className='rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700'>
-                  Stable
-                </div>
-              </div>
-
-              <div className='mb-4 space-y-3'>
-                <div className='flex items-center justify-between'>
-                  <span className='text-sm font-medium text-gray-600'>
-                    Expected APY
-                  </span>
-                  <span className='text-base font-medium text-green-600'>
-                    4.2% - 5.8%
-                  </span>
-                </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-sm font-medium text-gray-600'>
-                    Risk level
-                  </span>
-                  <span className='text-sm font-medium text-gray-900'>Low</span>
+                <div className='flex items-center'>
+                  <button
+                    onClick={() => setConservativeYieldEnabled(!conservativeYieldEnabled)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+                      conservativeYieldEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={conservativeYieldEnabled}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        conservativeYieldEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 
               {/* Amount Selection */}
-              <div className='mb-4 space-y-3'>
-                <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
+              <div className='mb-5 space-y-4'>
+                <div className='text-base font-medium text-gray-900'>Select amount to invest</div>
                                  <div className='flex w-full gap-2'>
                    <div className="relative w-full overflow-hidden">
                      <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
@@ -195,7 +196,7 @@ export default function PyUSDYieldSelector() {
                                  setConservativeAmount(amount);
                                }
                              }}
-                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2.5 px-3 text-center text-base font-medium leading-normal transition-colors hover:bg-gray-50 ${
                                conservativeAmount === amount
                                  ? 'border-blue-600 bg-blue-50 text-blue-700'
                                  : 'border-gray-300 text-gray-600'
@@ -228,7 +229,7 @@ export default function PyUSDYieldSelector() {
                            }
                          }}
                          placeholder="Enter amount"
-                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                          autoFocus={showConservativeCustom}
                        />
                        <button
@@ -252,19 +253,26 @@ export default function PyUSDYieldSelector() {
 
                                           {/* Press to Confirm Button */}
               <div className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
-                conservativeAmount ? 'bg-blue-600' : 'bg-blue-600/30'
+                conservativeAmount && conservativeYieldEnabled ? 'bg-blue-600' : 'bg-blue-600/30'
               }`}>
                 <div
-                  className={`absolute inset-0 flex items-center justify-center text-sm font-medium transition-all duration-500 ease-in-out ${
-                    conservativeAmount ? 'text-white' : 'text-white/80'
+                  className={`absolute inset-0 flex items-center justify-center text-base font-medium transition-all duration-500 ease-in-out ${
+                    conservativeAmount && conservativeYieldEnabled ? 'text-white' : 'text-white/80'
                   } ${conservativeSliding ? 'opacity-0' : 'opacity-100'}`}
                 >
-                  <span>{conservativeAmount ? `Invest $${conservativeAmount}` : 'Select amount to invest'}</span>
-                  {conservativeAmount && <ArrowRight className='ml-2 h-4 w-4' />}
+                  <span>
+                    {!conservativeYieldEnabled
+                      ? 'Yield disabled'
+                      : conservativeAmount
+                        ? `Invest $${conservativeAmount}`
+                        : 'Select amount to invest'
+                    }
+                  </span>
+                  {conservativeAmount && conservativeYieldEnabled && <ArrowRight className='ml-2 h-4 w-4' />}
                 </div>
-                                {/* Explosion animation */}
+                                                {/* Explosion animation */}
                 <div
-                  className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-sm font-medium text-white transition-all duration-200 ease-out ${
+                  className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-base font-medium text-white transition-all duration-200 ease-out ${
                     conservativeSliding
                       ? 'w-[120%] h-[120%] -translate-x-1/2 -translate-y-1/2 opacity-100'
                       : 'w-0 h-0 -translate-x-1/2 -translate-y-1/2 opacity-0'
@@ -273,7 +281,7 @@ export default function PyUSDYieldSelector() {
                 >
                   <span className={conservativeSliding ? 'opacity-100' : 'opacity-0'}>✓ Confirmed!</span>
                 </div>
-                {conservativeAmount && (
+                {conservativeAmount && conservativeYieldEnabled && (
                   <button
                     type="button"
                     onMouseDown={() => setConservativeSliding(true)}
@@ -298,48 +306,43 @@ export default function PyUSDYieldSelector() {
 
           {/* Growth Vault */}
           <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
-            <div className='p-5'>
-              <div className='mb-4 flex items-center justify-between'>
-                <div className='flex items-center space-x-3'>
-                  <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50'>
-                    <TrendingUp className='h-5 w-5 text-blue-600' />
+            <div className='p-6'>
+              <div className='mb-6 flex items-center justify-between'>
+                <div className='flex items-center space-x-4'>
+                  <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50'>
+                    <TrendingUp className='h-6 w-6 text-blue-600' />
                   </div>
                   <div>
-                    <h3 className='text-base font-medium text-gray-900'>
+                    <h3 className='text-xl font-medium text-gray-900'>
                       Growth Vault
                     </h3>
-                    <p className='text-sm text-gray-500'>
-                      Higher potential returns
+                    <p className={`text-lg font-medium mt-1 ${growthYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}>
+                      8.5% - 12.3% APY
                     </p>
                   </div>
                 </div>
-                <div className='rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700'>
-                  Growth
-                </div>
-              </div>
-
-              <div className='mb-4 space-y-3'>
-                <div className='flex items-center justify-between'>
-                  <span className='text-sm font-medium text-gray-600'>
-                    Expected APY
-                  </span>
-                  <span className='text-base font-medium text-blue-600'>
-                    8.5% - 12.3%
-                  </span>
-                </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-sm font-medium text-gray-600'>
-                    Risk level
-                  </span>
-                  <span className='text-sm font-medium text-gray-900'>
-                    Medium
-                  </span>
+                <div className='flex items-center'>
+                  <button
+                    onClick={() => setGrowthYieldEnabled(!growthYieldEnabled)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+                      growthYieldEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                    role="switch"
+                    aria-checked={growthYieldEnabled}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        growthYieldEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 
               {/* Amount Selection */}
-              <div className='mb-4 space-y-3'>
-                <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
+              <div className='mb-5 space-y-4'>
+                <div className='text-base font-medium text-gray-900'>Select amount to invest</div>
                                  <div className='flex w-full gap-2'>
                    <div className="relative w-full overflow-hidden">
                      <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
@@ -357,7 +360,7 @@ export default function PyUSDYieldSelector() {
                                  setGrowthAmount(amount);
                                }
                              }}
-                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2.5 px-3 text-center text-base font-medium leading-normal transition-colors hover:bg-gray-50 ${
                                growthAmount === amount
                                  ? 'border-blue-600 bg-blue-50 text-blue-700'
                                  : 'border-gray-300 text-gray-600'
@@ -390,7 +393,7 @@ export default function PyUSDYieldSelector() {
                            }
                          }}
                          placeholder="Enter amount"
-                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                          autoFocus={showGrowthCustom}
                        />
                        <button
@@ -414,19 +417,26 @@ export default function PyUSDYieldSelector() {
 
                                           {/* Press to Confirm Button */}
               <div className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
-                growthAmount ? 'bg-blue-600' : 'bg-blue-600/30'
+                growthAmount && growthYieldEnabled ? 'bg-blue-600' : 'bg-blue-600/30'
               }`}>
                 <div
-                  className={`absolute inset-0 flex items-center justify-center text-sm font-medium transition-all duration-500 ease-in-out ${
-                    growthAmount ? 'text-white' : 'text-white/80'
+                  className={`absolute inset-0 flex items-center justify-center text-base font-medium transition-all duration-500 ease-in-out ${
+                    growthAmount && growthYieldEnabled ? 'text-white' : 'text-white/80'
                   } ${growthSliding ? 'opacity-0' : 'opacity-100'}`}
                 >
-                  <span>{growthAmount ? `Invest $${growthAmount}` : 'Select amount to invest'}</span>
-                  {growthAmount && <ArrowRight className='ml-2 h-4 w-4' />}
+                  <span>
+                    {!growthYieldEnabled
+                      ? 'Yield disabled'
+                      : growthAmount
+                        ? `Invest $${growthAmount}`
+                        : 'Select amount to invest'
+                    }
+                  </span>
+                  {growthAmount && growthYieldEnabled && <ArrowRight className='ml-2 h-4 w-4' />}
                 </div>
-                                {/* Explosion animation */}
+                                                {/* Explosion animation */}
                 <div
-                  className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-sm font-medium text-white transition-all duration-200 ease-out ${
+                  className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-base font-medium text-white transition-all duration-200 ease-out ${
                     growthSliding
                       ? 'w-[120%] h-[120%] -translate-x-1/2 -translate-y-1/2 opacity-100'
                       : 'w-0 h-0 -translate-x-1/2 -translate-y-1/2 opacity-0'
@@ -435,7 +445,7 @@ export default function PyUSDYieldSelector() {
                 >
                   <span className={growthSliding ? 'opacity-100' : 'opacity-0'}>✓ Confirmed!</span>
                 </div>
-                {growthAmount && (
+                {growthAmount && growthYieldEnabled && (
                   <button
                     type="button"
                     onMouseDown={() => setGrowthSliding(true)}
@@ -464,26 +474,26 @@ export default function PyUSDYieldSelector() {
           <div className='p-6 text-white'>
             <div className='mb-3 flex items-center space-x-2'>
               <Zap className='h-5 w-5' />
-              <h3 className='font-medium'>Instant Deployment</h3>
+              <h3 className='text-lg font-medium'>Instant Deployment</h3>
             </div>
-            <p className='mb-4 text-sm text-blue-100'>
+            <p className='mb-4 text-base text-blue-100'>
               Your pyUSD starts earning yield immediately after investment
             </p>
             <div className='grid grid-cols-2 gap-4 text-center'>
               <div>
                 <p className='text-2xl font-bold'>$2.4M+</p>
-                <p className='text-xs text-blue-100'>Total Value Locked</p>
+                <p className='text-sm text-blue-100'>Total Value Locked</p>
               </div>
               <div>
                 <p className='text-2xl font-bold'>1,200+</p>
-                <p className='text-xs text-blue-100'>Active Investors</p>
+                <p className='text-sm text-blue-100'>Active Investors</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className='pb-8 text-center text-xs text-gray-500'>
+        <div className='pb-8 text-center text-sm text-gray-500'>
           <p>Powered by institutional-grade DeFi protocols</p>
           <p className='mt-1'>Your funds are secured by smart contracts</p>
         </div>
