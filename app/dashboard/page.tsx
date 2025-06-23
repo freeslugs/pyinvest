@@ -1,7 +1,17 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import { AlertCircle, ArrowRight, Award, CheckCircle, Copy, Edit3, Globe, Shield, Zap } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  Award,
+  CheckCircle,
+  Copy,
+  Edit3,
+  Globe,
+  Shield,
+  Zap,
+} from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -71,7 +81,9 @@ export default function PyUSDYieldSelector() {
   });
 
   // KYC state management
-  const [kycStatus, setKycStatus] = useState<'not_started' | 'passed' | 'claimed'>('not_started');
+  const [kycStatus, setKycStatus] = useState<
+    'not_started' | 'passed' | 'claimed'
+  >('not_started');
 
   // Mock KYC status - in real app this would come from backend
   useEffect(() => {
@@ -332,7 +344,7 @@ export default function PyUSDYieldSelector() {
             <div className='flex items-center space-x-3'>
               <a
                 href='/profile'
-                className='rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center space-x-2'
+                className='flex items-center space-x-2 rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200'
               >
                 {kycStatus === 'not_started' && (
                   <AlertCircle className='h-4 w-4 text-gray-400' />

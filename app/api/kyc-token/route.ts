@@ -1,10 +1,11 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createPublicClient, http } from 'viem';
+import { bscTestnet } from 'viem/chains';
+
 import {
   createPrivyClient,
   fetchAndVerifyAuthorizationAppRouter,
 } from '@/lib/server-utils';
-import { NextRequest, NextResponse } from 'next/server';
-import { createPublicClient, http } from 'viem';
-import { bscTestnet } from 'viem/chains';
 
 const client = createPrivyClient();
 
@@ -26,7 +27,8 @@ const KYC_CONTRACT_ABI = [
   },
 ] as const;
 
-const KYC_CONTRACT_ADDRESS = '0xcc8e8b424464991bbcda036c4781a60334c40628' as const;
+const KYC_CONTRACT_ADDRESS =
+  '0xcc8e8b424464991bbcda036c4781a60334c40628' as const;
 
 // Create a public client for BSC testnet read operations
 const publicClient = createPublicClient({
