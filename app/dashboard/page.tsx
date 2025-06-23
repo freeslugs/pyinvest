@@ -1,9 +1,11 @@
 'use client';
 
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { ArrowRight, Edit3, Globe, User, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
+import { encodeFunctionData } from 'viem';
 
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { SmartWalletCard } from '@/components/SmartWalletCard';
@@ -11,7 +13,14 @@ import { NetworkSelector } from '@/components/ui/network-selector';
 
 // Custom Verified Icon Component
 const VerifiedIcon = ({ className }: { className?: string }) => (
-  <svg viewBox='0 0 24 24' width='1.2em' height='1.2em' className={className}>
+  <svg
+    viewBox='0 0 24 24'
+    width='1.2em'
+    height='1.2em'
+    className={className}
+    aria-label='Verified'
+  >
+    <title>Verified</title>
     <g
       fill='none'
       stroke='currentColor'
@@ -19,8 +28,8 @@ const VerifiedIcon = ({ className }: { className?: string }) => (
       strokeLinejoin='round'
       strokeWidth='2'
     >
-      <path d='M3.85 8.62a4 4 0 0 1 4.78-4.77a4 4 0 0 1 6.74 0a4 4 0 0 1 4.78 4.78a4 4 0 0 1 0 6.74a4 4 0 0 1-4.77 4.78a4 4 0 0 1-6.75 0a4 4 0 0 1-4.78-4.77a4 4 0 0 1 0-6.76'></path>
-      <path d='m9 12l2 2l4-4'></path>
+      <path d='M3.85 8.62a4 4 0 0 1 4.78-4.77a4 4 0 0 1 6.74 0a4 4 0 0 1 4.78 4.78a4 4 0 0 1 0 6.74a4 4 0 0 1-4.77 4.78a4 4 0 0 1-6.75 0a4 4 0 0 1-4.78-4.77a4 4 0 0 1 0-6.76' />
+      <path d='m9 12l2 2l4-4' />
     </g>
   </svg>
 );
@@ -37,6 +46,24 @@ const PYUSD_TOKEN_CONFIG = {
   symbol: 'PYUSD',
 };
 
+// USDC Token Configuration (Sepolia)
+const USDC_TOKEN_CONFIG = {
+  address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238' as const,
+  decimals: 6,
+  symbol: 'USDC',
+};
+
+// Uniswap V3 Configuration (Sepolia)
+const UNISWAP_CONFIG = {
+  ROUTER_ADDRESS: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as const,
+  POSITION_MANAGER_ADDRESS:
+    '0x1238536071E1c677A632429e3655c799b22cDA52' as const,
+  PYUSD_USDC_POOL: {
+    address: '0x1eA26f380A71E15E75E61c6D66B4242c1f652FEd' as const,
+    fee: 3000, // 0.3%
+  },
+};
+
 // ERC20 ABI for balanceOf function
 const ERC20_ABI = [
   {
@@ -44,6 +71,103 @@ const ERC20_ABI = [
     inputs: [{ name: '_owner', type: 'address' }],
     name: 'balanceOf',
     outputs: [{ name: 'balance', type: 'uint256' }],
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_spender', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    type: 'function',
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: '_from', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' },
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    type: 'function',
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: '_owner', type: 'address' },
+      { name: '_spender', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    type: 'function',
+  },
+] as const;
+
+// Uniswap V3 Router ABI (simplified)
+const UNISWAP_V3_ROUTER_ABI = [
+  {
+    inputs: [
+      { name: 'commands', type: 'bytes' },
+      { name: 'inputs', type: 'bytes[]' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    name: 'execute',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+] as const;
+
+// Uniswap V3 Position Manager ABI (for liquidity positions)
+const UNISWAP_V3_POSITION_MANAGER_ABI = [
+  {
+    inputs: [
+      {
+        components: [
+          { name: 'token0', type: 'address' },
+          { name: 'token1', type: 'address' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'tickLower', type: 'int24' },
+          { name: 'tickUpper', type: 'int24' },
+          { name: 'amount0Desired', type: 'uint256' },
+          { name: 'amount1Desired', type: 'uint256' },
+          { name: 'amount0Min', type: 'uint256' },
+          { name: 'amount1Min', type: 'uint256' },
+          { name: 'recipient', type: 'address' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+        name: 'params',
+        type: 'tuple',
+      },
+    ],
+    name: 'mint',
+    outputs: [
+      { name: 'tokenId', type: 'uint256' },
+      { name: 'liquidity', type: 'uint128' },
+      { name: 'amount0', type: 'uint256' },
+      { name: 'amount1', type: 'uint256' },
+    ],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [{ name: 'owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
     type: 'function',
   },
 ] as const;
@@ -58,12 +182,36 @@ const formatPyusdBalance = (balance: bigint): string => {
 };
 
 export default function PyUSDYieldSelector() {
+  const { user, authenticated, ready } = usePrivy();
+  const { wallets } = useWallets();
+  const { client } = useSmartWallets();
   const [conservativeAmount, setConservativeAmount] = useState('');
   const [growthAmount, setGrowthAmount] = useState('');
   const [balances, setBalances] = useState<WalletBalance>({
     smartWallet: '0',
     metaMask: '0',
   });
+
+  // Growth Vault specific state
+  const [growthVaultBalance, setGrowthVaultBalance] = useState('0.00');
+  const [investmentStatus, setInvestmentStatus] = useState('');
+
+  // KYC state management - commented out as not currently used
+  // const [kycStatus, setKycStatus] = useState<
+  //   'not_started' | 'passed' | 'claimed'
+  // >('not_started');
+
+  // Find smart wallet from linked accounts
+  const smartWallet = user?.linkedAccounts?.find(
+    account => account.type === 'smart_wallet'
+  ) as
+    | { type: 'smart_wallet'; address: string; smartWalletType?: string }
+    | undefined;
+
+  // Get the connected MetaMask wallet
+  const metamaskWallet = wallets.find(
+    wallet => wallet.walletClientType === 'metamask'
+  );
 
   // Onboarding and smart wallet states
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -73,13 +221,25 @@ export default function PyUSDYieldSelector() {
   const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false);
   const [isDepositFlow, setIsDepositFlow] = useState(false);
 
-  // Privy hooks
-  const { user, authenticated, ready } = usePrivy();
+  // Mock KYC status - in real app this would come from backend - commented out as not currently used
+  // useEffect(() => {
+  //   if (user?.id) {
+  //     // Mock logic - simulate different states based on user ID
+  //     const userId = user.id;
+  //     if (userId.endsWith('1') || userId.endsWith('2')) {
+  //       setKycStatus('passed');
+  //     } else if (userId.endsWith('3') || userId.endsWith('4')) {
+  //       setKycStatus('claimed');
+  //     } else {
+  //       setKycStatus('not_started');
+  //     }
+  //   }
+  // }, [user]);
 
-  // Get smart wallet from user's linked accounts
-  const smartWallet = user?.linkedAccounts?.find(
-    (account: any) => account.type === 'smart_wallet'
-  ) as { address: string } | undefined;
+  // // Get smart wallet from user's linked accounts
+  // const smartWallet = user?.linkedAccounts?.find(
+  //   (account: any) => account.type === 'smart_wallet'
+  // ) as { address: string } | undefined;
 
   // Function to fetch PYUSD balance for MetaMask wallet
   const fetchMetaMaskBalance = useCallback(async () => {
@@ -147,6 +307,307 @@ export default function PyUSDYieldSelector() {
     }
   }, [user]);
 
+  // Function to check Growth Vault balance (LP token balance)
+  const checkGrowthVaultBalance = useCallback(async () => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      console.log('Must be on Sepolia network with smart wallet');
+      return;
+    }
+
+    try {
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
+      });
+
+      // Check how many NFT positions the smart wallet has in the Position Manager
+      const nftBalance = (await publicClient.readContract({
+        address: UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS,
+        abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+        functionName: 'balanceOf',
+        args: [smartWallet.address as `0x${string}`],
+      })) as bigint;
+
+      console.log('Smart wallet NFT positions:', nftBalance.toString());
+
+      // For simplicity, we'll show the number of positions as the "balance"
+      // In a real implementation, you'd iterate through the positions and calculate their total value
+      const positionCount = Number(nftBalance);
+      setGrowthVaultBalance(positionCount.toString());
+
+      console.log('Growth Vault positions:', positionCount);
+    } catch (error) {
+      console.error('Error checking Growth Vault balance:', error);
+      setGrowthVaultBalance('0');
+    }
+  }, [client, smartWallet]);
+
+  // Check Growth Vault balance on component mount and when smart wallet changes
+  useEffect(() => {
+    if (smartWallet && client) {
+      checkGrowthVaultBalance();
+    }
+  }, [smartWallet, client, checkGrowthVaultBalance]);
+
+  // Function to check smart wallet PYUSD balance
+  const checkSmartWalletBalance = async (): Promise<bigint> => {
+    if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
+      throw new Error('Must be on Sepolia network with smart wallet');
+    }
+
+    const { createPublicClient, http } = await import('viem');
+    const { sepolia } = await import('viem/chains');
+
+    const publicClient = createPublicClient({
+      chain: sepolia,
+      transport: http(
+        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+      ),
+    });
+
+    const balance = await publicClient.readContract({
+      address: PYUSD_TOKEN_CONFIG.address,
+      abi: ERC20_ABI,
+      functionName: 'balanceOf',
+      args: [smartWallet.address as `0x${string}`],
+    });
+
+    return balance as bigint;
+  };
+
+  // Function to transfer PYUSD from MetaMask to Smart Wallet
+  const transferFromMetaMaskToSmartWallet = async (amount: bigint) => {
+    if (!metamaskWallet || !smartWallet) {
+      throw new Error('MetaMask wallet or Smart Wallet not found');
+    }
+
+    // Get the MetaMask wallet's provider
+    const metamaskProvider = await metamaskWallet.getEthereumProvider();
+
+    // Switch to Sepolia if needed
+    const currentChainId = await metamaskProvider.request({
+      method: 'eth_chainId',
+    });
+    const sepoliaChainId = '0xaa36a7'; // 11155111 in hex
+
+    if (currentChainId !== sepoliaChainId) {
+      await metamaskProvider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: sepoliaChainId }],
+      });
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Transfer PYUSD from MetaMask to Smart Wallet
+    const transferData = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: 'transfer',
+      args: [smartWallet.address as `0x${string}`, amount],
+    });
+
+    const txHash = await metamaskProvider.request({
+      method: 'eth_sendTransaction',
+      params: [
+        {
+          from: metamaskWallet.address,
+          to: PYUSD_TOKEN_CONFIG.address,
+          data: transferData,
+        },
+      ],
+    });
+
+    console.log('Transfer to smart wallet tx:', txHash);
+    return txHash;
+  };
+
+  // Function to swap half PYUSD to USDC using smart wallet
+  const swapHalfPyusdToUsdc = async (totalAmount: bigint) => {
+    if (!client || !smartWallet) {
+      throw new Error('Smart wallet client not available');
+    }
+
+    const swapAmount = totalAmount / 2n; // Half of the total amount
+    console.log(`Swapping ${swapAmount} PYUSD to USDC`);
+
+    // Switch smart wallet to Sepolia
+    await client.switchChain({ id: 11155111 });
+
+    // First approve the router to spend PYUSD
+    const approveData = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [UNISWAP_CONFIG.ROUTER_ADDRESS, swapAmount],
+    });
+
+    console.log('Approving router to spend PYUSD...');
+    const approveTx = await client.sendTransaction({
+      to: PYUSD_TOKEN_CONFIG.address,
+      data: approveData,
+      value: 0n,
+    });
+    console.log('PYUSD approval tx:', approveTx);
+
+    // Wait for approval to be mined
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Create swap parameters
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+    const minAmountOut = swapAmount / 75n; // Conservative estimate based on price ratio
+
+    // Encode swap command for Universal Router
+    const { encodeAbiParameters } = await import('viem');
+
+    const commands = '0x00'; // V3_SWAP_EXACT_IN
+
+    const swapInput = encodeAbiParameters(
+      [
+        { name: 'recipient', type: 'address' },
+        { name: 'amountIn', type: 'uint256' },
+        { name: 'amountOutMinimum', type: 'uint256' },
+        { name: 'path', type: 'bytes' },
+        { name: 'payerIsUser', type: 'bool' },
+      ],
+      [
+        smartWallet.address as `0x${string}`,
+        swapAmount,
+        minAmountOut,
+        // Path: PYUSD -> 0.3% fee -> USDC
+        `0x${PYUSD_TOKEN_CONFIG.address.slice(2)}${UNISWAP_CONFIG.PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${USDC_TOKEN_CONFIG.address.slice(2)}` as `0x${string}`,
+        true,
+      ]
+    );
+
+    const executeCalldata = encodeFunctionData({
+      abi: UNISWAP_V3_ROUTER_ABI,
+      functionName: 'execute',
+      args: [commands as `0x${string}`, [swapInput], deadline],
+    });
+
+    console.log('Executing swap...');
+    const swapTx = await client.sendTransaction({
+      to: UNISWAP_CONFIG.ROUTER_ADDRESS,
+      data: executeCalldata,
+      value: 0n,
+    });
+
+    console.log('Swap tx:', swapTx);
+    return swapTx;
+  };
+
+  // Function to add liquidity to the pool
+  const addLiquidityToPool = async (
+    pyusdAmount: bigint,
+    usdcAmount: bigint
+  ) => {
+    if (!client || !smartWallet) {
+      throw new Error('Smart wallet client not available');
+    }
+
+    console.log(`Adding liquidity: ${pyusdAmount} PYUSD + ${usdcAmount} USDC`);
+
+    // Approve position manager to spend both tokens
+    const pyusdApproveData = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS, pyusdAmount],
+    });
+
+    const usdcApproveData = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS, usdcAmount],
+    });
+
+    console.log('Approving position manager for PYUSD...');
+    const pyusdApproveTx = await client.sendTransaction({
+      to: PYUSD_TOKEN_CONFIG.address,
+      data: pyusdApproveData,
+      value: 0n,
+    });
+
+    console.log('Approving position manager for USDC...');
+    const usdcApproveTx = await client.sendTransaction({
+      to: USDC_TOKEN_CONFIG.address,
+      data: usdcApproveData,
+      value: 0n,
+    });
+
+    console.log('Token approvals:', { pyusdApproveTx, usdcApproveTx });
+
+    // Wait for approvals to be mined
+    await new Promise(resolve => setTimeout(resolve, 8000));
+
+    // Determine correct token order (token0 < token1 by address)
+    const isUSDCToken0 =
+      USDC_TOKEN_CONFIG.address.toLowerCase() <
+      PYUSD_TOKEN_CONFIG.address.toLowerCase();
+    const token0Address = isUSDCToken0
+      ? USDC_TOKEN_CONFIG.address
+      : PYUSD_TOKEN_CONFIG.address;
+    const token1Address = isUSDCToken0
+      ? PYUSD_TOKEN_CONFIG.address
+      : USDC_TOKEN_CONFIG.address;
+
+    // Assign amounts according to token order
+    const amount0Desired = isUSDCToken0 ? usdcAmount : pyusdAmount;
+    const amount1Desired = isUSDCToken0 ? pyusdAmount : usdcAmount;
+
+    // Calculate tick range for full range position
+    const tickSpacing = 60; // For 0.3% fee tier
+    const maxTick = 887270;
+    const tickLower = -Math.floor(maxTick / tickSpacing) * tickSpacing;
+    const tickUpper = Math.floor(maxTick / tickSpacing) * tickSpacing;
+
+    // Create deadline (20 minutes from now)
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+
+    // Prepare mint parameters
+    const mintParams = {
+      token0: token0Address,
+      token1: token1Address,
+      fee: UNISWAP_CONFIG.PYUSD_USDC_POOL.fee,
+      tickLower,
+      tickUpper,
+      amount0Desired,
+      amount1Desired,
+      amount0Min: (amount0Desired * 95n) / 100n, // 5% slippage tolerance
+      amount1Min: (amount1Desired * 95n) / 100n, // 5% slippage tolerance
+      recipient: smartWallet.address as `0x${string}`,
+      deadline,
+    };
+
+    console.log('Mint parameters:', {
+      ...mintParams,
+      amount0Desired: mintParams.amount0Desired.toString(),
+      amount1Desired: mintParams.amount1Desired.toString(),
+      amount0Min: mintParams.amount0Min.toString(),
+      amount1Min: mintParams.amount1Min.toString(),
+      deadline: mintParams.deadline.toString(),
+    });
+
+    // Encode the mint function call
+    const mintData = encodeFunctionData({
+      abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+      functionName: 'mint',
+      args: [mintParams],
+    });
+
+    console.log('Minting liquidity position...');
+    const mintTx = await client.sendTransaction({
+      to: UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS,
+      data: mintData,
+      value: 0n,
+    });
+
+    console.log('Liquidity mint tx:', mintTx);
+    return { pyusdApproveTx, usdcApproveTx, mintTx };
+  };
+
   // Function to fetch PYUSD balance for smart wallet
   const fetchSmartWalletBalance = async (address: string) => {
     try {
@@ -198,7 +659,7 @@ export default function PyUSDYieldSelector() {
       });
 
       // If they have a balance, show smart wallet view
-      if (parseFloat(formattedBalance) > 0) {
+      if (Number.parseFloat(formattedBalance) > 0) {
         setShowSmartWallet(true);
       }
     } catch (error) {
@@ -220,7 +681,6 @@ export default function PyUSDYieldSelector() {
   // Yield toggle states
   const [conservativeYieldEnabled, setConservativeYieldEnabled] =
     useState(false);
-  const [growthYieldEnabled, setGrowthYieldEnabled] = useState(false);
 
   // Check onboarding status - only show for truly new users
   useEffect(() => {
@@ -313,8 +773,9 @@ export default function PyUSDYieldSelector() {
     console.log('MetaMask balance string:', balances.metaMask);
 
     const smartWalletNum =
-      parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
-    const metaMaskNum = parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
+      Number.parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
+    const metaMaskNum =
+      Number.parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
 
     console.log('Smart Wallet parsed number:', smartWalletNum);
     console.log('MetaMask parsed number:', metaMaskNum);
@@ -334,7 +795,10 @@ export default function PyUSDYieldSelector() {
   };
 
   const handleConservativeCustomSubmit = () => {
-    if (conservativeCustomValue && parseFloat(conservativeCustomValue) > 0) {
+    if (
+      conservativeCustomValue &&
+      Number.parseFloat(conservativeCustomValue) > 0
+    ) {
       setConservativeAmount(conservativeCustomValue);
       setShowConservativeCustom(false);
       setConservativeCustomValue('');
@@ -342,7 +806,7 @@ export default function PyUSDYieldSelector() {
   };
 
   const handleGrowthCustomSubmit = () => {
-    if (growthCustomValue && parseFloat(growthCustomValue) > 0) {
+    if (growthCustomValue && Number.parseFloat(growthCustomValue) > 0) {
       setGrowthAmount(growthCustomValue);
       setShowGrowthCustom(false);
       setGrowthCustomValue('');
@@ -365,10 +829,101 @@ export default function PyUSDYieldSelector() {
     setConservativeSliding(false);
   };
 
-  const handleGrowthSlideComplete = () => {
-    // Investment logic would go here
-    console.log(`Investing ${growthAmount} in Growth Vault`);
-    setGrowthSliding(false);
+  const handleGrowthSlideComplete = async () => {
+    if (!growthAmount) return;
+
+    setInvestmentStatus('Starting investment...');
+
+    try {
+      const investmentAmountWei = BigInt(
+        Number(growthAmount) * 10 ** PYUSD_TOKEN_CONFIG.decimals
+      );
+
+      console.log(
+        `Investing ${growthAmount} PYUSD (${investmentAmountWei} wei) in Growth Vault`
+      );
+
+      // Step 1: Check if MetaMask has PYUSD and transfer to smart wallet if needed
+      if (metamaskWallet) {
+        setInvestmentStatus('Checking MetaMask balance...');
+
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
+
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(
+            'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+          ),
+        });
+
+        const metamaskBalance = (await publicClient.readContract({
+          address: PYUSD_TOKEN_CONFIG.address,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [metamaskWallet.address as `0x${string}`],
+        })) as bigint;
+
+        console.log('MetaMask PYUSD balance:', metamaskBalance.toString());
+
+        // If MetaMask has sufficient PYUSD, transfer to smart wallet
+        if (metamaskBalance >= investmentAmountWei) {
+          setInvestmentStatus('Transferring PYUSD to smart wallet...');
+          await transferFromMetaMaskToSmartWallet(investmentAmountWei);
+
+          // Wait for transfer to be mined
+          await new Promise(resolve => setTimeout(resolve, 8000));
+        }
+      }
+
+      // Step 2: Check smart wallet balance
+      setInvestmentStatus('Checking smart wallet balance...');
+      const smartWalletBalance = await checkSmartWalletBalance();
+      console.log('Smart wallet PYUSD balance:', smartWalletBalance.toString());
+
+      if (smartWalletBalance < investmentAmountWei) {
+        throw new Error('Insufficient PYUSD balance in smart wallet');
+      }
+
+      // Step 3: Swap half PYUSD to USDC
+      setInvestmentStatus('Swapping half PYUSD to USDC...');
+      await swapHalfPyusdToUsdc(investmentAmountWei);
+
+      // Wait for swap to be mined
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
+      // Step 4: Add liquidity to the pool
+      setInvestmentStatus('Adding liquidity to pool...');
+      const halfAmount = investmentAmountWei / 2n;
+
+      // Check USDC balance after swap (estimated)
+      const estimatedUsdcAmount = halfAmount / 70n; // Rough conversion rate
+
+      await addLiquidityToPool(halfAmount, estimatedUsdcAmount);
+
+      // Wait for liquidity addition to be mined
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
+      setInvestmentStatus('Investment complete!');
+
+      // Refresh vault balance
+      await checkGrowthVaultBalance();
+
+      setTimeout(() => {
+        setInvestmentStatus('');
+        setGrowthSliding(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Investment failed:', error);
+      setInvestmentStatus(
+        `Investment failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+
+      setTimeout(() => {
+        setInvestmentStatus('');
+        setGrowthSliding(false);
+      }, 5000);
+    }
   };
 
   const handleOnboardingComplete = () => {
@@ -763,15 +1318,47 @@ export default function PyUSDYieldSelector() {
                 </div>
                 <div className='flex items-center space-x-1'>
                   <VerifiedIcon className='h-4 w-4 text-blue-500' />
-                  <span
-                    className={`text-sm font-medium ${growthYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}
-                  >
+                  <span className='text-sm font-medium text-blue-600'>
                     8.5% - 12.3% APY
                   </span>
                 </div>
               </div>
 
-              {/* Toggle Section */}
+              {/* Vault Balance Display */}
+              <div className='mb-5 rounded-lg bg-gray-50 p-4'>
+                <div className='flex items-center justify-between'>
+                  <span className='text-sm font-medium text-gray-700'>
+                    Current Vault Balance
+                  </span>
+                  <div className='flex items-center space-x-2'>
+                    <span className='text-lg font-semibold text-gray-900'>
+                      {growthVaultBalance}
+                    </span>
+                    <span className='text-sm text-gray-500'>Positions</span>
+                  </div>
+                </div>
+                {smartWallet && (
+                  <div className='mt-2 text-xs text-gray-500'>
+                    Smart Wallet: {smartWallet.address.slice(0, 6)}...
+                    {smartWallet.address.slice(-4)}
+                  </div>
+                )}
+              </div>
+
+              {/* Investment Status */}
+              {investmentStatus && (
+                <div className='mb-5 rounded-lg bg-blue-50 p-4'>
+                  <div className='flex items-center space-x-2'>
+                    <div className='h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent'></div>
+                    <span className='text-sm font-medium text-blue-700'>
+                      {investmentStatus}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Toggle Section - Commented Out */}
+              {/*
               <div className='mb-5 flex items-center justify-between'>
                 <span className='text-sm font-medium text-gray-700'>
                   Yield Active
@@ -792,6 +1379,7 @@ export default function PyUSDYieldSelector() {
                   />
                 </button>
               </div>
+              */}
 
               {/* Amount Selection */}
               <div className='mb-5 space-y-4'>
@@ -881,26 +1469,26 @@ export default function PyUSDYieldSelector() {
               {/* Press to Confirm Button */}
               <div
                 className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
-                  growthAmount && growthYieldEnabled
+                  growthAmount && !investmentStatus
                     ? 'bg-blue-600'
                     : 'bg-blue-600/30'
                 }`}
               >
                 <div
                   className={`absolute inset-0 flex items-center justify-center text-base font-medium transition-all duration-500 ease-in-out ${
-                    growthAmount && growthYieldEnabled
+                    growthAmount && !investmentStatus
                       ? 'text-white'
                       : 'text-white/80'
                   } ${growthSliding ? 'opacity-0' : 'opacity-100'}`}
                 >
                   <span>
-                    {!growthYieldEnabled
-                      ? 'Yield disabled'
+                    {investmentStatus
+                      ? 'Processing...'
                       : growthAmount
                         ? `Invest $${growthAmount}`
                         : 'Select amount to invest'}
                   </span>
-                  {growthAmount && growthYieldEnabled && (
+                  {growthAmount && !investmentStatus && (
                     <ArrowRight className='ml-2 h-4 w-4' />
                   )}
                 </div>
@@ -917,7 +1505,7 @@ export default function PyUSDYieldSelector() {
                     ✓ Confirmed!
                   </span>
                 </div>
-                {growthAmount && growthYieldEnabled && (
+                {growthAmount && !investmentStatus && (
                   <button
                     type='button'
                     onMouseDown={() => setGrowthSliding(true)}
