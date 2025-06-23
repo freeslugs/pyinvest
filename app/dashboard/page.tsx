@@ -276,10 +276,13 @@ export default function PyUSDYieldSelector() {
         <div className='px-2 pb-4 pt-12'>
           <div className='mb-2 flex items-center' style={{ gap: '10px' }}>
             <div className='flex h-10 w-10 items-center justify-center'>
-              <img
+              <Image
                 src='/assets/PyInvest-logomark.png'
                 alt='PyInvest logo'
+                width={28}
+                height={28}
                 className='h-7 w-7'
+                unoptimized
               />
             </div>
             <div className='flex-1'>
@@ -305,10 +308,13 @@ export default function PyUSDYieldSelector() {
               <p className='font-adelle text-4xl font-medium text-gray-800'>
                 {totalBalance()}
               </p>
-              <img
+              <Image
                 src='/assets/pyusd_logo.png'
                 alt='pyUSD logo'
+                width={24}
+                height={24}
                 className='ml-1 h-6 w-6'
+                unoptimized
               />
             </div>
 

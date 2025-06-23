@@ -187,21 +187,7 @@ export default function CookbookPage() {
     },
   ] as const;
 
-  // AAVE Pool ABI
-  const AAVE_POOL_ABI = [
-    {
-      name: 'supply',
-      type: 'function',
-      stateMutability: 'nonpayable',
-      inputs: [
-        { name: 'asset', type: 'address' },
-        { name: 'amount', type: 'uint256' },
-        { name: 'onBehalfOf', type: 'address' },
-        { name: 'referralCode', type: 'uint16' },
-      ],
-      outputs: [],
-    },
-  ] as const;
+
 
   // WETH Gateway ABI for depositing ETH
   const WETH_GATEWAY_ABI = [
@@ -218,34 +204,7 @@ export default function CookbookPage() {
     },
   ] as const;
 
-  // Multicall3 contract ABI for batch transactions
-  const MULTICALL3_ABI = [
-    {
-      name: 'aggregate3',
-      type: 'function',
-      inputs: [
-        {
-          name: 'calls',
-          type: 'tuple[]',
-          components: [
-            { name: 'target', type: 'address' },
-            { name: 'allowFailure', type: 'bool' },
-            { name: 'callData', type: 'bytes' },
-          ],
-        },
-      ],
-      outputs: [
-        {
-          name: 'returnData',
-          type: 'tuple[]',
-          components: [
-            { name: 'success', type: 'bool' },
-            { name: 'returnData', type: 'bytes' },
-          ],
-        },
-      ],
-    },
-  ] as const;
+
 
   // Function to switch networks
   const switchNetwork = async (chainId: number) => {
@@ -1373,10 +1332,10 @@ export default function CookbookPage() {
         args: [metamaskWallet.address as `0x${string}`],
       });
 
-      console.log('USDC balance (raw):', balance.toString());
+      console.log('USDC balance (raw):', (balance as bigint).toString());
       console.log(
         'USDC balance (formatted):',
-        (Number(balance) / 10 ** 6).toFixed(6)
+        (Number(balance as bigint) / 10 ** 6).toFixed(6)
       );
 
       // Test: Get current allowance for AAVE Pool
@@ -1387,14 +1346,14 @@ export default function CookbookPage() {
         args: [metamaskWallet.address as `0x${string}`, AAVE_CONFIG.POOL],
       });
 
-      console.log('Current AAVE allowance (raw):', allowance.toString());
+      console.log('Current AAVE allowance (raw):', (allowance as bigint).toString());
       console.log(
         'Current AAVE allowance (formatted):',
-        (Number(allowance) / 10 ** 6).toFixed(6)
+        (Number(allowance as bigint) / 10 ** 6).toFixed(6)
       );
 
       setUsdcTestResults({
-        aaveDepositStatus: `USDC Contract Test: Balance=${(Number(balance) / 10 ** 6).toFixed(6)}, Allowance=${(Number(allowance) / 10 ** 6).toFixed(6)}`,
+        aaveDepositStatus: `USDC Contract Test: Balance=${(Number(balance as bigint) / 10 ** 6).toFixed(6)}, Allowance=${(Number(allowance as bigint) / 10 ** 6).toFixed(6)}`,
         error: '',
       });
     } catch (error) {
