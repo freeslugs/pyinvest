@@ -296,3 +296,8 @@ export function getSepoliaTokens() {
 export function getPoolsForNetwork(chainId: number) {
   return POOLS[chainId as keyof typeof POOLS] || {};
 }
+
+// Specific helper for Sepolia pools to ensure proper typing
+export function getSepoliaPools() {
+  return POOLS[NETWORKS.SEPOLIA.id];
+}

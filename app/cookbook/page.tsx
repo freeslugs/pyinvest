@@ -13,7 +13,7 @@ import {
   UNISWAP_V3_POSITION_MANAGER_ADDRESS,
   UNISWAP_V3_ROUTER_ABI,
   UNISWAP_V3_ROUTER_ADDRESS,
-  getPoolsForNetwork,
+  getSepoliaPools,
   getSepoliaTokens,
 } from '../../lib/constants';
 
@@ -322,7 +322,7 @@ export default function CookbookPage() {
 
   // Get token and pool configurations for Sepolia
   const SEPOLIA_TOKENS = getSepoliaTokens();
-  const SEPOLIA_POOLS = getPoolsForNetwork(NETWORKS.SEPOLIA.id);
+  const SEPOLIA_POOLS = getSepoliaPools();
   const PYUSD_TOKEN = SEPOLIA_TOKENS.PYUSD;
   const USDC_TOKEN = SEPOLIA_TOKENS.USDC;
   const PYUSD_USDC_POOL = SEPOLIA_POOLS.PYUSD_USDC;
