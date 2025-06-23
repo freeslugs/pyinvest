@@ -16,6 +16,7 @@ import {
   User,
   Wallet,
   X,
+  Zap,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';

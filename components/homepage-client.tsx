@@ -13,6 +13,10 @@ export function HeaderButton({ isAuthenticated }: HeaderButtonProps) {
   const router = useRouter();
   const { login } = useLogin({
     onComplete: () => router.push('/dashboard'),
+    onError: error => {
+      // Handle login cancellation or errors
+      console.log('Login cancelled or failed:', error);
+    },
   });
 
   const handleClick = () => {
@@ -49,6 +53,10 @@ export function HeroCTAButton({ isAuthenticated }: HeroCTAButtonProps) {
   const router = useRouter();
   const { login } = useLogin({
     onComplete: () => router.push('/dashboard'),
+    onError: error => {
+      // Handle login cancellation or errors
+      console.log('Login cancelled or failed:', error);
+    },
   });
 
   const handleClick = () => {
@@ -78,6 +86,10 @@ export function FinalCTAButton({ isAuthenticated }: FinalCTAButtonProps) {
   const router = useRouter();
   const { login } = useLogin({
     onComplete: () => router.push('/dashboard'),
+    onError: error => {
+      // Handle login cancellation or errors
+      console.log('Login cancelled or failed:', error);
+    },
   });
 
   const handleClick = () => {
