@@ -8,13 +8,13 @@ import { encodeFunctionData } from 'viem';
 
 import WalletList from '../../components/WalletList';
 import {
-  NETWORKS,
-  UNISWAP_V3_POSITION_MANAGER_ABI,
-  UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-  UNISWAP_V3_ROUTER_ABI,
-  UNISWAP_V3_ROUTER_ADDRESS,
-  getPoolsForNetwork,
-  getTokensForNetwork,
+    NETWORKS,
+    UNISWAP_V3_POSITION_MANAGER_ABI,
+    UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+    UNISWAP_V3_ROUTER_ABI,
+    UNISWAP_V3_ROUTER_ADDRESS,
+    getPoolsForNetwork,
+    getTokensForNetwork,
 } from '../../lib/constants';
 
 // Types for our pool data
@@ -4509,9 +4509,27 @@ export default function CookbookPage() {
             >
               🔄 Swap {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD → USDC' : 'USDC → PYUSD'}
             </button>
-            <p className='mt-2 text-sm text-purple-700'>
-              Status: {poolData.swapStatus}
-            </p>
+            <div className='mt-2'>
+              <p className='text-sm text-purple-700'>
+                Status: {poolData.swapStatus.includes('Tx: ') ?
+                  poolData.swapStatus.split('Tx: ')[0] : poolData.swapStatus}
+              </p>
+              {poolData.swapStatus.includes('Tx: ') && (
+                <div className='mt-1'>
+                  <p className='text-xs text-gray-500'>
+                    Transaction Hash:
+                    <a
+                      href={`https://sepolia.etherscan.io/tx/${poolData.swapStatus.split('Tx: ')[1]}`}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='ml-1 font-mono text-blue-600 underline hover:text-blue-800'
+                    >
+                      {poolData.swapStatus.split('Tx: ')[1]}
+                    </a>
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Liquidity Section */}
@@ -4551,9 +4569,27 @@ export default function CookbookPage() {
             >
               🏊 Add Liquidity
             </button>
-            <p className='mt-2 text-sm text-red-700'>
-              Status: {poolData.liquidityStatus}
-            </p>
+            <div className='mt-2'>
+              <p className='text-sm text-red-700'>
+                Status: {poolData.liquidityStatus.includes('Tx: ') ?
+                  poolData.liquidityStatus.split('Tx: ')[0] : poolData.liquidityStatus}
+              </p>
+              {poolData.liquidityStatus.includes('Tx: ') && (
+                <div className='mt-1'>
+                  <p className='text-xs text-gray-500'>
+                    Transaction Hash:
+                    <a
+                      href={`https://sepolia.etherscan.io/tx/${poolData.liquidityStatus.split('Tx: ')[1]}`}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='ml-1 font-mono text-blue-600 underline hover:text-blue-800'
+                    >
+                      {poolData.liquidityStatus.split('Tx: ')[1]}
+                    </a>
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Error Display */}
