@@ -1,9 +1,12 @@
 'use client';
 
+import { usePrivy } from '@privy-io/react-auth';
 import { ArrowRight, CheckCircle, Copy, Edit3, Globe, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
+import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { SmartWalletCard } from '@/components/SmartWalletCard';
 import { Modal } from '@/components/ui/modal';
 import { NetworkSelector } from '@/components/ui/network-selector';
 
@@ -75,7 +78,6 @@ export default function PyUSDYieldSelector() {
 
   // Privy hooks
   const { user, authenticated, ready } = usePrivy();
-  const { client } = useSmartWallets();
 
   // Get smart wallet from user's linked accounts
   const smartWallet = user?.linkedAccounts?.find(

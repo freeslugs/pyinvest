@@ -1,10 +1,10 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { ArrowRight, Copy, Wallet } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
+
 import { Modal } from './ui/modal';
 import { QRCodeComponent } from './ui/qr-code';
 
@@ -25,7 +25,6 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [isLoading, setIsLoading] = useState(false);
   const { user, linkWallet } = usePrivy();
-  const { client } = useSmartWallets();
 
   // Get smart wallet address
   const smartWallet = user?.linkedAccounts?.find(
@@ -84,7 +83,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
           Welcome to PyInvest!
         </h2>
         <p className="text-gray-600">
-          Let's get you started with earning yield on your PYUSD
+          Let&apos;s get you started with earning yield on your PYUSD
         </p>
       </div>
 
@@ -144,12 +143,12 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
       </div>
 
       <div className="text-center pt-4">
-        <button
-          onClick={handleCompleteOnboarding}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          I don't have PYUSD yet
-        </button>
+                  <button
+            onClick={handleCompleteOnboarding}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            I don&apos;t have PYUSD yet
+          </button>
       </div>
     </div>
   );
@@ -208,7 +207,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
               </div>
               <div className="flex items-start space-x-2">
                 <span className="font-semibold">3.</span>
-                <p>Choose "Send" or "Transfer" and scan the QR code above</p>
+                <p>Choose &quot;Send&quot; or &quot;Transfer&quot; and scan the QR code above</p>
               </div>
               <div className="flex items-start space-x-2">
                 <span className="font-semibold">4.</span>
@@ -221,7 +220,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
             onClick={handleContinueToDeposit}
             className="w-full rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition-colors"
           >
-            I've sent the PYUSD
+            I&apos;ve sent the PYUSD
           </button>
         </div>
       )}
@@ -285,13 +284,13 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
           Waiting for your PYUSD deposit
         </h2>
         <p className="text-sm text-gray-600">
-          We're watching for your PYUSD to arrive. This usually takes a few minutes.
+          We&apos;re watching for your PYUSD to arrive. This usually takes a few minutes.
         </p>
       </div>
 
       <div className="bg-gray-50 rounded-xl p-4">
         <p className="text-sm text-gray-700">
-          Once we detect your PYUSD, you'll be able to start earning yield immediately!
+          Once we detect your PYUSD, you&apos;ll be able to start earning yield immediately!
         </p>
       </div>
 

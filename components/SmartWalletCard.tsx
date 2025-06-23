@@ -3,6 +3,7 @@
 import { Copy, QrCode } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
+
 import { Modal } from './ui/modal';
 import { QRCodeComponent } from './ui/qr-code';
 
