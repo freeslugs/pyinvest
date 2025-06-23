@@ -294,6 +294,15 @@ export default function CookbookPage() {
        const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
        console.log(`⏰ Deadline: ${deadline}`);
 
+       // Calculate minimum output amount with 5% slippage tolerance
+       // Based on rough price ratio from successful txs: ~70 PYUSD per USDC
+       const estimatedOutputWei = swapAmountWei / 70n; // Rough estimate
+       const slippageToleranceBps = 500n; // 5% = 500 basis points
+       const amountOutMinimum = (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
+
+       console.log(`📊 Estimated output: ${estimatedOutputWei} wei USDC`);
+       console.log(`📊 Minimum output (5% slippage): ${amountOutMinimum} wei USDC`);
+
        // Construct swap parameters
        const swapParams = {
          tokenIn: PYUSD_TOKEN.address as `0x${string}`,
@@ -302,15 +311,25 @@ export default function CookbookPage() {
          recipient: metamaskWallet.address as `0x${string}`,
          deadline,
          amountIn: swapAmountWei,
-         amountOutMinimum: 0n, // Accept any amount out (for demo)
-         sqrtPriceLimitX96: 0n,
+         amountOutMinimum, // Proper slippage protection
+         sqrtPriceLimitX96: 0n, // No price limit for now
        };
 
        console.log('📋 Swap parameters:', {
          ...swapParams,
          deadline: swapParams.deadline.toString(),
          amountIn: swapParams.amountIn.toString(),
+         amountOutMinimum: swapParams.amountOutMinimum.toString(),
        });
+
+       // Validate parameters before encoding
+       console.log('🔍 Validating swap parameters...');
+       console.log(`  - Token In: ${swapParams.tokenIn}`);
+       console.log(`  - Token Out: ${swapParams.tokenOut}`);
+       console.log(`  - Fee: ${swapParams.fee}`);
+       console.log(`  - Recipient: ${swapParams.recipient}`);
+       console.log(`  - Amount In: ${swapParams.amountIn.toString()} wei (${Number(swapParams.amountIn) / Math.pow(10, PYUSD_TOKEN.decimals)} tokens)`);
+       console.log(`  - Min Amount Out: ${swapParams.amountOutMinimum.toString()} wei (${Number(swapParams.amountOutMinimum) / Math.pow(10, USDC_TOKEN.decimals)} tokens)`);
 
        // Encode the swap call
        const swapCalldata = encodeFunctionData({
@@ -320,6 +339,7 @@ export default function CookbookPage() {
        });
 
        console.log('📞 Swap calldata:', swapCalldata);
+       console.log('📞 Router address:', UNISWAP_V3_ROUTER_ADDRESS);
 
        // Execute swap transaction
        console.log('🚀 Executing swap transaction...');
@@ -343,10 +363,30 @@ export default function CookbookPage() {
 
     } catch (error) {
       console.error('❌ Swap failed:', error);
+      console.error('❌ Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+      });
+
+      // Try to extract more meaningful error info
+      let errorMessage = 'Swap failed';
+      if (error instanceof Error) {
+        if (error.message.includes('execution reverted')) {
+          errorMessage = 'Transaction reverted - check slippage/liquidity';
+        } else if (error.message.includes('insufficient')) {
+          errorMessage = 'Insufficient balance or allowance';
+        } else if (error.message.includes('user denied')) {
+          errorMessage = 'Transaction rejected by user';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       setPoolData(prev => ({
         ...prev,
         swapStatus: 'Swap failed',
-        error: error instanceof Error ? error.message : 'Swap failed',
+        error: errorMessage,
       }));
     }
   };
