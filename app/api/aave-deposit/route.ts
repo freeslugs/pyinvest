@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
-    createPrivyClient,
-    fetchAndVerifyAuthorizationAppRouter,
+  createPrivyClient,
+  fetchAndVerifyAuthorizationAppRouter,
 } from '@/lib/server-utils';
 
 const client = createPrivyClient();
