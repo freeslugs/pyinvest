@@ -9,15 +9,16 @@ import { NetworkSelector } from '@/components/ui/network-selector';
 
 // Custom Verified Icon Component
 const VerifiedIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    width="1.2em"
-    height="1.2em"
-    className={className}
-  >
-    <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-      <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77a4 4 0 0 1 6.74 0a4 4 0 0 1 4.78 4.78a4 4 0 0 1 0 6.74a4 4 0 0 1-4.77 4.78a4 4 0 0 1-6.75 0a4 4 0 0 1-4.78-4.77a4 4 0 0 1 0-6.76"></path>
-      <path d="m9 12l2 2l4-4"></path>
+  <svg viewBox='0 0 24 24' width='1.2em' height='1.2em' className={className}>
+    <g
+      fill='none'
+      stroke='currentColor'
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      strokeWidth='2'
+    >
+      <path d='M3.85 8.62a4 4 0 0 1 4.78-4.77a4 4 0 0 1 6.74 0a4 4 0 0 1 4.78 4.78a4 4 0 0 1 0 6.74a4 4 0 0 1-4.77 4.78a4 4 0 0 1-6.75 0a4 4 0 0 1-4.78-4.77a4 4 0 0 1 0-6.76'></path>
+      <path d='m9 12l2 2l4-4'></path>
     </g>
   </svg>
 );
@@ -509,7 +510,7 @@ export default function PyUSDYieldSelector() {
               {/* Header Bar */}
               <div className='mb-5 flex items-center justify-between border-b border-gray-100 pb-4'>
                 <div className='flex items-center space-x-2'>
-                  <div className='flex h-7 w-7 items-center justify-center rounded-md bg-gray-100 border border-gray-200'>
+                  <div className='flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-gray-100'>
                     <Globe className='h-4 w-4 text-gray-400' />
                   </div>
                   <span className='text-base font-medium text-gray-700'>
@@ -717,7 +718,7 @@ export default function PyUSDYieldSelector() {
               {/* Header Bar */}
               <div className='mb-5 flex items-center justify-between border-b border-gray-100 pb-4'>
                 <div className='flex items-center space-x-2'>
-                  <div className='flex h-7 w-7 items-center justify-center rounded-md bg-gray-100 border border-gray-200'>
+                  <div className='flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-gray-100'>
                     <Globe className='h-4 w-4 text-gray-400' />
                   </div>
                   <span className='text-base font-medium text-gray-700'>

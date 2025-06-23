@@ -18,15 +18,15 @@ export function HeaderButton({ isAuthenticated }: HeaderButtonProps) {
   return isAuthenticated ? (
     <Button
       onClick={() => handleNavigation('/dashboard')}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-medium"
+      className='rounded-xl bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700'
     >
       Open App
     </Button>
   ) : (
     <Button
       onClick={() => handleNavigation('/login')}
-      variant="outline"
-      className="border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-2 rounded-xl font-medium"
+      variant='outline'
+      className='rounded-xl border-blue-600 px-6 py-2 font-medium text-blue-600 hover:bg-blue-50'
     >
       Open App
     </Button>
@@ -46,9 +46,11 @@ export function HeroCTAButton({ isAuthenticated }: HeroCTAButtonProps) {
 
   return (
     <Button
-      onClick={() => handleNavigation(isAuthenticated ? '/dashboard' : '/login')}
-      size="lg"
-      className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+      onClick={() =>
+        handleNavigation(isAuthenticated ? '/dashboard' : '/login')
+      }
+      size='lg'
+      className='rounded-2xl bg-blue-600 px-12 py-6 text-lg font-semibold text-white shadow-lg transition-all duration-200 hover:bg-blue-700 hover:shadow-xl'
     >
       Get Started
     </Button>
@@ -68,9 +70,11 @@ export function FinalCTAButton({ isAuthenticated }: FinalCTAButtonProps) {
 
   return (
     <Button
-      onClick={() => handleNavigation(isAuthenticated ? '/dashboard' : '/login')}
-      size="lg"
-      className="bg-white text-blue-600 hover:bg-gray-50 px-12 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+      onClick={() =>
+        handleNavigation(isAuthenticated ? '/dashboard' : '/login')
+      }
+      size='lg'
+      className='rounded-2xl bg-white px-12 py-6 text-lg font-semibold text-blue-600 shadow-lg transition-all duration-200 hover:bg-gray-50 hover:shadow-xl'
     >
       Get Started - It&apos;s Free
     </Button>
