@@ -1,13 +1,7 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import {
-  ArrowRight,
-  Edit3,
-  Globe,
-  User,
-  Zap
-} from 'lucide-react';
+import { ArrowRight, Edit3, Globe, User, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -70,8 +64,6 @@ export default function PyUSDYieldSelector() {
     smartWallet: '0',
     metaMask: '0',
   });
-
-
 
   // Onboarding and smart wallet states
   const [showOnboarding, setShowOnboarding] = useState(false);
