@@ -9,7 +9,8 @@ export const NETWORKS = {
   SEPOLIA: {
     id: 11155111,
     name: 'Sepolia Testnet',
-    rpcUrl: 'https://rpc.sepolia.org',
+    rpcUrl:
+      'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
     explorerUrl: 'https://sepolia.etherscan.io',
   },
   BASE: {
@@ -33,7 +34,7 @@ export const NETWORKS = {
   BSC_TESTNET: {
     id: 97,
     name: 'BSC Testnet',
-    rpcURL: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+    rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545',
     explorerUrl: 'https://testnet.bscscan.com',
   },
 } as const;
@@ -43,13 +44,13 @@ export const TOKENS = {
   [NETWORKS.SEPOLIA.id]: {
     PYUSD: {
       address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
-      decimals: 6, // From your balance showing 9.000001 PYUSD
+      decimals: 6,
       symbol: 'PYUSD',
       name: 'PayPal USD (Testnet)',
     },
     USDC: {
-      address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238' as const,
-      decimals: 6, // USDC typically uses 6 decimals
+      address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as const,
+      decimals: 6,
       symbol: 'USDC',
       name: 'USD Coin (Testnet)',
     },
@@ -94,8 +95,43 @@ export const AAVE_CONTRACTS = {
     WETH_GATEWAY: '0x387d311e47e80b498169e6fb51d3193167d89f7d' as const,
     WETH: '0xc558dbdd856501fcd9aaf1e62eae57a9f0629a3c' as const,
     AWETH: '0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830' as const,
-    AUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80' as const, // aUSDC token address
+    AUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80' as const,
+    MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11' as const,
   },
+};
+
+// Permit2 configuration
+export const PERMIT2_CONFIG = {
+  ADDRESS: '0x000000000022d473030f116ddee9f6b43ac78ba3' as const,
+  ABI: [
+    {
+      inputs: [
+        { name: 'owner', type: 'address' },
+        { name: 'token', type: 'address' },
+        { name: 'spender', type: 'address' },
+      ],
+      name: 'allowance',
+      outputs: [
+        { name: 'amount', type: 'uint160' },
+        { name: 'expiration', type: 'uint48' },
+        { name: 'nonce', type: 'uint48' },
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+    {
+      inputs: [
+        { name: 'token', type: 'address' },
+        { name: 'spender', type: 'address' },
+        { name: 'amount', type: 'uint160' },
+        { name: 'expiration', type: 'uint48' },
+      ],
+      name: 'approve',
+      outputs: [],
+      stateMutability: 'nonpayable',
+      type: 'function',
+    },
+  ] as const,
 };
 
 // Standard ERC20 ABI
@@ -147,6 +183,21 @@ export const ERC20_ABI = [
     name: 'allowance',
     outputs: [{ name: '', type: 'uint256' }],
     type: 'function',
+  },
+] as const;
+
+// WETH Gateway ABI for depositing ETH to AAVE
+export const WETH_GATEWAY_ABI = [
+  {
+    name: 'depositETH',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'lendingPool', type: 'address' },
+      { name: 'onBehalfOf', type: 'address' },
+      { name: 'referralCode', type: 'uint16' },
+    ],
+    outputs: [],
   },
 ] as const;
 
@@ -276,10 +327,33 @@ export const UNISWAP_V3_POSITION_MANAGER_ADDRESS =
 export const UNISWAP_V3_FACTORY_ADDRESS =
   '0x0227628f3F023bb0B980b67D528571c95c6DaC1c' as const;
 
-// AAVE contract addresses by Chain
-export // Helper function to get network config
-function getNetworkConfig(chainId: number) {
+// Utility functions for Uniswap
+export const getTickSpacing = (feeTier: number): number => {
+  switch (feeTier) {
+    case 500:
+      return 10; // 0.05%
+    case 3000:
+      return 60; // 0.3%
+    case 10000:
+      return 200; // 1%
+    default:
+      throw new Error(`Unsupported fee tier: ${feeTier}`);
+  }
+};
+
+// Helper function to get network config
+export function getNetworkConfig(chainId: number) {
   return Object.values(NETWORKS).find(network => network.id === chainId);
+}
+
+// Helper function to get available networks as array (for UI components)
+export function getAvailableNetworks() {
+  return Object.values(NETWORKS).map(network => ({
+    id: network.id,
+    name: network.name,
+    rpcUrl: network.rpcUrl,
+    explorerUrl: network.explorerUrl,
+  }));
 }
 
 // Helper function to get tokens for a network
@@ -300,4 +374,25 @@ export function getPoolsForNetwork(chainId: number) {
 // Specific helper for Sepolia pools to ensure proper typing
 export function getSepoliaPools() {
   return POOLS[NETWORKS.SEPOLIA.id];
+}
+
+// Helper function to get AAVE contracts for a network
+export function getAaveContracts(chainId: number) {
+  return AAVE_CONTRACTS[chainId as keyof typeof AAVE_CONTRACTS] || {};
+}
+
+// Specific helper for Sepolia AAVE contracts
+export function getSepoliaAaveContracts() {
+  return AAVE_CONTRACTS[NETWORKS.SEPOLIA.id];
+}
+
+// Helper function to format balance with decimals
+export function formatTokenBalance(balance: bigint, decimals: number): number {
+  return Number(balance) / Math.pow(10, decimals);
+}
+
+// Helper function to convert token amount to wei
+export function parseTokenAmount(amount: string | number, decimals: number): bigint {
+  const amountNum = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return BigInt(Math.round(amountNum * Math.pow(10, decimals)));
 }
