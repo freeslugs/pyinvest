@@ -1,12 +1,117 @@
 'use client';
 
-import { ArrowRight, Edit3, Shield, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle, Copy, Edit3, Shield, TrendingUp, Zap } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { Modal } from '@/components/ui/modal';
+
+interface WalletBalance {
+  venmo: string;
+  coinbase: string;
+}
 
 export default function PyUSDYieldSelector() {
   const [conservativeAmount, setConservativeAmount] = useState('250');
   const [growthAmount, setGrowthAmount] = useState('250');
+  const [isVenmoModalOpen, setIsVenmoModalOpen] = useState(false);
+  const [venmoAddress, setVenmoAddress] = useState('');
+  const [venmoInputValue, setVenmoInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [balances, setBalances] = useState<WalletBalance>({
+    venmo: '0',
+    coinbase: '4,200.00' // Hardcoded for now
+  });
+
+  // Load Venmo address from localStorage on component mount
+  useEffect(() => {
+    const savedVenmoAddress = localStorage.getItem('venmoWalletAddress');
+    if (savedVenmoAddress) {
+      setVenmoAddress(savedVenmoAddress);
+      // Fetch balance for the saved address
+      fetchVenmoBalance(savedVenmoAddress);
+    }
+  }, []);
+
+  // Mock function to fetch PYUSD balance for Venmo wallet
+  const fetchVenmoBalance = async (address: string) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Mock balance - in real implementation, you'd call the actual API with the address
+      // For now, we'll return a mock balance regardless of the address
+      const mockBalance = '8,250.00';
+      console.log('Fetching balance for address:', address);
+
+      setBalances(prev => ({
+        ...prev,
+        venmo: mockBalance
+      }));
+    } catch (error) {
+      console.error('Error fetching Venmo balance:', error);
+      setBalances(prev => ({
+        ...prev,
+        venmo: '0'
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate total balance
+  const totalBalance = () => {
+    const venmoNum = parseFloat(balances.venmo.replace(/,/g, '')) || 0;
+    const coinbaseNum = parseFloat(balances.coinbase.replace(/,/g, '')) || 0;
+    return (venmoNum + coinbaseNum).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const handleVenmoSubmit = async () => {
+    if (!venmoInputValue.trim()) return;
+
+    setIsLoading(true);
+
+    try {
+      // Validate Ethereum address format (basic validation)
+      const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
+      if (!ethAddressRegex.test(venmoInputValue.trim())) {
+        alert('Please enter a valid Ethereum address');
+        return;
+      }
+
+      // Save to localStorage
+      localStorage.setItem('venmoWalletAddress', venmoInputValue.trim());
+      setVenmoAddress(venmoInputValue.trim());
+
+      // Fetch balance for the new address
+      await fetchVenmoBalance(venmoInputValue.trim());
+
+      // Show success animation
+      setShowSuccess(true);
+
+      // Close modal after animation
+      setTimeout(() => {
+        setIsVenmoModalOpen(false);
+        setShowSuccess(false);
+        setVenmoInputValue('');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error saving Venmo address:', error);
+      alert('Error saving address. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   return (
     <div className='min-h-screen bg-gray-50 p-4'>
@@ -32,7 +137,7 @@ export default function PyUSDYieldSelector() {
             <p className='mb-2 text-sm text-gray-500'>Amount</p>
             <div className='mb-1 flex items-center space-x-2'>
               <span className='text-4xl font-light text-gray-300 font-adelle'>$</span>
-              <p className='text-4xl font-medium text-gray-800 font-adelle'>12,450.00</p>
+              <p className='text-4xl font-medium text-gray-800 font-adelle'>{totalBalance()}</p>
               <Image
                 src='/assets/pyusd_logo.png'
                 alt='pyUSD logo'
@@ -56,7 +161,20 @@ export default function PyUSDYieldSelector() {
                     />
                     <span className='text-sm text-gray-500'>Venmo</span>
                   </div>
-                  <span className='text-sm text-gray-500'>$8,250.00</span>
+                  <div className='flex items-center'>
+                    {venmoAddress ? (
+                      <span className='text-sm text-gray-500'>
+                        ${balances.venmo}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setIsVenmoModalOpen(true)}
+                        className='text-sm text-blue-600 hover:text-blue-800 hover:underline'
+                      >
+                        Configure
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center'>
@@ -69,12 +187,110 @@ export default function PyUSDYieldSelector() {
                     />
                     <span className='text-sm text-gray-500'>Coinbase</span>
                   </div>
-                  <span className='text-sm text-gray-500'>$4,200.00</span>
+                  <span className='text-sm text-gray-500'>${balances.coinbase}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Venmo Configuration Modal */}
+        <Modal
+          isOpen={isVenmoModalOpen}
+          onClose={() => {
+            if (!isLoading) {
+              setIsVenmoModalOpen(false);
+              setVenmoInputValue('');
+              setShowSuccess(false);
+            }
+          }}
+          title="Configure Venmo Wallet"
+        >
+          {showSuccess ? (
+            <div className="text-center">
+              <div className="mb-4 flex justify-center">
+                <CheckCircle className="h-16 w-16 text-green-500 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Success!
+              </h3>
+              <p className="text-gray-600">
+                Your Venmo wallet has been configured successfully.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  How to get your Venmo ETH address:
+                </h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">1</span>
+                    <p>Open your Venmo app and go to the Crypto section</p>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">2</span>
+                    <p>Tap on &ldquo;Receive&rdquo; or &ldquo;Deposit&rdquo; for Ethereum</p>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">3</span>
+                    <p>Copy your Ethereum wallet address (starts with 0x)</p>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">4</span>
+                    <p>Paste the address below</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="venmo-address" className="block text-sm font-medium text-gray-700 mb-2">
+                  Venmo ETH Address
+                </label>
+                <div className="relative">
+                  <input
+                    id="venmo-address"
+                    type="text"
+                    value={venmoInputValue}
+                    onChange={(e) => setVenmoInputValue(e.target.value)}
+                    placeholder="0x..."
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  />
+                  {venmoInputValue && (
+                    <button
+                      onClick={() => copyToClipboard(venmoInputValue)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setIsVenmoModalOpen(false);
+                    setVenmoInputValue('');
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleVenmoSubmit}
+                  disabled={isLoading || !venmoInputValue.trim()}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Saving...' : 'Save Address'}
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
 
         {/* Investment Options */}
         <div className='space-y-4'>
