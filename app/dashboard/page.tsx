@@ -75,6 +75,7 @@ export default function PyUSDYieldSelector() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [smartWalletBalance, setSmartWalletBalance] = useState('0');
   const [showSmartWallet, setShowSmartWallet] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
 
   // Privy hooks
   const { user, authenticated, ready } = usePrivy();
@@ -101,23 +102,28 @@ export default function PyUSDYieldSelector() {
 
   // Check onboarding status and load saved data
   useEffect(() => {
-    if (!ready || !authenticated) return;
+    if (!ready || !authenticated || onboardingChecked) return;
 
     const onboardingCompleted = localStorage.getItem('onboarding_completed');
     const hasConnectedWallet = user?.linkedAccounts?.some(
       (account: any) => account.type === 'wallet' && account.walletClientType !== 'privy'
     );
-    const hasSmartWalletBalance = smartWalletBalance !== '0';
 
     // Show onboarding if not completed and user doesn't have significant setup
-    if (!onboardingCompleted && !hasConnectedWallet && !hasSmartWalletBalance) {
+    if (!onboardingCompleted && !hasConnectedWallet) {
       setShowOnboarding(true);
     }
 
+    // Mark onboarding check as completed
+    setOnboardingChecked(true);
+
     // Determine whether to show smart wallet or traditional balance sources
-    if (smartWallet && (hasSmartWalletBalance || hasConnectedWallet)) {
+    if (smartWallet && hasConnectedWallet) {
       setShowSmartWallet(true);
       // Fetch smart wallet balance
+      fetchSmartWalletBalance(smartWallet.address);
+    } else if (smartWallet) {
+      // Always fetch smart wallet balance to check if they have funds
       fetchSmartWalletBalance(smartWallet.address);
     } else {
       // Load traditional Venmo address setup
@@ -127,7 +133,16 @@ export default function PyUSDYieldSelector() {
         fetchVenmoBalance(savedVenmoAddress);
       }
     }
-  }, [ready, authenticated, user, smartWallet, smartWalletBalance]);
+  }, [ready, authenticated, user, smartWallet, onboardingChecked]);
+
+  // Separate effect to handle smart wallet balance updates
+  useEffect(() => {
+    if (smartWalletBalance && parseFloat(smartWalletBalance) > 0) {
+      setShowSmartWallet(true);
+      // If user has balance, don't show onboarding
+      setShowOnboarding(false);
+    }
+  }, [smartWalletBalance]);
 
   // Function to fetch PYUSD balance for smart wallet
   const fetchSmartWalletBalance = async (address: string) => {
