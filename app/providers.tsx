@@ -2,7 +2,7 @@
 
 import { PrivyProvider } from '@privy-io/react-auth';
 import { SmartWalletsProvider } from '@privy-io/react-auth/smart-wallets';
-import { sepolia } from 'viem/chains';
+import { bscTestnet, flowTestnet, sepolia } from 'viem/chains';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           createOnLogin: 'all-users',
         },
         defaultChain: sepolia,
-        supportedChains: [sepolia],
+        supportedChains: [sepolia, flowTestnet, bscTestnet],
         appearance: {
           theme: 'light',
         },

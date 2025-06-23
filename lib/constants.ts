@@ -24,6 +24,18 @@ export const NETWORKS = {
     rpcUrl: 'https://sepolia.base.org',
     explorerUrl: 'https://base-sepolia.blockscout.com',
   },
+  FLOW_TESTNET: {
+    id: 545,
+    name: 'Flow Testnet',
+    rpcUrl: 'https://testnet.evm.nodes.onflow.org',
+    explorerUrl: 'https://evm-testnet.flowscan.io',
+  },
+  BSC_TESTNET: {
+    id: 97,
+    name: 'BSC Testnet',
+    rpcURL: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+    explorerUrl: 'https://testnet.bscscan.com',
+  },
 } as const;
 
 // Token configurations by network
