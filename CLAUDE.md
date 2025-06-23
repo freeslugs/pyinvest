@@ -18,7 +18,7 @@ This is a Next.js 14+ application using the **App Router** architecture with Pri
 
 - **App Router Structure**: Uses Next.js App Router (`app/` directory) instead of Pages Router
 - **Authentication**: Privy Auth handles wallet-based authentication with embedded wallet creation
-- **Styling**: Tailwind CSS with custom fonts (Adelle Sans) and Headless UI components
+- **Styling**: Tailwind CSS with Inter font (primary) and Adelle Sans (balance numbers) with Headless UI components
 - **API Routes**: Authentication endpoints in `app/api/` for Ethereum/Solana message signing and verification
 
 ### Important Files
