@@ -1,7 +1,7 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import { AlertCircle, ArrowRight, Award, CheckCircle, Copy, Edit3, Globe, Shield, Zap } from 'lucide-react';
+import { AlertCircle, ArrowRight, Award, Edit3, Globe, Shield, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -58,7 +58,6 @@ const formatPyusdBalance = (balance: bigint): string => {
 };
 
 export default function PyUSDYieldSelector() {
-  const { user } = usePrivy();
   const [conservativeAmount, setConservativeAmount] = useState('');
   const [growthAmount, setGrowthAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
