@@ -1,11 +1,11 @@
 'use client';
 
 import { getAccessToken, usePrivy, useWallets } from '@privy-io/react-auth';
+import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { encodeFunctionData } from 'viem';
 
-import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
-import { useRouter } from 'next/navigation';
 import WalletList from '../../components/WalletList';
 import {
   NETWORKS,
