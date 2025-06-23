@@ -329,7 +329,9 @@ export default function CookbookPage() {
   // Form state
   const [swapAmount, setSwapAmount] = useState<string>('1');
   const [liquidityAmount, setLiquidityAmount] = useState<string>('2');
-  const [swapDirection, setSwapDirection] = useState<'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'>('PYUSD_TO_USDC');
+  const [swapDirection, setSwapDirection] = useState<
+    'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'
+  >('PYUSD_TO_USDC');
   const [slippageTolerance, setSlippageTolerance] = useState<string>('15'); // Default to 15% for more flexibility
 
   // Get token and pool configurations for Sepolia
@@ -2416,7 +2418,7 @@ export default function CookbookPage() {
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
       console.log(`⏰ Deadline: ${deadline}`);
 
-            // Calculate minimum output amount with configurable slippage tolerance
+      // Calculate minimum output amount with configurable slippage tolerance
       // Based on rough price ratio from successful txs: ~70 PYUSD per USDC
       // Use more conservative estimates and higher slippage for USDC->PYUSD
       let estimatedOutputWei: bigint;
@@ -2435,9 +2437,12 @@ export default function CookbookPage() {
       if (Number(slippageTolerance) >= 25) {
         // For very high slippage (25%+), use minimal protection to avoid failures
         amountOutMinimum = 1n; // Accept any amount > 0
-        console.log('⚠️ Using minimal slippage protection due to high tolerance');
+        console.log(
+          '⚠️ Using minimal slippage protection due to high tolerance'
+        );
       } else {
-        amountOutMinimum = (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
+        amountOutMinimum =
+          (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
       }
 
       // Ensure minimum is never 0
@@ -2445,7 +2450,9 @@ export default function CookbookPage() {
         amountOutMinimum = 1n;
       }
 
-      console.log(`📊 Estimated output: ${estimatedOutputWei} wei ${outputToken.symbol}`);
+      console.log(
+        `📊 Estimated output: ${estimatedOutputWei} wei ${outputToken.symbol}`
+      );
       console.log(
         `📊 Minimum output (${slippageTolerance}% slippage): ${amountOutMinimum} wei ${outputToken.symbol}`
       );
@@ -4425,17 +4432,23 @@ export default function CookbookPage() {
           {/* Swap Section */}
           <div className='mt-8 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-6'>
             <h2 className='mb-4 text-xl font-bold text-purple-900'>
-              Step 2: Swap {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD → USDC' : 'USDC → PYUSD'}
+              Step 2: Swap{' '}
+              {swapDirection === 'PYUSD_TO_USDC'
+                ? 'PYUSD → USDC'
+                : 'USDC → PYUSD'}
             </h2>
             <p className='mb-4 text-sm text-purple-700'>
-              Test the Uniswap V3 swap functionality by converting between PYUSD and USDC in both directions.
+              Test the Uniswap V3 swap functionality by converting between PYUSD
+              and USDC in both directions.
               <br />
-              <strong>Note:</strong> USDC→PYUSD swaps may need higher slippage tolerance (15%+) due to price volatility and liquidity differences.
+              <strong>Note:</strong> USDC→PYUSD swaps may need higher slippage
+              tolerance (15%+) due to price volatility and liquidity
+              differences.
             </p>
 
             {/* Direction Selector */}
             <div className='mb-4'>
-              <label className='block text-sm font-medium text-purple-800 mb-2'>
+              <label className='mb-2 block text-sm font-medium text-purple-800'>
                 Swap Direction
               </label>
               <div className='flex gap-4'>
@@ -4445,7 +4458,11 @@ export default function CookbookPage() {
                     name='swapDirection'
                     value='PYUSD_TO_USDC'
                     checked={swapDirection === 'PYUSD_TO_USDC'}
-                    onChange={(e) => setSwapDirection(e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD')}
+                    onChange={e =>
+                      setSwapDirection(
+                        e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'
+                      )
+                    }
                     className='mr-2'
                   />
                   <span className='text-sm text-purple-700'>PYUSD → USDC</span>
@@ -4456,7 +4473,11 @@ export default function CookbookPage() {
                     name='swapDirection'
                     value='USDC_TO_PYUSD'
                     checked={swapDirection === 'USDC_TO_PYUSD'}
-                    onChange={(e) => setSwapDirection(e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD')}
+                    onChange={e =>
+                      setSwapDirection(
+                        e.target.value as 'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'
+                      )
+                    }
                     className='mr-2'
                   />
                   <span className='text-sm text-purple-700'>USDC → PYUSD</span>
@@ -4467,7 +4488,8 @@ export default function CookbookPage() {
             <div className='mb-4 space-y-4'>
               <div>
                 <label className='block text-sm font-medium text-purple-800'>
-                  Amount to Swap ({swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD' : 'USDC'})
+                  Amount to Swap (
+                  {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD' : 'USDC'})
                 </label>
                 <input
                   type='number'
@@ -4482,7 +4504,7 @@ export default function CookbookPage() {
                 <label className='block text-sm font-medium text-purple-800'>
                   Slippage Tolerance (%)
                 </label>
-                <div className='flex gap-2 items-center mt-1'>
+                <div className='mt-1 flex items-center gap-2'>
                   <input
                     type='number'
                     value={slippageTolerance}
@@ -4496,43 +4518,51 @@ export default function CookbookPage() {
                     <button
                       type='button'
                       onClick={() => setSlippageTolerance('5')}
-                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '5' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '5' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
                     >
                       5%
                     </button>
                     <button
                       type='button'
                       onClick={() => setSlippageTolerance('10')}
-                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '10' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '10' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
                     >
                       10%
                     </button>
                     <button
                       type='button'
                       onClick={() => setSlippageTolerance('15')}
-                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '15' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '15' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
                     >
                       15%
                     </button>
                     <button
                       type='button'
                       onClick={() => setSlippageTolerance('50')}
-                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '50' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}
-                      title="Disables slippage protection - use with caution!"
+                      className={`rounded px-2 py-1 text-xs ${slippageTolerance === '50' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}
+                      title='Disables slippage protection - use with caution!'
                     >
                       Max
                     </button>
                   </div>
                 </div>
-                                 <p className='text-xs text-purple-600 mt-1'>
-                   Higher slippage = more likely to succeed but potentially worse price.
-                   {slippageTolerance && Number(slippageTolerance) > 10 && (
-                     <span className='text-yellow-600 font-medium'> ⚠️ High slippage warning!</span>
-                   )}
-                   {swapDirection === 'USDC_TO_PYUSD' && Number(slippageTolerance) < 15 && (
-                     <span className='text-blue-600 font-medium'> 💡 Tip: USDC→PYUSD often needs 15%+ slippage</span>
-                   )}
-                 </p>
+                <p className='mt-1 text-xs text-purple-600'>
+                  Higher slippage = more likely to succeed but potentially worse
+                  price.
+                  {slippageTolerance && Number(slippageTolerance) > 10 && (
+                    <span className='font-medium text-yellow-600'>
+                      {' '}
+                      ⚠️ High slippage warning!
+                    </span>
+                  )}
+                  {swapDirection === 'USDC_TO_PYUSD' &&
+                    Number(slippageTolerance) < 15 && (
+                      <span className='font-medium text-blue-600'>
+                        {' '}
+                        💡 Tip: USDC→PYUSD often needs 15%+ slippage
+                      </span>
+                    )}
+                </p>
               </div>
             </div>
             <button
@@ -4545,7 +4575,10 @@ export default function CookbookPage() {
                   : poolData.metaMaskUSDCBalance < Number(swapAmount))
               }
             >
-              🔄 Swap {swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD → USDC' : 'USDC → PYUSD'}
+              🔄 Swap{' '}
+              {swapDirection === 'PYUSD_TO_USDC'
+                ? 'PYUSD → USDC'
+                : 'USDC → PYUSD'}
             </button>
             <div className='mt-2'>
               <p className='text-sm text-purple-700'>
