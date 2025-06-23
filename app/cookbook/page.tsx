@@ -171,7 +171,7 @@ export default function CookbookPage() {
                 args: [metamaskWallet.address as `0x${string}`, BigInt(i)],
               }) as bigint;
 
-              console.log(`📍 Position ${i + 1} - Token ID: ${tokenId}`);
+                            console.log(`📍 Position ${i + 1} - Token ID: ${tokenId}`);
 
               // Get position details
               const position = await publicClient.readContract({
@@ -185,9 +185,20 @@ export default function CookbookPage() {
               const token0Address = position[2];
               const token1Address = position[3];
               const fee = position[4];
+              const tickLower = position[5];
+              const tickUpper = position[6];
               const liquidity = position[7];
               const tokensOwed0 = position[10];
               const tokensOwed1 = position[11];
+
+              console.log(`🔍 Position ${i + 1} Details:`);
+              console.log(`   Token0: ${token0Address}`);
+              console.log(`   Token1: ${token1Address}`);
+              console.log(`   Fee: ${fee}`);
+              console.log(`   TickLower: ${tickLower}, TickUpper: ${tickUpper}`);
+              console.log(`   Liquidity: ${liquidity.toString()}`);
+              console.log(`   TokensOwed0 (fees): ${tokensOwed0.toString()}`);
+              console.log(`   TokensOwed1 (fees): ${tokensOwed1.toString()}`);
 
               // Check if this is our PYUSD/USDC pool
               const isOurPool = (
@@ -197,18 +208,103 @@ export default function CookbookPage() {
                  token1Address.toLowerCase() === USDC_TOKEN.address.toLowerCase())
               ) && fee === PYUSD_USDC_POOL.fee;
 
+              console.log(`   Is our PYUSD/USDC pool: ${isOurPool}`);
+
               if (isOurPool && Number(liquidity) > 0) {
-                // Calculate approximate position value
-                // For simplicity, assume roughly equal split between tokens
-                const token0Amount = Number(tokensOwed0) / Math.pow(10, 6); // Both tokens have 6 decimals
-                const token1Amount = Number(tokensOwed1) / Math.pow(10, 6);
+                try {
+                  // Get current pool state to calculate position value
+                  const poolSlot0 = await publicClient.readContract({
+                    address: PYUSD_USDC_POOL.address as `0x${string}`,
+                    abi: [
+                      {
+                        inputs: [],
+                        name: 'slot0',
+                        outputs: [
+                          { name: 'sqrtPriceX96', type: 'uint160' },
+                          { name: 'tick', type: 'int24' },
+                          { name: 'observationIndex', type: 'uint16' },
+                          { name: 'observationCardinality', type: 'uint16' },
+                          { name: 'observationCardinalityNext', type: 'uint16' },
+                          { name: 'feeProtocol', type: 'uint8' },
+                          { name: 'unlocked', type: 'bool' }
+                        ],
+                        stateMutability: 'view',
+                        type: 'function',
+                      }
+                    ],
+                    functionName: 'slot0',
+                  }) as readonly [bigint, number, number, number, number, number, boolean];
 
-                // Rough USD value (assuming USDC ≈ $1, PYUSD ≈ $1)
-                const positionValueUSD = token0Amount + token1Amount;
-                totalValueUSD += positionValueUSD;
+                  const currentTick = poolSlot0[1];
+                  const sqrtPriceX96 = poolSlot0[0];
 
-                console.log(`💰 Position ${i + 1} value: ~$${positionValueUSD.toFixed(2)} USD`);
-                console.log(`   Token0: ${token0Amount.toFixed(4)}, Token1: ${token1Amount.toFixed(4)}`);
+                  console.log(`   Current pool tick: ${currentTick}`);
+                  console.log(`   Current sqrtPriceX96: ${sqrtPriceX96.toString()}`);
+
+                  // Simple approximation for position value
+                  // For full-range positions or when current tick is within range
+                  if (currentTick >= tickLower && currentTick <= tickUpper) {
+                    // Position is in range - has both tokens
+                    // Use a simplified calculation based on liquidity
+                    // This is a rough approximation - real calculation is complex
+
+                    // Convert liquidity to approximate token amounts
+                    // For stablecoin pairs around 1:1 ratio, this should be roughly equal
+                    const liquidityNum = Number(liquidity);
+                    const approxTokenValue = liquidityNum / Math.pow(10, 18); // Rough conversion
+
+                    // Split roughly equally between tokens for stablecoin pairs
+                    const token0Amount = approxTokenValue / 2;
+                    const token1Amount = approxTokenValue / 2;
+
+                    console.log(`   Liquidity-based calculation:`);
+                    console.log(`   Raw liquidity: ${liquidityNum}`);
+                    console.log(`   Approx token0: ${token0Amount.toFixed(6)}`);
+                    console.log(`   Approx token1: ${token1Amount.toFixed(6)}`);
+
+                    // Rough USD value (assuming USDC ≈ $1, PYUSD ≈ $1)
+                    const positionValueUSD = token0Amount + token1Amount;
+                    totalValueUSD += positionValueUSD;
+
+                    console.log(`💰 Position ${i + 1} value: ~$${positionValueUSD.toFixed(2)} USD`);
+                  } else {
+                    // Position is out of range - only has one token
+                    console.log(`   Position is out of range (tick ${currentTick} not between ${tickLower} and ${tickUpper})`);
+
+                    // Still try to estimate value from liquidity
+                    const liquidityNum = Number(liquidity);
+                    if (liquidityNum > 0) {
+                      const approxValue = liquidityNum / Math.pow(10, 18);
+                      totalValueUSD += approxValue;
+                      console.log(`💰 Position ${i + 1} (out of range) value: ~$${approxValue.toFixed(2)} USD`);
+                    }
+                  }
+
+                  // Also check unclaimed fees
+                  const feeAmount0 = Number(tokensOwed0) / Math.pow(10, 6);
+                  const feeAmount1 = Number(tokensOwed1) / Math.pow(10, 6);
+                  const totalFees = feeAmount0 + feeAmount1;
+
+                  if (totalFees > 0) {
+                    console.log(`💸 Position ${i + 1} unclaimed fees: $${totalFees.toFixed(4)} USD`);
+                    totalValueUSD += totalFees; // Add fees to total value
+                  }
+
+                } catch (poolStateError) {
+                  console.warn(`⚠️ Could not read pool state for position ${i + 1}:`, poolStateError);
+
+                  // Fallback: just use liquidity as a rough estimate
+                  const liquidityNum = Number(liquidity);
+                  if (liquidityNum > 0) {
+                    const roughValue = liquidityNum / Math.pow(10, 18);
+                    totalValueUSD += roughValue;
+                    console.log(`💰 Position ${i + 1} (fallback) value: ~$${roughValue.toFixed(2)} USD`);
+                  }
+                }
+              } else if (!isOurPool) {
+                console.log(`   Skipping position ${i + 1} - not our PYUSD/USDC pool`);
+              } else {
+                console.log(`   Skipping position ${i + 1} - no liquidity`);
               }
             } catch (positionError) {
               console.warn(`⚠️ Could not read position ${i + 1}:`, positionError);
