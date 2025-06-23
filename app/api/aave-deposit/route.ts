@@ -5,9 +5,8 @@ import {
   fetchAndVerifyAuthorizationAppRouter,
 } from '@/lib/server-utils';
 
-const client = createPrivyClient();
-
 export async function POST(request: NextRequest) {
+  const client = createPrivyClient();
   const errorOrVerifiedClaims = await fetchAndVerifyAuthorizationAppRouter(
     request,
     client
@@ -33,6 +32,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
+      );
+    }
+
+    // Check if wallet API is available
+    if (!client.walletApi) {
+      return NextResponse.json(
+        {
+          error:
+            'Wallet API not configured. Please set SESSION_SIGNER_SECRET environment variable.',
+        },
+        { status: 503 }
       );
     }
 
