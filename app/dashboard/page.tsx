@@ -2,14 +2,10 @@
 
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
-import { AlertCircle, ArrowRight, Award, CheckCircle, Copy, Edit3, Globe, Shield, Zap } from 'lucide-react';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
-import { encodeFunctionData } from 'viem';
-import { usePrivy } from '@privy-io/react-auth';
 import { ArrowRight, Edit3, Globe, User, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
+import { encodeFunctionData } from 'viem';
 
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { SmartWalletCard } from '@/components/SmartWalletCard';
@@ -17,7 +13,14 @@ import { NetworkSelector } from '@/components/ui/network-selector';
 
 // Custom Verified Icon Component
 const VerifiedIcon = ({ className }: { className?: string }) => (
-  <svg viewBox='0 0 24 24' width='1.2em' height='1.2em' className={className}>
+  <svg
+    viewBox='0 0 24 24'
+    width='1.2em'
+    height='1.2em'
+    className={className}
+    aria-label='Verified'
+  >
+    <title>Verified</title>
     <g
       fill='none'
       stroke='currentColor'
@@ -25,8 +28,8 @@ const VerifiedIcon = ({ className }: { className?: string }) => (
       strokeLinejoin='round'
       strokeWidth='2'
     >
-      <path d='M3.85 8.62a4 4 0 0 1 4.78-4.77a4 4 0 0 1 6.74 0a4 4 0 0 1 4.78 4.78a4 4 0 0 1 0 6.74a4 4 0 0 1-4.77 4.78a4 4 0 0 1-6.75 0a4 4 0 0 1-4.78-4.77a4 4 0 0 1 0-6.76'></path>
-      <path d='m9 12l2 2l4-4'></path>
+      <path d='M3.85 8.62a4 4 0 0 1 4.78-4.77a4 4 0 0 1 6.74 0a4 4 0 0 1 4.78 4.78a4 4 0 0 1 0 6.74a4 4 0 0 1-4.77 4.78a4 4 0 0 1-6.75 0a4 4 0 0 1-4.78-4.77a4 4 0 0 1 0-6.76' />
+      <path d='m9 12l2 2l4-4' />
     </g>
   </svg>
 );
@@ -53,7 +56,8 @@ const USDC_TOKEN_CONFIG = {
 // Uniswap V3 Configuration (Sepolia)
 const UNISWAP_CONFIG = {
   ROUTER_ADDRESS: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as const,
-  POSITION_MANAGER_ADDRESS: '0x1238536071E1c677A632429e3655c799b22cDA52' as const,
+  POSITION_MANAGER_ADDRESS:
+    '0x1238536071E1c677A632429e3655c799b22cDA52' as const,
   PYUSD_USDC_POOL: {
     address: '0x1eA26f380A71E15E75E61c6D66B4242c1f652FEd' as const,
     fee: 3000, // 0.3%
@@ -178,7 +182,7 @@ const formatPyusdBalance = (balance: bigint): string => {
 };
 
 export default function PyUSDYieldSelector() {
-  const { user } = usePrivy();
+  const { user, authenticated, ready } = usePrivy();
   const { wallets } = useWallets();
   const { client } = useSmartWallets();
   const [conservativeAmount, setConservativeAmount] = useState('');
@@ -192,8 +196,10 @@ export default function PyUSDYieldSelector() {
   const [growthVaultBalance, setGrowthVaultBalance] = useState('0.00');
   const [investmentStatus, setInvestmentStatus] = useState('');
 
-  // KYC state management
-  const [kycStatus, setKycStatus] = useState<'not_started' | 'passed' | 'claimed'>('not_started');
+  // KYC state management - commented out as not currently used
+  // const [kycStatus, setKycStatus] = useState<
+  //   'not_started' | 'passed' | 'claimed'
+  // >('not_started');
 
   // Find smart wallet from linked accounts
   const smartWallet = user?.linkedAccounts?.find(
@@ -207,20 +213,6 @@ export default function PyUSDYieldSelector() {
     wallet => wallet.walletClientType === 'metamask'
   );
 
-  // Mock KYC status - in real app this would come from backend
-  useEffect(() => {
-    if (user?.id) {
-      // Mock logic - simulate different states based on user ID
-      const userId = user.id;
-      if (userId.endsWith('1') || userId.endsWith('2')) {
-        setKycStatus('passed');
-      } else if (userId.endsWith('3') || userId.endsWith('4')) {
-        setKycStatus('claimed');
-      } else {
-        setKycStatus('not_started');
-      }
-    })
- 
   // Onboarding and smart wallet states
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [smartWalletBalance, setSmartWalletBalance] = useState('0');
@@ -229,13 +221,25 @@ export default function PyUSDYieldSelector() {
   const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false);
   const [isDepositFlow, setIsDepositFlow] = useState(false);
 
-  // Privy hooks
-  const { user, authenticated, ready } = usePrivy();
+  // Mock KYC status - in real app this would come from backend - commented out as not currently used
+  // useEffect(() => {
+  //   if (user?.id) {
+  //     // Mock logic - simulate different states based on user ID
+  //     const userId = user.id;
+  //     if (userId.endsWith('1') || userId.endsWith('2')) {
+  //       setKycStatus('passed');
+  //     } else if (userId.endsWith('3') || userId.endsWith('4')) {
+  //       setKycStatus('claimed');
+  //     } else {
+  //       setKycStatus('not_started');
+  //     }
+  //   }
+  // }, [user]);
 
-  // Get smart wallet from user's linked accounts
-  const smartWallet = user?.linkedAccounts?.find(
-    (account: any) => account.type === 'smart_wallet'
-  ) as { address: string } | undefined;
+  // // Get smart wallet from user's linked accounts
+  // const smartWallet = user?.linkedAccounts?.find(
+  //   (account: any) => account.type === 'smart_wallet'
+  // ) as { address: string } | undefined;
 
   // Function to fetch PYUSD balance for MetaMask wallet
   const fetchMetaMaskBalance = useCallback(async () => {
@@ -303,15 +307,8 @@ export default function PyUSDYieldSelector() {
     }
   }, [user]);
 
-  // Check Growth Vault balance on component mount and when smart wallet changes
-  useEffect(() => {
-    if (smartWallet && client) {
-      checkGrowthVaultBalance();
-    }
-  }, [smartWallet, client]);
-
-    // Function to check Growth Vault balance (LP token balance)
-  const checkGrowthVaultBalance = async () => {
+  // Function to check Growth Vault balance (LP token balance)
+  const checkGrowthVaultBalance = useCallback(async () => {
     if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
       console.log('Must be on Sepolia network with smart wallet');
       return;
@@ -329,12 +326,12 @@ export default function PyUSDYieldSelector() {
       });
 
       // Check how many NFT positions the smart wallet has in the Position Manager
-      const nftBalance = await publicClient.readContract({
+      const nftBalance = (await publicClient.readContract({
         address: UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS,
         abi: UNISWAP_V3_POSITION_MANAGER_ABI,
         functionName: 'balanceOf',
         args: [smartWallet.address as `0x${string}`],
-      }) as bigint;
+      })) as bigint;
 
       console.log('Smart wallet NFT positions:', nftBalance.toString());
 
@@ -348,7 +345,14 @@ export default function PyUSDYieldSelector() {
       console.error('Error checking Growth Vault balance:', error);
       setGrowthVaultBalance('0');
     }
-  };
+  }, [client, smartWallet]);
+
+  // Check Growth Vault balance on component mount and when smart wallet changes
+  useEffect(() => {
+    if (smartWallet && client) {
+      checkGrowthVaultBalance();
+    }
+  }, [smartWallet, client, checkGrowthVaultBalance]);
 
   // Function to check smart wallet PYUSD balance
   const checkSmartWalletBalance = async (): Promise<bigint> => {
@@ -495,8 +499,11 @@ export default function PyUSDYieldSelector() {
     return swapTx;
   };
 
-    // Function to add liquidity to the pool
-  const addLiquidityToPool = async (pyusdAmount: bigint, usdcAmount: bigint) => {
+  // Function to add liquidity to the pool
+  const addLiquidityToPool = async (
+    pyusdAmount: bigint,
+    usdcAmount: bigint
+  ) => {
     if (!client || !smartWallet) {
       throw new Error('Smart wallet client not available');
     }
@@ -536,9 +543,15 @@ export default function PyUSDYieldSelector() {
     await new Promise(resolve => setTimeout(resolve, 8000));
 
     // Determine correct token order (token0 < token1 by address)
-    const isUSDCToken0 = USDC_TOKEN_CONFIG.address.toLowerCase() < PYUSD_TOKEN_CONFIG.address.toLowerCase();
-    const token0Address = isUSDCToken0 ? USDC_TOKEN_CONFIG.address : PYUSD_TOKEN_CONFIG.address;
-    const token1Address = isUSDCToken0 ? PYUSD_TOKEN_CONFIG.address : USDC_TOKEN_CONFIG.address;
+    const isUSDCToken0 =
+      USDC_TOKEN_CONFIG.address.toLowerCase() <
+      PYUSD_TOKEN_CONFIG.address.toLowerCase();
+    const token0Address = isUSDCToken0
+      ? USDC_TOKEN_CONFIG.address
+      : PYUSD_TOKEN_CONFIG.address;
+    const token1Address = isUSDCToken0
+      ? PYUSD_TOKEN_CONFIG.address
+      : USDC_TOKEN_CONFIG.address;
 
     // Assign amounts according to token order
     const amount0Desired = isUSDCToken0 ? usdcAmount : pyusdAmount;
@@ -564,7 +577,7 @@ export default function PyUSDYieldSelector() {
       amount1Desired,
       amount0Min: (amount0Desired * 95n) / 100n, // 5% slippage tolerance
       amount1Min: (amount1Desired * 95n) / 100n, // 5% slippage tolerance
-      recipient: smartWallet.address,
+      recipient: smartWallet.address as `0x${string}`,
       deadline,
     };
 
@@ -646,7 +659,7 @@ export default function PyUSDYieldSelector() {
       });
 
       // If they have a balance, show smart wallet view
-      if (parseFloat(formattedBalance) > 0) {
+      if (Number.parseFloat(formattedBalance) > 0) {
         setShowSmartWallet(true);
       }
     } catch (error) {
@@ -668,7 +681,6 @@ export default function PyUSDYieldSelector() {
   // Yield toggle states
   const [conservativeYieldEnabled, setConservativeYieldEnabled] =
     useState(false);
-  const [growthYieldEnabled, setGrowthYieldEnabled] = useState(false);
 
   // Check onboarding status - only show for truly new users
   useEffect(() => {
@@ -761,8 +773,9 @@ export default function PyUSDYieldSelector() {
     console.log('MetaMask balance string:', balances.metaMask);
 
     const smartWalletNum =
-      parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
-    const metaMaskNum = parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
+      Number.parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
+    const metaMaskNum =
+      Number.parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
 
     console.log('Smart Wallet parsed number:', smartWalletNum);
     console.log('MetaMask parsed number:', metaMaskNum);
@@ -782,7 +795,10 @@ export default function PyUSDYieldSelector() {
   };
 
   const handleConservativeCustomSubmit = () => {
-    if (conservativeCustomValue && parseFloat(conservativeCustomValue) > 0) {
+    if (
+      conservativeCustomValue &&
+      Number.parseFloat(conservativeCustomValue) > 0
+    ) {
       setConservativeAmount(conservativeCustomValue);
       setShowConservativeCustom(false);
       setConservativeCustomValue('');
@@ -790,7 +806,7 @@ export default function PyUSDYieldSelector() {
   };
 
   const handleGrowthCustomSubmit = () => {
-    if (growthCustomValue && parseFloat(growthCustomValue) > 0) {
+    if (growthCustomValue && Number.parseFloat(growthCustomValue) > 0) {
       setGrowthAmount(growthCustomValue);
       setShowGrowthCustom(false);
       setGrowthCustomValue('');
@@ -823,7 +839,9 @@ export default function PyUSDYieldSelector() {
         Number(growthAmount) * 10 ** PYUSD_TOKEN_CONFIG.decimals
       );
 
-      console.log(`Investing ${growthAmount} PYUSD (${investmentAmountWei} wei) in Growth Vault`);
+      console.log(
+        `Investing ${growthAmount} PYUSD (${investmentAmountWei} wei) in Growth Vault`
+      );
 
       // Step 1: Check if MetaMask has PYUSD and transfer to smart wallet if needed
       if (metamaskWallet) {
@@ -839,12 +857,12 @@ export default function PyUSDYieldSelector() {
           ),
         });
 
-        const metamaskBalance = await publicClient.readContract({
+        const metamaskBalance = (await publicClient.readContract({
           address: PYUSD_TOKEN_CONFIG.address,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
           args: [metamaskWallet.address as `0x${string}`],
-        }) as bigint;
+        })) as bigint;
 
         console.log('MetaMask PYUSD balance:', metamaskBalance.toString());
 
@@ -895,10 +913,11 @@ export default function PyUSDYieldSelector() {
         setInvestmentStatus('');
         setGrowthSliding(false);
       }, 3000);
-
     } catch (error) {
       console.error('Investment failed:', error);
-      setInvestmentStatus(`Investment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setInvestmentStatus(
+        `Investment failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
 
       setTimeout(() => {
         setInvestmentStatus('');
@@ -1309,7 +1328,8 @@ export default function PyUSDYieldSelector() {
                 </div>
                 {smartWallet && (
                   <div className='mt-2 text-xs text-gray-500'>
-                    Smart Wallet: {smartWallet.address.slice(0, 6)}...{smartWallet.address.slice(-4)}
+                    Smart Wallet: {smartWallet.address.slice(0, 6)}...
+                    {smartWallet.address.slice(-4)}
                   </div>
                 )}
               </div>
