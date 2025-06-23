@@ -1,6 +1,6 @@
 import {
-    createPrivyClient,
-    fetchAndVerifyAuthorizationAppRouter,
+  createPrivyClient,
+  fetchAndVerifyAuthorizationAppRouter,
 } from '@/lib/server-utils';
 import { NextRequest, NextResponse } from 'next/server';
 
