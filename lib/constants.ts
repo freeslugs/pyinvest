@@ -30,13 +30,13 @@ export const NETWORKS = {
 export const TOKENS = {
   [NETWORKS.SEPOLIA.id]: {
     PYUSD: {
-      address: '0x2d5fA65fd978E4533FE6876cc19A26A285e81f72' as const,
-      decimals: 18, // Most testnet tokens use 18 decimals
+      address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
+      decimals: 6, // From your balance showing 9.000001 PYUSD
       symbol: 'PYUSD',
       name: 'PayPal USD (Testnet)',
     },
     USDC: {
-      address: '0x703bd35f91bc3947aaC70B4b0c560Bee5F06F84c' as const,
+      address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238' as const,
       decimals: 6, // USDC typically uses 6 decimals
       symbol: 'USDC',
       name: 'USD Coin (Testnet)',
@@ -141,27 +141,18 @@ export const UNISWAP_V3_POOL_ABI = [
   },
 ] as const;
 
-// Uniswap V3 Router ABI (simplified for swaps and liquidity)
+
+
+// Uniswap V3 Router ABI (Universal Router)
 export const UNISWAP_V3_ROUTER_ABI = [
   {
     inputs: [
-      {
-        components: [
-          { name: 'tokenIn', type: 'address' },
-          { name: 'tokenOut', type: 'address' },
-          { name: 'fee', type: 'uint24' },
-          { name: 'recipient', type: 'address' },
-          { name: 'deadline', type: 'uint256' },
-          { name: 'amountIn', type: 'uint256' },
-          { name: 'amountOutMinimum', type: 'uint256' },
-          { name: 'sqrtPriceLimitX96', type: 'uint256' },
-        ],
-        name: 'params',
-        type: 'tuple',
-      },
+      { name: 'commands', type: 'bytes' },
+      { name: 'inputs', type: 'bytes[]' },
+      { name: 'deadline', type: 'uint256' },
     ],
-    name: 'exactInputSingle',
-    outputs: [{ name: 'amountOut', type: 'uint256' }],
+    name: 'execute',
+    outputs: [],
     stateMutability: 'payable',
     type: 'function',
   },
@@ -240,7 +231,7 @@ export const UNISWAP_V3_POSITION_MANAGER_ABI = [
 
 // Uniswap V3 contract addresses on Sepolia
 export const UNISWAP_V3_ROUTER_ADDRESS =
-  '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E' as const;
+  '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as const; // Universal Router
 export const UNISWAP_V3_POSITION_MANAGER_ADDRESS =
   '0x1238536071E1c677A632429e3655c799b22cDA52' as const;
 export const UNISWAP_V3_FACTORY_ADDRESS =

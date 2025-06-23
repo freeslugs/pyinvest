@@ -67,7 +67,7 @@ export default function CookbookPage() {
       console.log('📍 MetaMask address:', metamaskWallet.address);
       console.log('📍 PYUSD token:', PYUSD_TOKEN.address);
       console.log('📍 USDC token:', USDC_TOKEN.address);
-      console.log('📍 Router address:', UNISWAP_V3_ROUTER_ADDRESS);
+      console.log('📍 Universal Router address:', UNISWAP_V3_ROUTER_ADDRESS);
       console.log('📍 Position Manager:', UNISWAP_V3_POSITION_MANAGER_ADDRESS);
 
       // Create viem public client
@@ -103,8 +103,8 @@ export default function CookbookPage() {
       const usdcBalanceFormatted = Number(usdcBalance) / Math.pow(10, USDC_TOKEN.decimals);
       console.log(`✅ USDC Balance: ${usdcBalanceFormatted} USDC`);
 
-      // Check router allowance for PYUSD
-      console.log('🔐 Checking router allowance for PYUSD...');
+      // Check Universal Router allowance for PYUSD
+      console.log('🔐 Checking Universal Router allowance for PYUSD...');
       const routerAllowance = await publicClient.readContract({
         address: PYUSD_TOKEN.address as `0x${string}`,
         abi: ERC20_ABI,
@@ -331,24 +331,52 @@ export default function CookbookPage() {
        console.log(`  - Amount In: ${swapParams.amountIn.toString()} wei (${Number(swapParams.amountIn) / Math.pow(10, PYUSD_TOKEN.decimals)} tokens)`);
        console.log(`  - Min Amount Out: ${swapParams.amountOutMinimum.toString()} wei (${Number(swapParams.amountOutMinimum) / Math.pow(10, USDC_TOKEN.decimals)} tokens)`);
 
-       // Encode the swap call
-       const swapCalldata = encodeFunctionData({
-         abi: UNISWAP_V3_ROUTER_ABI,
-         functionName: 'exactInputSingle',
-         args: [swapParams],
-       });
+       // Encode V3_SWAP_EXACT_IN command (0x00) for Universal Router
+       const { encodeAbiParameters } = await import('viem');
 
-       console.log('📞 Swap calldata:', swapCalldata);
-       console.log('📞 Router address:', UNISWAP_V3_ROUTER_ADDRESS);
+       // Command 0x00 = V3_SWAP_EXACT_IN
+       const commands = '0x00';
+
+       // Encode the swap input parameters for V3_SWAP_EXACT_IN
+       const swapInput = encodeAbiParameters(
+         [
+           { name: 'recipient', type: 'address' },
+           { name: 'amountIn', type: 'uint256' },
+           { name: 'amountOutMinimum', type: 'uint256' },
+           { name: 'path', type: 'bytes' },
+           { name: 'payerIsUser', type: 'bool' },
+         ],
+         [
+           metamaskWallet.address as `0x${string}`,
+           swapAmountWei,
+           amountOutMinimum,
+           // Encode path: token0 + fee + token1 (packed format)
+           `0x${PYUSD_TOKEN.address.slice(2)}${PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${USDC_TOKEN.address.slice(2)}` as `0x${string}`,
+           true, // User pays input token
+         ]
+       );
+
+       console.log('📞 Universal Router command:', commands);
+       console.log('📞 Swap input data:', swapInput);
+
+               // Encode the Universal Router execute call
+        const executeCalldata = encodeFunctionData({
+          abi: UNISWAP_V3_ROUTER_ABI,
+          functionName: 'execute',
+          args: [commands as `0x${string}`, [swapInput], deadline],
+        });
+
+       console.log('📞 Execute calldata:', executeCalldata);
+       console.log('📞 Universal Router address:', UNISWAP_V3_ROUTER_ADDRESS);
 
        // Execute swap transaction
-       console.log('🚀 Executing swap transaction...');
+       console.log('🚀 Executing Universal Router swap transaction...');
        const swapTx = await provider.request({
          method: 'eth_sendTransaction',
          params: [{
            from: metamaskWallet.address,
            to: UNISWAP_V3_ROUTER_ADDRESS,
-           data: swapCalldata,
+           data: executeCalldata,
            gas: '0x7A120', // 500k gas limit
          }],
        });
