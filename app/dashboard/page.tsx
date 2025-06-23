@@ -404,7 +404,10 @@ export default function PyUSDYieldSelector() {
               </div>
               <div className='flex-1'>
                 <h1 className='text-3xl font-medium leading-tight tracking-tight text-gray-900'>
-                  PyInvest
+                  PyInvest{' '}
+                  <span className='text-sm font-normal text-gray-400'>
+                    by Fellow
+                  </span>
                 </h1>
               </div>
             </div>
@@ -520,6 +523,14 @@ export default function PyUSDYieldSelector() {
               </div>
               <span>Deposit</span>
             </button>
+
+            {/* Analytics Button */}
+            <a
+              href='/analytics'
+              className='flex w-full items-center justify-center space-x-2 rounded-xl border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50'
+            >
+              <span>View Potential Returns</span>
+            </a>
           </div>
         )}
 
