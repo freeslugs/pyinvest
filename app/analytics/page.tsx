@@ -4,6 +4,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
 import YieldProjectionChart from '../../components/YieldProjectionChart';
 
 interface VaultOption {

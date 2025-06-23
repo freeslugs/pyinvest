@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -38,8 +38,6 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
   className = '',
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'1Y' | '2Y' | '3Y'>('1Y');
-  const [animationComplete, setAnimationComplete] = useState(false);
-  const [hoveredData, setHoveredData] = useState<DataPoint | null>(null);
 
   // Calculate compound interest data
   const calculateYieldData = (years: number): DataPoint[] => {
@@ -99,7 +97,7 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
   };
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -124,10 +122,7 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
     return null;
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimationComplete(true), 1000);
-    return () => clearTimeout(timer);
-  }, [selectedPeriod]);
+
 
   return (
     <motion.div
