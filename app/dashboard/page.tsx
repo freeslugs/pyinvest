@@ -1,6 +1,14 @@
 'use client';
 
-import { ArrowRight, CheckCircle, Copy, Edit3, Shield, TrendingUp, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle,
+  Copy,
+  Edit3,
+  Shield,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -34,7 +42,7 @@ const formatPyusdBalance = (balance: bigint): string => {
   const balanceNumber = Number(balance) / 10 ** PYUSD_TOKEN_CONFIG.decimals;
   return balanceNumber.toLocaleString('en-US', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
   });
 };
 
@@ -48,7 +56,7 @@ export default function PyUSDYieldSelector() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [balances, setBalances] = useState<WalletBalance>({
     venmo: '0',
-    coinbase: '4,200.00' // Hardcoded for now
+    coinbase: '4,200.00', // Hardcoded for now
   });
 
   // Load Venmo address from localStorage on component mount
@@ -126,7 +134,9 @@ export default function PyUSDYieldSelector() {
         console.log('PYUSD contract verified - bytecode found');
       } catch (contractError) {
         console.error('Contract verification failed:', contractError);
-        throw new Error(`PYUSD contract verification failed: ${contractError instanceof Error ? contractError.message : 'Unknown error'}`);
+        throw new Error(
+          `PYUSD contract verification failed: ${contractError instanceof Error ? contractError.message : 'Unknown error'}`
+        );
       }
 
       // Fetch PYUSD balance
@@ -144,19 +154,19 @@ export default function PyUSDYieldSelector() {
 
       setBalances(prev => ({
         ...prev,
-        venmo: formattedBalance
+        venmo: formattedBalance,
       }));
-
     } catch (error) {
       console.error('Error fetching Venmo PYUSD balance:', error);
       // Set balance to 0 on error but show error message
       setBalances(prev => ({
         ...prev,
-        venmo: '0'
+        venmo: '0',
       }));
 
       // Show user-friendly error message
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       alert(`Failed to fetch PYUSD balance: ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -169,7 +179,7 @@ export default function PyUSDYieldSelector() {
     const coinbaseNum = parseFloat(balances.coinbase.replace(/,/g, '')) || 0;
     return (venmoNum + coinbaseNum).toLocaleString('en-US', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   };
 
@@ -202,7 +212,6 @@ export default function PyUSDYieldSelector() {
         setShowSuccess(false);
         setVenmoInputValue('');
       }, 2000);
-
     } catch (error) {
       console.error('Error saving Venmo address:', error);
       alert('Error saving address. Please try again.');
@@ -238,8 +247,12 @@ export default function PyUSDYieldSelector() {
           <div className='p-6'>
             <p className='mb-2 text-sm text-gray-500'>Amount</p>
             <div className='mb-1 flex items-center space-x-2'>
-              <span className='text-4xl font-light text-gray-300 font-adelle'>$</span>
-              <p className='text-4xl font-medium text-gray-800 font-adelle'>{totalBalance()}</p>
+              <span className='font-adelle text-4xl font-light text-gray-300'>
+                $
+              </span>
+              <p className='font-adelle text-4xl font-medium text-gray-800'>
+                {totalBalance()}
+              </p>
               <Image
                 src='/assets/pyusd_logo.png'
                 alt='pyUSD logo'
@@ -289,7 +302,9 @@ export default function PyUSDYieldSelector() {
                     />
                     <span className='text-sm text-gray-500'>Coinbase</span>
                   </div>
-                  <span className='text-sm text-gray-500'>${balances.coinbase}</span>
+                  <span className='text-sm text-gray-500'>
+                    ${balances.coinbase}
+                  </span>
                 </div>
               </div>
             </div>
@@ -306,86 +321,99 @@ export default function PyUSDYieldSelector() {
               setShowSuccess(false);
             }
           }}
-          title="Configure Venmo Wallet"
+          title='Configure Venmo Wallet'
         >
           {showSuccess ? (
-            <div className="text-center">
-              <div className="mb-4 flex justify-center">
-                <CheckCircle className="h-16 w-16 text-green-500 animate-pulse" />
+            <div className='text-center'>
+              <div className='mb-4 flex justify-center'>
+                <CheckCircle className='h-16 w-16 animate-pulse text-green-500' />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className='mb-2 text-lg font-semibold text-gray-900'>
                 Success!
               </h3>
-              <p className="text-gray-600">
+              <p className='text-gray-600'>
                 Your Venmo wallet has been configured successfully.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                <h3 className='mb-3 text-lg font-semibold text-gray-900'>
                   How to get your Venmo Balance:
                 </h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">1</span>
+                <div className='space-y-2 text-sm text-gray-700'>
+                  <div className='flex items-start space-x-2'>
+                    <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                      1
+                    </span>
                     <p>Open your Venmo app and go to the Crypto section</p>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">2</span>
+                  <div className='flex items-start space-x-2'>
+                    <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                      2
+                    </span>
                     <p>Tap on PayPal USD at the top of the list of options</p>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">3</span>
-                    <p>Copy your Venmo PayPal wallet address (starts with 0x)</p>
+                  <div className='flex items-start space-x-2'>
+                    <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                      3
+                    </span>
+                    <p>
+                      Copy your Venmo PayPal wallet address (starts with 0x)
+                    </p>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">4</span>
+                  <div className='flex items-start space-x-2'>
+                    <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                      4
+                    </span>
                     <p>Paste the address below</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="venmo-address" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor='venmo-address'
+                  className='mb-2 block text-sm font-medium text-gray-700'
+                >
                   Venmo ETH Address
                 </label>
-                <div className="relative">
+                <div className='relative'>
                   <input
-                    id="venmo-address"
-                    type="text"
+                    id='venmo-address'
+                    type='text'
                     value={venmoInputValue}
-                    onChange={(e) => setVenmoInputValue(e.target.value)}
-                    placeholder="0x..."
+                    onChange={e => setVenmoInputValue(e.target.value)}
+                    placeholder='0x...'
                     disabled={isLoading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className='w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100'
                   />
                   {venmoInputValue && (
                     <button
                       onClick={() => copyToClipboard(venmoInputValue)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                      className='absolute right-2 top-1/2 -translate-y-1/2 transform p-1 text-gray-400 hover:text-gray-600'
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className='h-4 w-4' />
                     </button>
                   )}
                 </div>
               </div>
 
-              <div className="flex space-x-3 pt-4">
+              <div className='flex space-x-3 pt-4'>
                 <button
                   onClick={() => {
                     setIsVenmoModalOpen(false);
                     setVenmoInputValue('');
                   }}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className='flex-1 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleVenmoSubmit}
                   disabled={isLoading || !venmoInputValue.trim()}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className='flex-1 rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   {isLoading ? 'Saving...' : 'Save Address'}
                 </button>
@@ -441,10 +469,12 @@ export default function PyUSDYieldSelector() {
 
               {/* Amount Selection */}
               <div className='mb-4 space-y-3'>
-                <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
+                <div className='text-sm font-medium text-gray-900'>
+                  Select amount to invest
+                </div>
                 <div className='flex w-full gap-2'>
-                  <div role="radiogroup" className='flex w-full gap-2'>
-                    {['25', '50', '100', '250'].map((amount) => (
+                  <div role='radiogroup' className='flex w-full gap-2'>
+                    {['25', '50', '100', '250'].map(amount => (
                       <label
                         key={amount}
                         className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
@@ -454,21 +484,21 @@ export default function PyUSDYieldSelector() {
                         }`}
                       >
                         <input
-                          type="radio"
+                          type='radio'
                           value={amount}
                           checked={conservativeAmount === amount}
-                          onChange={(e) => setConservativeAmount(e.target.value)}
-                          className="sr-only"
+                          onChange={e => setConservativeAmount(e.target.value)}
+                          className='sr-only'
                         />
                         ${amount}
                       </label>
                     ))}
                   </div>
                   <button
-                    type="button"
-                    className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50"
+                    type='button'
+                    className='flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50'
                   >
-                    <Edit3 className="h-4 w-4" />
+                    <Edit3 className='h-4 w-4' />
                   </button>
                 </div>
               </div>
@@ -526,10 +556,12 @@ export default function PyUSDYieldSelector() {
 
               {/* Amount Selection */}
               <div className='mb-4 space-y-3'>
-                <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
+                <div className='text-sm font-medium text-gray-900'>
+                  Select amount to invest
+                </div>
                 <div className='flex w-full gap-2'>
-                  <div role="radiogroup" className='flex w-full gap-2'>
-                    {['25', '50', '100', '250'].map((amount) => (
+                  <div role='radiogroup' className='flex w-full gap-2'>
+                    {['25', '50', '100', '250'].map(amount => (
                       <label
                         key={amount}
                         className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
@@ -539,21 +571,21 @@ export default function PyUSDYieldSelector() {
                         }`}
                       >
                         <input
-                          type="radio"
+                          type='radio'
                           value={amount}
                           checked={growthAmount === amount}
-                          onChange={(e) => setGrowthAmount(e.target.value)}
-                          className="sr-only"
+                          onChange={e => setGrowthAmount(e.target.value)}
+                          className='sr-only'
                         />
                         ${amount}
                       </label>
                     ))}
                   </div>
                   <button
-                    type="button"
-                    className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50"
+                    type='button'
+                    className='flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50'
                   >
-                    <Edit3 className="h-4 w-4" />
+                    <Edit3 className='h-4 w-4' />
                   </button>
                 </div>
               </div>

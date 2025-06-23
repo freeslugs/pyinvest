@@ -41,7 +41,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className='fixed inset-0 z-50 flex items-center justify-center'>
       {/* Backdrop */}
       <div
         className={`fixed inset-0 bg-black transition-opacity duration-200 ${
@@ -51,21 +51,21 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
 
       {/* Modal */}
-      <div className={`relative z-10 w-full max-w-md mx-4 bg-white rounded-3xl shadow-xl transition-all duration-200 ${
-        isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-      }`}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      <div
+        className={`relative z-10 mx-4 w-full max-w-md rounded-3xl bg-white shadow-xl transition-all duration-200 ${
+          isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        }`}
+      >
+        <div className='flex items-center justify-between border-b border-gray-200 p-6'>
+          <h2 className='text-lg font-semibold text-gray-900'>{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            className='p-1 text-gray-400 transition-colors hover:text-gray-600'
           >
-            <X className="h-5 w-5" />
+            <X className='h-5 w-5' />
           </button>
         </div>
-        <div className="p-6">
-          {children}
-        </div>
+        <div className='p-6'>{children}</div>
       </div>
     </div>
   );

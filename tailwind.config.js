@@ -7,7 +7,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
-        'adelle': ['Adelle Sans', 'serif'],
+        adelle: ['Adelle Sans', 'serif'],
       },
       colors: {
         'privy-navy': '#160B45',
