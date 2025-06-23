@@ -20,6 +20,7 @@ interface PoolData {
   metaMaskUSDCBalance: number;
   routerAllowance: number;
   positionManagerAllowance: number;
+  positionManagerUSDCAllowance: number;
   poolLiquidity: string;
   swapStatus: string;
   liquidityStatus: string;
@@ -39,6 +40,7 @@ export default function CookbookPage() {
     metaMaskUSDCBalance: 0,
     routerAllowance: 0,
     positionManagerAllowance: 0,
+    positionManagerUSDCAllowance: 0,
     poolLiquidity: '0',
     swapStatus: 'Ready',
     liquidityStatus: 'Ready',
@@ -115,7 +117,7 @@ export default function CookbookPage() {
       const routerAllowanceFormatted = Number(routerAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
       console.log(`✅ Router Allowance: ${routerAllowanceFormatted} PYUSD`);
 
-      // Check position manager allowances
+      // Check position manager allowances for BOTH tokens
       console.log('🔐 Checking position manager allowances...');
       const pyusdPMAllowance = await publicClient.readContract({
         address: PYUSD_TOKEN.address as `0x${string}`,
@@ -124,8 +126,17 @@ export default function CookbookPage() {
         args: [metamaskWallet.address as `0x${string}`, UNISWAP_V3_POSITION_MANAGER_ADDRESS],
       }) as bigint;
 
-      const pmAllowanceFormatted = Number(pyusdPMAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      console.log(`✅ Position Manager Allowance: ${pmAllowanceFormatted} PYUSD`);
+      const usdcPMAllowance = await publicClient.readContract({
+        address: USDC_TOKEN.address as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [metamaskWallet.address as `0x${string}`, UNISWAP_V3_POSITION_MANAGER_ADDRESS],
+      }) as bigint;
+
+      const pyusdPMAllowanceFormatted = Number(pyusdPMAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
+      const usdcPMAllowanceFormatted = Number(usdcPMAllowance) / Math.pow(10, USDC_TOKEN.decimals);
+      console.log(`✅ Position Manager PYUSD Allowance: ${pyusdPMAllowanceFormatted} PYUSD`);
+      console.log(`✅ Position Manager USDC Allowance: ${usdcPMAllowanceFormatted} USDC`);
 
       // Update state
       setPoolData(prev => ({
@@ -133,7 +144,8 @@ export default function CookbookPage() {
         metaMaskPYUSDBalance: pyusdBalanceFormatted,
         metaMaskUSDCBalance: usdcBalanceFormatted,
         routerAllowance: routerAllowanceFormatted,
-        positionManagerAllowance: pmAllowanceFormatted,
+        positionManagerAllowance: pyusdPMAllowanceFormatted,
+        positionManagerUSDCAllowance: usdcPMAllowanceFormatted,
         error: undefined,
       }));
 
@@ -430,78 +442,118 @@ export default function CookbookPage() {
       console.log('🔄 === STARTING LIQUIDITY ADDITION ===');
       setPoolData(prev => ({ ...prev, liquidityStatus: 'Adding liquidity...' }));
 
-             // Switch to Sepolia
-       await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
+      // Switch to Sepolia
+      await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
 
-       // Get Ethereum provider
-       const provider = await metamaskWallet.getEthereumProvider();
+      // Get Ethereum provider
+      const provider = await metamaskWallet.getEthereumProvider();
 
-       // Calculate amounts
-       const amount0 = BigInt(Number(liquidityAmount) * Math.pow(10, PYUSD_TOKEN.decimals));
-       const amount1 = BigInt(Number(liquidityAmount) * Math.pow(10, USDC_TOKEN.decimals));
-       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+      console.log('🔍 === LIQUIDITY VALIDATION & SETUP ===');
+      console.log('📍 Wallet Address:', metamaskWallet.address);
+      console.log('📍 PYUSD Token:', PYUSD_TOKEN.address, `(${PYUSD_TOKEN.decimals} decimals)`);
+      console.log('📍 USDC Token:', USDC_TOKEN.address, `(${USDC_TOKEN.decimals} decimals)`);
+      console.log('📍 Pool Address:', PYUSD_USDC_POOL.address);
+      console.log('📍 Position Manager:', UNISWAP_V3_POSITION_MANAGER_ADDRESS);
 
-       console.log(`💰 Adding ${liquidityAmount} PYUSD and ${liquidityAmount} USDC`);
+      // Calculate amounts in wei
+      const pyusdAmountWei = BigInt(Number(liquidityAmount) * Math.pow(10, PYUSD_TOKEN.decimals));
+      const usdcAmountWei = BigInt(Number(liquidityAmount) * Math.pow(10, USDC_TOKEN.decimals));
 
-       // Define tick range (full range for simplicity)
-       const tickLower = -887270;
-       const tickUpper = 887270;
+      console.log(`💰 Desired amounts: ${liquidityAmount} PYUSD (${pyusdAmountWei} wei) and ${liquidityAmount} USDC (${usdcAmountWei} wei)`);
 
-       // Determine token order (token0 < token1)
-       const token0 = PYUSD_TOKEN.address.toLowerCase() < USDC_TOKEN.address.toLowerCase()
-         ? PYUSD_TOKEN.address : USDC_TOKEN.address;
-       const token1 = PYUSD_TOKEN.address.toLowerCase() < USDC_TOKEN.address.toLowerCase()
-         ? USDC_TOKEN.address : PYUSD_TOKEN.address;
+      // Determine correct token order (token0 < token1 by address)
+      const isUSDCToken0 = USDC_TOKEN.address.toLowerCase() < PYUSD_TOKEN.address.toLowerCase();
+      const token0Address = isUSDCToken0 ? USDC_TOKEN.address : PYUSD_TOKEN.address;
+      const token1Address = isUSDCToken0 ? PYUSD_TOKEN.address : USDC_TOKEN.address;
+      const token0Symbol = isUSDCToken0 ? 'USDC' : 'PYUSD';
+      const token1Symbol = isUSDCToken0 ? 'PYUSD' : 'USDC';
 
-       const amount0Desired = token0 === PYUSD_TOKEN.address ? amount0 : amount1;
-       const amount1Desired = token1 === PYUSD_TOKEN.address ? amount0 : amount1;
+      // Assign amounts according to token order
+      const amount0Desired = isUSDCToken0 ? usdcAmountWei : pyusdAmountWei;
+      const amount1Desired = isUSDCToken0 ? pyusdAmountWei : usdcAmountWei;
 
-       console.log('📋 Liquidity parameters:', {
-         token0,
-         token1,
-         fee: PYUSD_USDC_POOL.fee,
-         tickLower,
-         tickUpper,
-         amount0Desired: amount0Desired.toString(),
-         amount1Desired: amount1Desired.toString(),
-         deadline: deadline.toString(),
-       });
+      console.log('🔄 === TOKEN ORDERING ===');
+      console.log(`📍 Token0 (${token0Symbol}):`, token0Address);
+      console.log(`📍 Token1 (${token1Symbol}):`, token1Address);
+      console.log(`💰 Amount0Desired (${token0Symbol}):`, amount0Desired.toString(), 'wei');
+      console.log(`� Amount1Desired (${token1Symbol}):`, amount1Desired.toString(), 'wei');
 
-       // Construct mint parameters
-       const mintParams = {
-         token0: token0 as `0x${string}`,
-         token1: token1 as `0x${string}`,
-         fee: PYUSD_USDC_POOL.fee,
-         tickLower,
-         tickUpper,
-         amount0Desired,
-         amount1Desired,
-         amount0Min: 0n, // Accept any amount (for demo)
-         amount1Min: 0n,
-         recipient: metamaskWallet.address as `0x${string}`,
-         deadline,
-       };
+      // Use a more reasonable tick range (around current price)
+      // For demonstration, using a wide but not full range
+      const tickLower = -276320; // About 1% of the full range around current price
+      const tickUpper = 276320;
 
-       // Encode the mint call
-       const mintCalldata = encodeFunctionData({
-         abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-         functionName: 'mint',
-         args: [mintParams],
-       });
+      console.log('🎯 === TICK RANGE ===');
+      console.log('📍 Tick Lower:', tickLower);
+      console.log('📍 Tick Upper:', tickUpper);
+      console.log('📍 Fee Tier:', PYUSD_USDC_POOL.fee, '(0.3%)');
 
-       console.log('📞 Mint calldata:', mintCalldata);
+      // Add 5% slippage protection
+      const slippageToleranceBps = 500n; // 5%
+      const amount0Min = (amount0Desired * (10000n - slippageToleranceBps)) / 10000n;
+      const amount1Min = (amount1Desired * (10000n - slippageToleranceBps)) / 10000n;
 
-       // Execute mint transaction
-       console.log('🚀 Executing liquidity addition...');
-       const mintTx = await provider.request({
-         method: 'eth_sendTransaction',
-         params: [{
-           from: metamaskWallet.address,
-           to: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-           data: mintCalldata,
-           gas: '0x7A120', // 500k gas limit
-         }],
-       });
+      console.log('🛡️ === SLIPPAGE PROTECTION ===');
+      console.log(`💰 Amount0Min (${token0Symbol}):`, amount0Min.toString(), 'wei (5% slippage)');
+      console.log(`💰 Amount1Min (${token1Symbol}):`, amount1Min.toString(), 'wei (5% slippage)');
+
+      // Create deadline (20 minutes from now)
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+      console.log('⏰ Deadline:', deadline.toString());
+
+      // Construct mint parameters
+      const mintParams = {
+        token0: token0Address as `0x${string}`,
+        token1: token1Address as `0x${string}`,
+        fee: PYUSD_USDC_POOL.fee,
+        tickLower,
+        tickUpper,
+        amount0Desired,
+        amount1Desired,
+        amount0Min,
+        amount1Min,
+        recipient: metamaskWallet.address as `0x${string}`,
+        deadline,
+      };
+
+      console.log('📋 === FINAL MINT PARAMETERS ===');
+      console.log('Parameters for Position Manager mint():', {
+        token0: mintParams.token0,
+        token1: mintParams.token1,
+        fee: mintParams.fee,
+        tickLower: mintParams.tickLower,
+        tickUpper: mintParams.tickUpper,
+        amount0Desired: mintParams.amount0Desired.toString(),
+        amount1Desired: mintParams.amount1Desired.toString(),
+        amount0Min: mintParams.amount0Min.toString(),
+        amount1Min: mintParams.amount1Min.toString(),
+        recipient: mintParams.recipient,
+        deadline: mintParams.deadline.toString(),
+      });
+
+      // Encode the mint call
+      const mintCalldata = encodeFunctionData({
+        abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+        functionName: 'mint',
+        args: [mintParams],
+      });
+
+      console.log('📞 === TRANSACTION PREPARATION ===');
+      console.log('📞 Position Manager Address:', UNISWAP_V3_POSITION_MANAGER_ADDRESS);
+      console.log('📞 Mint Calldata:', mintCalldata);
+      console.log('📞 Gas Limit: 500,000');
+
+      // Execute mint transaction
+      console.log('🚀 === EXECUTING LIQUIDITY ADDITION ===');
+      const mintTx = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: metamaskWallet.address,
+          to: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+          data: mintCalldata,
+          gas: '0x7A120', // 500k gas limit
+        }],
+      });
 
       console.log(`✅ Liquidity addition transaction sent: ${mintTx}`);
       setPoolData(prev => ({ ...prev, liquidityStatus: `Liquidity added! Tx: ${mintTx}` }));
@@ -512,11 +564,34 @@ export default function CookbookPage() {
       }, 5000);
 
     } catch (error) {
-      console.error('❌ Liquidity addition failed:', error);
+      console.error('❌ === LIQUIDITY ADDITION FAILED ===');
+      console.error('❌ Error details:', error);
+      console.error('❌ Error name:', error instanceof Error ? error.name : 'Unknown');
+      console.error('❌ Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
+      // Try to extract more meaningful error info
+      let errorMessage = 'Liquidity addition failed';
+      if (error instanceof Error) {
+        if (error.message.includes('execution reverted')) {
+          errorMessage = 'Transaction reverted - check token approvals and balances';
+        } else if (error.message.includes('insufficient')) {
+          errorMessage = 'Insufficient balance or allowance for one or both tokens';
+        } else if (error.message.includes('user denied')) {
+          errorMessage = 'Transaction rejected by user';
+        } else if (error.message.includes('TRANSFER_FROM_FAILED')) {
+          errorMessage = 'Token transfer failed - check approvals to Position Manager';
+        } else if (error.message.includes('T')) {
+          errorMessage = 'Tick range or pool configuration issue';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       setPoolData(prev => ({
         ...prev,
         liquidityStatus: 'Liquidity addition failed',
-        error: error instanceof Error ? error.message : 'Liquidity addition failed',
+        error: errorMessage,
       }));
     }
   };
@@ -576,7 +651,8 @@ export default function CookbookPage() {
           <div>
             <h3 className='font-semibold text-green-800'>Approvals</h3>
             <p className='text-sm text-green-700'>Router: {poolData.routerAllowance.toFixed(2)} PYUSD</p>
-            <p className='text-sm text-green-700'>Position Mgr: {poolData.positionManagerAllowance.toFixed(2)} PYUSD</p>
+            <p className='text-sm text-green-700'>Position Mgr PYUSD: {poolData.positionManagerAllowance.toFixed(2)}</p>
+            <p className='text-sm text-green-700'>Position Mgr USDC: {poolData.positionManagerUSDCAllowance.toFixed(2)}</p>
           </div>
         </div>
         <button
@@ -604,9 +680,11 @@ export default function CookbookPage() {
           <button
             onClick={approvePositionManager}
             className='rounded bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700'
-            disabled={poolData.positionManagerAllowance > 100}
+            disabled={poolData.positionManagerAllowance > 100 && poolData.positionManagerUSDCAllowance > 100}
           >
-            {poolData.positionManagerAllowance > 100 ? '✅ Position Mgr Approved' : '🔓 Approve Position Manager'}
+            {poolData.positionManagerAllowance > 100 && poolData.positionManagerUSDCAllowance > 100
+              ? '✅ Position Mgr Approved (Both Tokens)'
+              : '🔓 Approve Position Manager (Both Tokens)'}
           </button>
         </div>
       </div>
@@ -661,6 +739,7 @@ export default function CookbookPage() {
           className='rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700'
           disabled={
             poolData.positionManagerAllowance < 1 ||
+            poolData.positionManagerUSDCAllowance < 1 ||
             poolData.metaMaskPYUSDBalance < Number(liquidityAmount) ||
             poolData.metaMaskUSDCBalance < Number(liquidityAmount)
           }
