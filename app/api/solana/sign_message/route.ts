@@ -1,8 +1,9 @@
-import {
-  createPrivyClient,
-  fetchAndVerifyAuthorizationAppRouter,
-} from '@/lib/server-utils';
 import { NextRequest, NextResponse } from 'next/server';
+
+import {
+    createPrivyClient,
+    fetchAndVerifyAuthorizationAppRouter,
+} from '@/lib/server-utils';
 
 export async function POST(request: NextRequest) {
   try {
