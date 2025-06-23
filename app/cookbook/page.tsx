@@ -455,6 +455,77 @@ export default function CookbookPage() {
       console.log('📍 Pool Address:', PYUSD_USDC_POOL.address);
       console.log('📍 Position Manager:', UNISWAP_V3_POSITION_MANAGER_ADDRESS);
 
+      // Validate pool configuration by reading from the pool contract
+      console.log('🔍 === POOL VALIDATION ===');
+      try {
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
+
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        });
+
+        // Read pool configuration
+        const poolToken0 = await publicClient.readContract({
+          address: PYUSD_USDC_POOL.address as `0x${string}`,
+          abi: [
+            {
+              inputs: [],
+              name: 'token0',
+              outputs: [{ name: '', type: 'address' }],
+              stateMutability: 'view',
+              type: 'function',
+            },
+          ],
+          functionName: 'token0',
+        }) as string;
+
+        const poolToken1 = await publicClient.readContract({
+          address: PYUSD_USDC_POOL.address as `0x${string}`,
+          abi: [
+            {
+              inputs: [],
+              name: 'token1',
+              outputs: [{ name: '', type: 'address' }],
+              stateMutability: 'view',
+              type: 'function',
+            },
+          ],
+          functionName: 'token1',
+        }) as string;
+
+        const poolFee = await publicClient.readContract({
+          address: PYUSD_USDC_POOL.address as `0x${string}`,
+          abi: [
+            {
+              inputs: [],
+              name: 'fee',
+              outputs: [{ name: '', type: 'uint24' }],
+              stateMutability: 'view',
+              type: 'function',
+            },
+          ],
+          functionName: 'fee',
+        }) as number;
+
+        console.log('✅ Pool Validation Results:');
+        console.log('📍 Pool Token0:', poolToken0);
+        console.log('📍 Pool Token1:', poolToken1);
+        console.log('📍 Pool Fee:', poolFee);
+        console.log('✅ Token0 matches USDC:', poolToken0.toLowerCase() === USDC_TOKEN.address.toLowerCase());
+        console.log('✅ Token1 matches PYUSD:', poolToken1.toLowerCase() === PYUSD_TOKEN.address.toLowerCase());
+        console.log('✅ Fee matches config:', poolFee === PYUSD_USDC_POOL.fee);
+
+        if (poolFee !== PYUSD_USDC_POOL.fee) {
+          throw new Error(`Pool fee mismatch: expected ${PYUSD_USDC_POOL.fee}, got ${poolFee}`);
+        }
+
+      } catch (poolValidationError) {
+        console.error('❌ Pool validation failed:', poolValidationError);
+        // Continue anyway, but log the issue
+      }
+
       // Calculate amounts in wei
       const pyusdAmountWei = BigInt(Number(liquidityAmount) * Math.pow(10, PYUSD_TOKEN.decimals));
       const usdcAmountWei = BigInt(Number(liquidityAmount) * Math.pow(10, USDC_TOKEN.decimals));
@@ -478,15 +549,30 @@ export default function CookbookPage() {
       console.log(`💰 Amount0Desired (${token0Symbol}):`, amount0Desired.toString(), 'wei');
       console.log(`� Amount1Desired (${token1Symbol}):`, amount1Desired.toString(), 'wei');
 
-      // Use a more reasonable tick range (around current price)
-      // For demonstration, using a wide but not full range
-      const tickLower = -276320; // About 1% of the full range around current price
-      const tickUpper = 276320;
+            // Get correct tick spacing based on fee tier
+      const getTickSpacing = (feeTier: number): number => {
+        switch (feeTier) {
+          case 500:   return 10;   // 0.05%
+          case 3000:  return 60;   // 0.3%
+          case 10000: return 200;  // 1%
+          default: throw new Error(`Unsupported fee tier: ${feeTier}`);
+        }
+      };
 
-      console.log('🎯 === TICK RANGE ===');
-      console.log('📍 Tick Lower:', tickLower);
-      console.log('📍 Tick Upper:', tickUpper);
+      const tickSpacing = getTickSpacing(PYUSD_USDC_POOL.fee);
+      const maxTick = 887270; // Maximum tick for Uniswap V3
+
+      // Calculate largest valid ticks (must be divisible by tick spacing)
+      const tickLower = -Math.floor(maxTick / tickSpacing) * tickSpacing;
+      const tickUpper = Math.floor(maxTick / tickSpacing) * tickSpacing;
+
+      console.log('🎯 === TICK RANGE CALCULATION ===');
       console.log('📍 Fee Tier:', PYUSD_USDC_POOL.fee, '(0.3%)');
+      console.log('📍 Required Tick Spacing:', tickSpacing);
+      console.log('📍 Tick Lower:', tickLower, `(${tickLower / tickSpacing} * ${tickSpacing})`);
+      console.log('📍 Tick Upper:', tickUpper, `(${tickUpper / tickSpacing} * ${tickSpacing})`);
+      console.log('✅ Tick Lower divisible by spacing:', tickLower % tickSpacing === 0);
+      console.log('✅ Tick Upper divisible by spacing:', tickUpper % tickSpacing === 0);
 
       // Add 5% slippage protection
       const slippageToleranceBps = 500n; // 5%
@@ -500,6 +586,47 @@ export default function CookbookPage() {
       // Create deadline (20 minutes from now)
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
       console.log('⏰ Deadline:', deadline.toString());
+
+      // Pre-flight checks for balances and allowances
+      console.log('🔍 === PRE-FLIGHT CHECKS ===');
+
+      // Check current balances
+      const currentPYUSDBalance = poolData.metaMaskPYUSDBalance;
+      const currentUSDCBalance = poolData.metaMaskUSDCBalance;
+      const requiredPYUSD = Number(pyusdAmountWei) / Math.pow(10, PYUSD_TOKEN.decimals);
+      const requiredUSDC = Number(usdcAmountWei) / Math.pow(10, USDC_TOKEN.decimals);
+
+      console.log('💰 Balance Check:');
+      console.log(`  - Current PYUSD: ${currentPYUSDBalance}, Required: ${requiredPYUSD}`);
+      console.log(`  - Current USDC: ${currentUSDCBalance}, Required: ${requiredUSDC}`);
+      console.log(`  - PYUSD Sufficient: ${currentPYUSDBalance >= requiredPYUSD}`);
+      console.log(`  - USDC Sufficient: ${currentUSDCBalance >= requiredUSDC}`);
+
+      // Check allowances
+      const currentPYUSDAllowance = poolData.positionManagerAllowance;
+      const currentUSDCAllowance = poolData.positionManagerUSDCAllowance;
+
+      console.log('🔐 Allowance Check:');
+      console.log(`  - PYUSD Allowance: ${currentPYUSDAllowance}, Required: ${requiredPYUSD}`);
+      console.log(`  - USDC Allowance: ${currentUSDCAllowance}, Required: ${requiredUSDC}`);
+      console.log(`  - PYUSD Allowance Sufficient: ${currentPYUSDAllowance >= requiredPYUSD}`);
+      console.log(`  - USDC Allowance Sufficient: ${currentUSDCAllowance >= requiredUSDC}`);
+
+      // Validate all requirements
+      if (currentPYUSDBalance < requiredPYUSD) {
+        throw new Error(`Insufficient PYUSD balance: have ${currentPYUSDBalance}, need ${requiredPYUSD}`);
+      }
+      if (currentUSDCBalance < requiredUSDC) {
+        throw new Error(`Insufficient USDC balance: have ${currentUSDCBalance}, need ${requiredUSDC}`);
+      }
+      if (currentPYUSDAllowance < requiredPYUSD) {
+        throw new Error(`Insufficient PYUSD allowance: have ${currentPYUSDAllowance}, need ${requiredPYUSD}`);
+      }
+      if (currentUSDCAllowance < requiredUSDC) {
+        throw new Error(`Insufficient USDC allowance: have ${currentUSDCAllowance}, need ${requiredUSDC}`);
+      }
+
+      console.log('✅ All pre-flight checks passed!');
 
       // Construct mint parameters
       const mintParams = {
