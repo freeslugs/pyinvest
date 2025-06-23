@@ -51,7 +51,7 @@ export const POOLS = {
       address: '0x1eA26f380A71E15E75E61c6D66B4242c1f652FEd' as const,
       token0: TOKENS[NETWORKS.SEPOLIA.id].PYUSD,
       token1: TOKENS[NETWORKS.SEPOLIA.id].USDC,
-      fee: 500, // 0.05%
+      fee: 3000, // 0.3% (actual fee tier of the pool)
       name: 'PYUSD/USDC',
     },
   },
