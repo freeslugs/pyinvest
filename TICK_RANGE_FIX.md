@@ -7,11 +7,13 @@ Your liquidity addition was failing because of **invalid tick ranges**. The erro
 ### ❌ The Problem
 
 **Uniswap V3 Tick Spacing Rules:**
+
 - Each fee tier has a specific tick spacing requirement
 - **0.3% fee (3000) → Tick spacing = 60**
 - **ALL tick values must be exact multiples of 60**
 
 **Your Previous Invalid Ticks:**
+
 ```
 Tick Lower: -276320 ÷ 60 = -4605.33... ❌ (not an integer)
 Tick Upper:  276320 ÷ 60 =  4605.33... ❌ (not an integer)
@@ -22,41 +24,52 @@ This is why MetaMask warned "likely to fail" - the Position Manager contract wou
 ## ✅ The Fix Applied
 
 ### 1. **Proper Tick Spacing Calculation**
+
 ```typescript
 const getTickSpacing = (feeTier: number): number => {
   switch (feeTier) {
-    case 500:   return 10;   // 0.05%
-    case 3000:  return 60;   // 0.3%  ← Your pool
-    case 10000: return 200;  // 1%
-    default: throw new Error(`Unsupported fee tier: ${feeTier}`);
+    case 500:
+      return 10; // 0.05%
+    case 3000:
+      return 60; // 0.3%  ← Your pool
+    case 10000:
+      return 200; // 1%
+    default:
+      throw new Error(`Unsupported fee tier: ${feeTier}`);
   }
 };
 ```
 
 ### 2. **Valid Tick Range Calculation**
+
 ```typescript
 const tickSpacing = getTickSpacing(PYUSD_USDC_POOL.fee); // 60
 const maxTick = 887270;
 
 // Calculate largest valid ticks (divisible by 60)
 const tickLower = -Math.floor(maxTick / tickSpacing) * tickSpacing; // -887220
-const tickUpper = Math.floor(maxTick / tickSpacing) * tickSpacing;   //  887220
+const tickUpper = Math.floor(maxTick / tickSpacing) * tickSpacing; //  887220
 ```
 
 **New Valid Ticks:**
+
 ```
 Tick Lower: -887220 ÷ 60 = -14787 ✅ (perfect integer)
 Tick Upper:  887220 ÷ 60 =  14787 ✅ (perfect integer)
 ```
 
 ### 3. **Added Pool Validation**
+
 The fix now validates the pool configuration by reading directly from the pool contract:
+
 - Confirms token0 and token1 addresses
 - Verifies the fee tier
 - Ensures our configuration matches the actual deployed pool
 
 ### 4. **Pre-Flight Safety Checks**
+
 Before submitting any transaction, the system now validates:
+
 - ✅ Sufficient PYUSD balance
 - ✅ Sufficient USDC balance
 - ✅ Adequate PYUSD allowance to Position Manager
@@ -65,7 +78,9 @@ Before submitting any transaction, the system now validates:
 - ✅ Pool configuration verification
 
 ### 5. **Enhanced Debugging**
+
 The console will now show extensive validation:
+
 ```
 🎯 === TICK RANGE CALCULATION ===
 📍 Fee Tier: 3000 (0.3%)
@@ -118,12 +133,14 @@ With this fix, your liquidity addition should now:
 ## 🔬 Technical Background
 
 **Why Tick Spacing Matters:**
+
 - Uniswap V3 uses ticks to represent price ranges
 - Different fee tiers have different precision requirements
 - Tick spacing ensures gas efficiency and prevents spam
 - Invalid ticks are rejected at the smart contract level
 
 **Full Range vs Narrow Range:**
+
 - We're using full range (-887220 to 887220) for safety
 - This provides liquidity across all possible prices
 - In production, you might want narrower ranges for higher capital efficiency
