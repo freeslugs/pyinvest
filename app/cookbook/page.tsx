@@ -3,7 +3,7 @@
 import { getAccessToken, usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { encodeFunctionData } from 'viem';
 
 import WalletList from '../../components/WalletList';
@@ -208,56 +208,60 @@ export default function CookbookPage() {
   };
 
   // ERC20 ABI for approve and transfer functions
-  const ERC20_ABI = [
-    {
-      constant: true,
-      inputs: [{ name: '_owner', type: 'address' }],
-      name: 'balanceOf',
-      outputs: [{ name: 'balance', type: 'uint256' }],
-      type: 'function',
-    },
-    {
-      constant: false,
-      inputs: [
-        { name: '_spender', type: 'address' },
-        { name: '_value', type: 'uint256' },
-      ],
-      name: 'approve',
-      outputs: [{ name: '', type: 'bool' }],
-      type: 'function',
-    },
-    {
-      constant: false,
-      inputs: [
-        { name: '_to', type: 'address' },
-        { name: '_value', type: 'uint256' },
-      ],
-      name: 'transfer',
-      outputs: [{ name: '', type: 'bool' }],
-      type: 'function',
-    },
-    {
-      constant: false,
-      inputs: [
-        { name: '_from', type: 'address' },
-        { name: '_to', type: 'address' },
-        { name: '_value', type: 'uint256' },
-      ],
-      name: 'transferFrom',
-      outputs: [{ name: '', type: 'bool' }],
-      type: 'function',
-    },
-    {
-      constant: true,
-      inputs: [
-        { name: '_owner', type: 'address' },
-        { name: '_spender', type: 'address' },
-      ],
-      name: 'allowance',
-      outputs: [{ name: '', type: 'uint256' }],
-      type: 'function',
-    },
-  ] as const;
+  const ERC20_ABI = useMemo(
+    () =>
+      [
+        {
+          constant: true,
+          inputs: [{ name: '_owner', type: 'address' }],
+          name: 'balanceOf',
+          outputs: [{ name: 'balance', type: 'uint256' }],
+          type: 'function',
+        },
+        {
+          constant: false,
+          inputs: [
+            { name: '_spender', type: 'address' },
+            { name: '_value', type: 'uint256' },
+          ],
+          name: 'approve',
+          outputs: [{ name: '', type: 'bool' }],
+          type: 'function',
+        },
+        {
+          constant: false,
+          inputs: [
+            { name: '_to', type: 'address' },
+            { name: '_value', type: 'uint256' },
+          ],
+          name: 'transfer',
+          outputs: [{ name: '', type: 'bool' }],
+          type: 'function',
+        },
+        {
+          constant: false,
+          inputs: [
+            { name: '_from', type: 'address' },
+            { name: '_to', type: 'address' },
+            { name: '_value', type: 'uint256' },
+          ],
+          name: 'transferFrom',
+          outputs: [{ name: '', type: 'bool' }],
+          type: 'function',
+        },
+        {
+          constant: true,
+          inputs: [
+            { name: '_owner', type: 'address' },
+            { name: '_spender', type: 'address' },
+          ],
+          name: 'allowance',
+          outputs: [{ name: '', type: 'uint256' }],
+          type: 'function',
+        },
+      ] as const,
+    []
+  );
 
   // WETH Gateway ABI for depositing ETH
   const WETH_GATEWAY_ABI = [
@@ -1629,63 +1633,63 @@ export default function CookbookPage() {
   };
 
   // Function to check Permit2 allowance
-  const checkPermit2Allowance = async (
-    tokenAddress: string,
-    ownerAddress: string
-  ) => {
-    try {
-      const { createPublicClient, http } = await import('viem');
-      const { sepolia } = await import('viem/chains');
+  const checkPermit2Allowance = useCallback(
+    async (tokenAddress: string, ownerAddress: string) => {
+      try {
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
 
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
-      });
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        });
 
-      const allowanceData = (await publicClient.readContract({
-        address: PERMIT2_CONFIG.ADDRESS,
-        abi: PERMIT2_CONFIG.ABI,
-        functionName: 'allowance',
-        args: [
-          ownerAddress as `0x${string}`,
-          tokenAddress as `0x${string}`,
-          UNISWAP_V3_ROUTER_ADDRESS,
-        ],
-      })) as readonly [bigint, number, number];
+        const allowanceData = (await publicClient.readContract({
+          address: PERMIT2_CONFIG.ADDRESS,
+          abi: PERMIT2_CONFIG.ABI,
+          functionName: 'allowance',
+          args: [
+            ownerAddress as `0x${string}`,
+            tokenAddress as `0x${string}`,
+            UNISWAP_V3_ROUTER_ADDRESS,
+          ],
+        })) as readonly [bigint, number, number];
 
-      const [amount, expiration, nonce] = allowanceData;
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      const isExpired = expiration > 0 && expiration < currentTimestamp;
+        const [amount, expiration, nonce] = allowanceData;
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const isExpired = expiration > 0 && expiration < currentTimestamp;
 
-      console.log(`🔍 Permit2 Allowance for ${tokenAddress}:`);
-      console.log(`  Amount: ${amount.toString()}`);
-      console.log(
-        `  Expiration: ${expiration} (${new Date(expiration * 1000).toISOString()})`
-      );
-      console.log(
-        `  Current: ${currentTimestamp} (${new Date(currentTimestamp * 1000).toISOString()})`
-      );
-      console.log(`  Is Expired: ${isExpired}`);
-      console.log(`  Nonce: ${nonce}`);
+        console.log(`🔍 Permit2 Allowance for ${tokenAddress}:`);
+        console.log(`  Amount: ${amount.toString()}`);
+        console.log(
+          `  Expiration: ${expiration} (${new Date(expiration * 1000).toISOString()})`
+        );
+        console.log(
+          `  Current: ${currentTimestamp} (${new Date(currentTimestamp * 1000).toISOString()})`
+        );
+        console.log(`  Is Expired: ${isExpired}`);
+        console.log(`  Nonce: ${nonce}`);
 
-      return {
-        amount: Number(amount),
-        expiration,
-        nonce,
-        isExpired,
-        isValid: !isExpired && Number(amount) > 0,
-      };
-    } catch (error) {
-      console.error('Error checking Permit2 allowance:', error);
-      return {
-        amount: 0,
-        expiration: 0,
-        nonce: 0,
-        isExpired: true,
-        isValid: false,
-      };
-    }
-  };
+        return {
+          amount: Number(amount),
+          expiration,
+          nonce,
+          isExpired,
+          isValid: !isExpired && Number(amount) > 0,
+        };
+      } catch (error) {
+        console.error('Error checking Permit2 allowance:', error);
+        return {
+          amount: 0,
+          expiration: 0,
+          nonce: 0,
+          isExpired: true,
+          isValid: false,
+        };
+      }
+    },
+    [PERMIT2_CONFIG.ABI, PERMIT2_CONFIG.ADDRESS]
+  );
 
   // Function to approve ERC20 token to Permit2 contract
   const approveTokenToPermit2 = async (tokenAddress: string) => {
@@ -1795,9 +1799,6 @@ export default function CookbookPage() {
       // Switch to Sepolia
       await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
 
-      // Get Ethereum provider
-      const provider = await metamaskWallet.getEthereumProvider();
-
       // STEP 1: Check if Permit2 contract has allowance to spend the token
       console.log('📍 Step 1: Checking token allowance to Permit2 contract...');
 
@@ -1823,7 +1824,7 @@ export default function CookbookPage() {
       // If allowance is insufficient, approve Permit2 contract first
       if (currentAllowance < 1000000n) {
         console.log('💰 Step 1: Approving token to Permit2 contract...');
-        const tokenTx = await approveTokenToPermit2(tokenAddress);
+        await approveTokenToPermit2(tokenAddress);
         console.log('⏳ Waiting for token approval confirmation...');
         await new Promise(resolve => setTimeout(resolve, 5000));
       } else {
@@ -2224,7 +2225,15 @@ export default function CookbookPage() {
         error: error instanceof Error ? error.message : 'Unknown error',
       }));
     }
-  }, [metamaskWallet, PYUSD_TOKEN, USDC_TOKEN]);
+  }, [
+    metamaskWallet,
+    PYUSD_TOKEN,
+    USDC_TOKEN,
+    ERC20_ABI,
+    PYUSD_USDC_POOL.address,
+    PYUSD_USDC_POOL.fee,
+    checkPermit2Allowance,
+  ]);
 
   // Load data on component mount and when wallet changes
   useEffect(() => {
@@ -2390,7 +2399,7 @@ export default function CookbookPage() {
         }));
 
         try {
-          const approveTx = await approvePermit2(PYUSD_TOKEN.address);
+          await approvePermit2(PYUSD_TOKEN.address);
           console.log('✅ Permit2 approved, waiting for confirmation...');
           setPoolData(prev => ({
             ...prev,
@@ -4382,7 +4391,8 @@ export default function CookbookPage() {
                   <p className='text-sm text-red-700'>
                     <strong>⚠️ Expired Allowance Detected:</strong> Your Permit2
                     allowance has expired. This is why your swap failed with
-                    &quot;AllowanceExpired&quot; error. Use the buttons above to renew.
+                    &quot;AllowanceExpired&quot; error. Use the buttons above to
+                    renew.
                   </p>
                 </div>
               )}
