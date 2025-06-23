@@ -23,7 +23,7 @@ export function Logo(props: LogoPropsType) {
         className="flex-shrink-0"
       />
       <span
-        className={`text-2xl font-semibold ${adelleSans.className}`}
+        className={`text-2xl font-medium ${adelleSans.className}`}
         style={{ color: fontColor }}
       >
         PyInvest

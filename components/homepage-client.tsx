@@ -18,7 +18,7 @@ export function HeaderButton({ isAuthenticated }: HeaderButtonProps) {
   return isAuthenticated ? (
     <Button
       onClick={() => handleNavigation('/dashboard')}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-medium"
+      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-normal"
     >
       Open App
     </Button>
@@ -26,7 +26,7 @@ export function HeaderButton({ isAuthenticated }: HeaderButtonProps) {
     <Button
       onClick={() => handleNavigation('/login')}
       variant="outline"
-      className="border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-2 rounded-xl font-medium"
+      className="border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-2 rounded-xl font-normal"
     >
       Open App
     </Button>
@@ -48,7 +48,7 @@ export function HeroCTAButton({ isAuthenticated }: HeroCTAButtonProps) {
     <Button
       onClick={() => handleNavigation(isAuthenticated ? '/dashboard' : '/login')}
       size="lg"
-      className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+      className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-xl text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
     >
       Get Started
     </Button>
@@ -70,7 +70,7 @@ export function FinalCTAButton({ isAuthenticated }: FinalCTAButtonProps) {
     <Button
       onClick={() => handleNavigation(isAuthenticated ? '/dashboard' : '/login')}
       size="lg"
-      className="bg-white text-blue-600 hover:bg-gray-50 px-12 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+      className="bg-white text-blue-600 hover:bg-gray-50 px-12 py-6 rounded-2xl text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
     >
       Get Started - It&apos;s Free
     </Button>
