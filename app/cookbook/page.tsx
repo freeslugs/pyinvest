@@ -173,6 +173,40 @@ export default function CookbookPage() {
     MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11' as const,
   };
 
+  // Add Permit2 configuration after AAVE_CONFIG
+  const PERMIT2_CONFIG = {
+    ADDRESS: '0x000000000022d473030f116ddee9f6b43ac78ba3' as const,
+    ABI: [
+      {
+        inputs: [
+          { name: 'owner', type: 'address' },
+          { name: 'token', type: 'address' },
+          { name: 'spender', type: 'address' },
+        ],
+        name: 'allowance',
+        outputs: [
+          { name: 'amount', type: 'uint160' },
+          { name: 'expiration', type: 'uint48' },
+          { name: 'nonce', type: 'uint48' },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+      },
+      {
+        inputs: [
+          { name: 'token', type: 'address' },
+          { name: 'spender', type: 'address' },
+          { name: 'amount', type: 'uint160' },
+          { name: 'expiration', type: 'uint48' },
+        ],
+        name: 'approve',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ] as const,
+  };
+
   // ERC20 ABI for approve and transfer functions
   const ERC20_ABI = [
     {
@@ -257,6 +291,23 @@ export default function CookbookPage() {
     liquidityStatus: 'Ready',
     nftPositionCount: 0,
     totalPoolValueUSD: 0,
+  });
+
+  // Add state for Permit2 allowances
+  const [permit2Data, setPermit2Data] = useState<{
+    pyusdPermit2: {
+      isValid: boolean;
+      isExpired: boolean;
+      expiration: number;
+    } | null;
+    usdcPermit2: {
+      isValid: boolean;
+      isExpired: boolean;
+      expiration: number;
+    } | null;
+  }>({
+    pyusdPermit2: null,
+    usdcPermit2: null,
   });
 
   // Form state
@@ -1577,6 +1628,219 @@ export default function CookbookPage() {
     }
   };
 
+  // Function to check Permit2 allowance
+  const checkPermit2Allowance = async (
+    tokenAddress: string,
+    ownerAddress: string
+  ) => {
+    try {
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+      });
+
+      const allowanceData = (await publicClient.readContract({
+        address: PERMIT2_CONFIG.ADDRESS,
+        abi: PERMIT2_CONFIG.ABI,
+        functionName: 'allowance',
+        args: [
+          ownerAddress as `0x${string}`,
+          tokenAddress as `0x${string}`,
+          UNISWAP_V3_ROUTER_ADDRESS,
+        ],
+      })) as readonly [bigint, number, number];
+
+      const [amount, expiration, nonce] = allowanceData;
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      const isExpired = expiration > 0 && expiration < currentTimestamp;
+
+      console.log(`🔍 Permit2 Allowance for ${tokenAddress}:`);
+      console.log(`  Amount: ${amount.toString()}`);
+      console.log(
+        `  Expiration: ${expiration} (${new Date(expiration * 1000).toISOString()})`
+      );
+      console.log(
+        `  Current: ${currentTimestamp} (${new Date(currentTimestamp * 1000).toISOString()})`
+      );
+      console.log(`  Is Expired: ${isExpired}`);
+      console.log(`  Nonce: ${nonce}`);
+
+      return {
+        amount: Number(amount),
+        expiration,
+        nonce,
+        isExpired,
+        isValid: !isExpired && Number(amount) > 0,
+      };
+    } catch (error) {
+      console.error('Error checking Permit2 allowance:', error);
+      return {
+        amount: 0,
+        expiration: 0,
+        nonce: 0,
+        isExpired: true,
+        isValid: false,
+      };
+    }
+  };
+
+  // Function to approve ERC20 token to Permit2 contract
+  const approveTokenToPermit2 = async (tokenAddress: string) => {
+    if (!metamaskWallet) return;
+
+    try {
+      console.log('🔄 === STEP 1: APPROVING TOKEN TO PERMIT2 CONTRACT ===');
+
+      // Switch to Sepolia
+      await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
+
+      // Get Ethereum provider
+      const provider = await metamaskWallet.getEthereumProvider();
+
+      const maxApproval = 2n ** 256n - 1n; // Max uint256 for traditional ERC20 approval
+
+      console.log(`💰 Approving Permit2 contract to spend ${tokenAddress}`);
+      console.log(`  Permit2 Address: ${PERMIT2_CONFIG.ADDRESS}`);
+      console.log(`  Approval Amount: ${maxApproval.toString()} (max uint256)`);
+
+      const tokenApprovalTx = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [
+          {
+            from: metamaskWallet.address,
+            to: tokenAddress,
+            data: encodeFunctionData({
+              abi: ERC20_ABI,
+              functionName: 'approve',
+              args: [PERMIT2_CONFIG.ADDRESS, maxApproval],
+            }),
+          },
+        ],
+      });
+
+      console.log(`✅ Token approval to Permit2 sent: ${tokenApprovalTx}`);
+      return tokenApprovalTx;
+    } catch (error) {
+      console.error('❌ Token approval to Permit2 failed:', error);
+      throw error;
+    }
+  };
+
+  // Function to approve Universal Router through Permit2
+  const approveRouterThroughPermit2 = async (tokenAddress: string) => {
+    if (!metamaskWallet) return;
+
+    try {
+      console.log(
+        '🔄 === STEP 2: APPROVING UNIVERSAL ROUTER THROUGH PERMIT2 ==='
+      );
+
+      // Switch to Sepolia
+      await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
+
+      // Get Ethereum provider
+      const provider = await metamaskWallet.getEthereumProvider();
+
+      const approveAmount = 2n ** 160n - 1n; // Max uint160 for Permit2
+      const expiration = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // 1 year from now
+
+      console.log(
+        `💰 Approving Universal Router through Permit2 for ${tokenAddress}`
+      );
+      console.log(`  Token: ${tokenAddress}`);
+      console.log(`  Spender: ${UNISWAP_V3_ROUTER_ADDRESS}`);
+      console.log(`  Amount: ${approveAmount.toString()} (max uint160)`);
+      console.log(
+        `  Expiration: ${expiration} (${new Date(expiration * 1000).toISOString()})`
+      );
+
+      const permit2ApprovalTx = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [
+          {
+            from: metamaskWallet.address,
+            to: PERMIT2_CONFIG.ADDRESS,
+            data: encodeFunctionData({
+              abi: PERMIT2_CONFIG.ABI,
+              functionName: 'approve',
+              args: [
+                tokenAddress as `0x${string}`,
+                UNISWAP_V3_ROUTER_ADDRESS as `0x${string}`,
+                approveAmount,
+                expiration,
+              ],
+            }),
+          },
+        ],
+      });
+
+      console.log(`✅ Permit2 approval transaction sent: ${permit2ApprovalTx}`);
+      return permit2ApprovalTx;
+    } catch (error) {
+      console.error('❌ Permit2 approval failed:', error);
+      throw error;
+    }
+  };
+
+  // Combined function to handle both steps
+  const approvePermit2 = async (tokenAddress: string) => {
+    if (!metamaskWallet) return;
+
+    try {
+      console.log('🔄 === STARTING PERMIT2 APPROVAL (2-STEP PROCESS) ===');
+
+      // Switch to Sepolia
+      await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
+
+      // Get Ethereum provider
+      const provider = await metamaskWallet.getEthereumProvider();
+
+      // STEP 1: Check if Permit2 contract has allowance to spend the token
+      console.log('📍 Step 1: Checking token allowance to Permit2 contract...');
+
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+      });
+
+      const currentAllowance = (await publicClient.readContract({
+        address: tokenAddress as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [metamaskWallet.address as `0x${string}`, PERMIT2_CONFIG.ADDRESS],
+      })) as bigint;
+
+      console.log(
+        `Current token allowance to Permit2: ${currentAllowance.toString()}`
+      );
+
+      // If allowance is insufficient, approve Permit2 contract first
+      if (currentAllowance < 1000000n) {
+        console.log('💰 Step 1: Approving token to Permit2 contract...');
+        const tokenTx = await approveTokenToPermit2(tokenAddress);
+        console.log('⏳ Waiting for token approval confirmation...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      } else {
+        console.log('✅ Permit2 already has sufficient token allowance');
+      }
+
+      // STEP 2: Approve Universal Router through Permit2
+      console.log('💰 Step 2: Approving Universal Router through Permit2...');
+      const permit2Tx = await approveRouterThroughPermit2(tokenAddress);
+
+      return permit2Tx;
+    } catch (error) {
+      console.error('❌ Permit2 approval failed:', error);
+      throw error;
+    }
+  };
+
   // Check token balances and allowances
   const checkBalancesAndAllowances = useCallback(async () => {
     if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN) {
@@ -1934,6 +2198,24 @@ export default function CookbookPage() {
         error: undefined,
       }));
 
+      // Check Permit2 allowances
+      console.log('🔍 Checking Permit2 allowances...');
+      try {
+        const [pyusdPermit2, usdcPermit2] = await Promise.all([
+          checkPermit2Allowance(PYUSD_TOKEN.address, metamaskWallet.address),
+          checkPermit2Allowance(USDC_TOKEN.address, metamaskWallet.address),
+        ]);
+
+        setPermit2Data({
+          pyusdPermit2,
+          usdcPermit2,
+        });
+
+        console.log('✅ Permit2 allowances checked');
+      } catch (permit2Error) {
+        console.warn('⚠️ Could not check Permit2 allowances:', permit2Error);
+      }
+
       console.log('✅ === BALANCE & ALLOWANCE CHECK COMPLETED ===\n');
     } catch (error) {
       console.error('❌ Error checking balances:', error);
@@ -2091,6 +2373,65 @@ export default function CookbookPage() {
       console.log('🔄 === STARTING PYUSD → USDC SWAP ===');
       setPoolData(prev => ({ ...prev, swapStatus: 'Swapping...' }));
 
+      // Check Permit2 allowance first
+      console.log('🔍 Checking Permit2 allowance before swap...');
+      const permit2Check = await checkPermit2Allowance(
+        PYUSD_TOKEN.address,
+        metamaskWallet.address
+      );
+
+      if (!permit2Check.isValid) {
+        console.log(
+          '⚠️ Permit2 allowance invalid or expired, requesting approval...'
+        );
+        setPoolData(prev => ({
+          ...prev,
+          swapStatus: 'Permit2 approval needed...',
+        }));
+
+        try {
+          const approveTx = await approvePermit2(PYUSD_TOKEN.address);
+          console.log('✅ Permit2 approved, waiting for confirmation...');
+          setPoolData(prev => ({
+            ...prev,
+            swapStatus: 'Waiting for Permit2 confirmation...',
+          }));
+
+          // Wait a bit for the transaction to be mined
+          await new Promise(resolve => setTimeout(resolve, 5000));
+
+          // Recheck the allowance
+          const recheckPermit2 = await checkPermit2Allowance(
+            PYUSD_TOKEN.address,
+            metamaskWallet.address
+          );
+          if (!recheckPermit2.isValid) {
+            throw new Error(
+              'Permit2 approval was not successful. Please try again.'
+            );
+          }
+
+          console.log('✅ Permit2 approval confirmed, proceeding with swap...');
+          setPoolData(prev => ({
+            ...prev,
+            swapStatus: 'Permit2 approved, swapping...',
+          }));
+        } catch (permit2Error) {
+          console.error('❌ Permit2 approval failed:', permit2Error);
+          setPoolData(prev => ({
+            ...prev,
+            swapStatus: 'Permit2 approval failed',
+            error:
+              permit2Error instanceof Error
+                ? permit2Error.message
+                : 'Permit2 approval failed',
+          }));
+          return;
+        }
+      } else {
+        console.log('✅ Permit2 allowance is valid, proceeding with swap...');
+      }
+
       // Switch to Sepolia
       await metamaskWallet.switchChain(NETWORKS.SEPOLIA.id);
 
@@ -2233,8 +2574,15 @@ export default function CookbookPage() {
       // Try to extract more meaningful error info
       let errorMessage = 'Swap failed';
       if (error instanceof Error) {
-        if (error.message.includes('execution reverted')) {
-          errorMessage = 'Transaction reverted - check slippage/liquidity';
+        if (
+          error.message.includes('AllowanceExpired') ||
+          error.message.includes('allowance.expiration')
+        ) {
+          errorMessage =
+            '🔒 Permit2 allowance has expired. The token approval to Permit2 needs to be renewed. Please approve Permit2 again.';
+        } else if (error.message.includes('execution reverted')) {
+          errorMessage =
+            'Transaction reverted - check slippage/liquidity or token approvals';
         } else if (error.message.includes('insufficient')) {
           errorMessage = 'Insufficient balance or allowance';
         } else if (error.message.includes('user denied')) {
@@ -2402,7 +2750,7 @@ export default function CookbookPage() {
         'wei'
       );
       console.log(
-        `� Amount1Desired (${token1Symbol}):`,
+        `💰 Amount1Desired (${token1Symbol}):`,
         amount1Desired.toString(),
         'wei'
       );
@@ -3832,7 +4180,7 @@ export default function CookbookPage() {
             <h2 className='mb-4 text-xl font-bold text-green-900'>
               Token Balances & Approvals
             </h2>
-            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
               <div>
                 <h3 className='font-semibold text-green-800'>Balances</h3>
                 <p className='text-sm text-green-700'>
@@ -3852,7 +4200,9 @@ export default function CookbookPage() {
                 </div>
               </div>
               <div>
-                <h3 className='font-semibold text-green-800'>Approvals</h3>
+                <h3 className='font-semibold text-green-800'>
+                  Legacy Approvals
+                </h3>
                 <p className='text-sm text-green-700'>
                   Router: {poolData.routerAllowance.toFixed(2)} PYUSD
                 </p>
@@ -3865,13 +4215,178 @@ export default function CookbookPage() {
                   {poolData.positionManagerUSDCAllowance.toFixed(2)}
                 </p>
               </div>
+              <div>
+                <h3 className='font-semibold text-green-800'>
+                  🔒 Permit2 Status
+                </h3>
+                <div className='space-y-2'>
+                  <div className='text-sm'>
+                    <span className='font-medium'>PYUSD:</span>{' '}
+                    {permit2Data.pyusdPermit2 === null ? (
+                      <span className='text-gray-500'>Not checked</span>
+                    ) : permit2Data.pyusdPermit2.isValid ? (
+                      <span className='text-green-600'>✅ Valid</span>
+                    ) : permit2Data.pyusdPermit2.isExpired ? (
+                      <span className='text-red-600'>❌ Expired</span>
+                    ) : (
+                      <span className='text-yellow-600'>⚠️ Not approved</span>
+                    )}
+                  </div>
+                  <div className='text-sm'>
+                    <span className='font-medium'>USDC:</span>{' '}
+                    {permit2Data.usdcPermit2 === null ? (
+                      <span className='text-gray-500'>Not checked</span>
+                    ) : permit2Data.usdcPermit2.isValid ? (
+                      <span className='text-green-600'>✅ Valid</span>
+                    ) : permit2Data.usdcPermit2.isExpired ? (
+                      <span className='text-red-600'>❌ Expired</span>
+                    ) : (
+                      <span className='text-yellow-600'>⚠️ Not approved</span>
+                    )}
+                  </div>
+                  {(permit2Data.pyusdPermit2?.expiration ||
+                    permit2Data.usdcPermit2?.expiration) && (
+                    <div className='mt-2 text-xs text-gray-600'>
+                      {permit2Data.pyusdPermit2?.expiration && (
+                        <div>
+                          PYUSD expires:{' '}
+                          {new Date(
+                            permit2Data.pyusdPermit2.expiration * 1000
+                          ).toLocaleDateString()}
+                        </div>
+                      )}
+                      {permit2Data.usdcPermit2?.expiration && (
+                        <div>
+                          USDC expires:{' '}
+                          {new Date(
+                            permit2Data.usdcPermit2.expiration * 1000
+                          ).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <button
-              onClick={checkBalancesAndAllowances}
-              className='mt-4 rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700'
-            >
-              🔄 Refresh Data
-            </button>
+            <div className='mt-4 flex flex-wrap gap-2'>
+              <button
+                type='button'
+                onClick={checkBalancesAndAllowances}
+                className='rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700'
+              >
+                🔄 Refresh Data
+              </button>
+              {/* PYUSD Permit2 Approvals */}
+              <button
+                type='button'
+                onClick={() => approveTokenToPermit2(PYUSD_TOKEN.address)}
+                className='rounded bg-orange-600 px-3 py-2 text-sm text-white hover:bg-orange-700'
+              >
+                🔗 Step 1: Approve PYUSD → Permit2
+              </button>
+              <button
+                type='button'
+                onClick={() => approveRouterThroughPermit2(PYUSD_TOKEN.address)}
+                className='rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700'
+              >
+                🔒 Step 2: Permit2 → Router (PYUSD)
+              </button>
+              {/* USDC Permit2 Approvals */}
+              <button
+                type='button'
+                onClick={() => approveTokenToPermit2(USDC_TOKEN.address)}
+                className='rounded bg-orange-600 px-3 py-2 text-sm text-white hover:bg-orange-700'
+              >
+                🔗 Step 1: Approve USDC → Permit2
+              </button>
+              <button
+                type='button'
+                onClick={() => approveRouterThroughPermit2(USDC_TOKEN.address)}
+                className='rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700'
+              >
+                🔒 Step 2: Permit2 → Router (USDC)
+              </button>
+              {/* Combined approvals for convenience */}
+              {permit2Data.pyusdPermit2 &&
+                !permit2Data.pyusdPermit2.isValid && (
+                  <button
+                    type='button'
+                    onClick={() => approvePermit2(PYUSD_TOKEN.address)}
+                    className='rounded bg-purple-600 px-4 py-2 text-white hover:bg-purple-700'
+                  >
+                    🔄 Full Permit2 Setup (PYUSD)
+                  </button>
+                )}
+              {permit2Data.usdcPermit2 && !permit2Data.usdcPermit2.isValid && (
+                <button
+                  type='button'
+                  onClick={() => approvePermit2(USDC_TOKEN.address)}
+                  className='rounded bg-purple-600 px-4 py-2 text-white hover:bg-purple-700'
+                >
+                  🔄 Full Permit2 Setup (USDC)
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Permit2 Information Section */}
+          <div className='mt-8 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6'>
+            <h2 className='mb-4 text-xl font-bold text-blue-900'>
+              🔒 Understanding Permit2 Approvals
+            </h2>
+            <div className='space-y-4'>
+              <div className='rounded border border-blue-300 bg-blue-100 p-4'>
+                <p className='text-sm text-blue-800'>
+                  <strong>What is Permit2?</strong>
+                </p>
+                <ul className='mt-2 list-inside list-disc space-y-1 text-xs text-blue-700'>
+                  <li>
+                    Permit2 is a token approval contract used by Uniswap for
+                    more secure and efficient token transfers
+                  </li>
+                  <li>
+                    Unlike traditional ERC20 approvals, Permit2 approvals have
+                    expiration times for better security
+                  </li>
+                  <li>
+                    It requires a 2-step process: 1) Approve Permit2 to spend
+                    your tokens, 2) Approve Universal Router through Permit2
+                  </li>
+                </ul>
+              </div>
+
+              <div className='grid gap-3 md:grid-cols-2'>
+                <div className='rounded border border-orange-200 bg-orange-50 p-3'>
+                  <h4 className='font-semibold text-orange-800'>
+                    🔗 Step 1: Token → Permit2
+                  </h4>
+                  <p className='text-sm text-orange-700'>
+                    Approve the Permit2 contract to spend your tokens
+                    (PYUSD/USDC). This is a traditional ERC20 approval.
+                  </p>
+                </div>
+                <div className='rounded border border-blue-200 bg-blue-50 p-3'>
+                  <h4 className='font-semibold text-blue-800'>
+                    🔒 Step 2: Permit2 → Router
+                  </h4>
+                  <p className='text-sm text-blue-700'>
+                    Approve the Universal Router through Permit2 with an
+                    expiration time. This enables swaps through Uniswap.
+                  </p>
+                </div>
+              </div>
+
+              {(permit2Data.pyusdPermit2?.isExpired ||
+                permit2Data.usdcPermit2?.isExpired) && (
+                <div className='rounded border border-red-300 bg-red-100 p-3'>
+                  <p className='text-sm text-red-700'>
+                    <strong>⚠️ Expired Allowance Detected:</strong> Your Permit2
+                    allowance has expired. This is why your swap failed with
+                    "AllowanceExpired" error. Use the buttons above to renew.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Approval Section */}
@@ -3881,7 +4396,8 @@ export default function CookbookPage() {
             </h2>
             <p className='mb-4 text-sm text-yellow-700'>
               Approve contracts to spend your tokens before swapping or adding
-              liquidity.
+              liquidity. Both legacy approvals and Permit2 approvals may be
+              needed.
             </p>
             <div className='space-x-4'>
               <button
