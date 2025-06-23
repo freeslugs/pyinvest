@@ -8,6 +8,38 @@ export default function PyUSDYieldSelector() {
   const [conservativeAmount, setConservativeAmount] = useState('250');
   const [growthAmount, setGrowthAmount] = useState('250');
 
+  // Custom input states
+  const [showConservativeCustom, setShowConservativeCustom] = useState(false);
+  const [showGrowthCustom, setShowGrowthCustom] = useState(false);
+  const [conservativeCustomValue, setConservativeCustomValue] = useState('');
+  const [growthCustomValue, setGrowthCustomValue] = useState('');
+
+  const handleConservativeCustomSubmit = () => {
+    if (conservativeCustomValue && parseFloat(conservativeCustomValue) > 0) {
+      setConservativeAmount(conservativeCustomValue);
+      setShowConservativeCustom(false);
+      setConservativeCustomValue('');
+    }
+  };
+
+  const handleGrowthCustomSubmit = () => {
+    if (growthCustomValue && parseFloat(growthCustomValue) > 0) {
+      setGrowthAmount(growthCustomValue);
+      setShowGrowthCustom(false);
+      setGrowthCustomValue('');
+    }
+  };
+
+  const handleConservativeCustomCancel = () => {
+    setShowConservativeCustom(false);
+    setConservativeCustomValue('');
+  };
+
+  const handleGrowthCustomCancel = () => {
+    setShowGrowthCustom(false);
+    setGrowthCustomValue('');
+  };
+
   return (
     <div className='min-h-screen bg-gray-50 p-4'>
       <div className='mx-auto max-w-md space-y-6'>
@@ -125,33 +157,72 @@ export default function PyUSDYieldSelector() {
               <div className='mb-4 space-y-3'>
                 <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
                 <div className='flex w-full gap-2'>
-                  <div role="radiogroup" className='flex w-full gap-2'>
-                    {['25', '50', '100', '250'].map((amount) => (
-                      <label
-                        key={amount}
-                        className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
-                          conservativeAmount === amount
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-300 text-gray-600'
-                        }`}
+                  {!showConservativeCustom ? (
+                    <>
+                      <div role="radiogroup" className='flex w-full gap-2 transition-all duration-300 ease-in-out'>
+                        {['25', '50', '100', '250'].map((amount) => (
+                          <label
+                            key={amount}
+                            className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                              conservativeAmount === amount
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-300 text-gray-600'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              value={amount}
+                              checked={conservativeAmount === amount}
+                              onChange={(e) => setConservativeAmount(e.target.value)}
+                              className="sr-only"
+                            />
+                            ${amount}
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowConservativeCustom(true)}
+                        className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
                       >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className='flex w-full gap-2 animate-in slide-in-from-right-5 duration-300'>
+                      <div className='flex w-full gap-2'>
                         <input
-                          type="radio"
-                          value={amount}
-                          checked={conservativeAmount === amount}
-                          onChange={(e) => setConservativeAmount(e.target.value)}
-                          className="sr-only"
+                          type="number"
+                          value={conservativeCustomValue}
+                          onChange={(e) => setConservativeCustomValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleConservativeCustomSubmit();
+                            } else if (e.key === 'Escape') {
+                              handleConservativeCustomCancel();
+                            }
+                          }}
+                          placeholder="Enter amount"
+                          className="flex-1 rounded-[10px] border-[1.5px] border-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-700 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
                         />
-                        ${amount}
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                  </button>
+                        <button
+                          type="button"
+                          onClick={handleConservativeCustomSubmit}
+                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleConservativeCustomCancel}
+                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -210,33 +281,72 @@ export default function PyUSDYieldSelector() {
               <div className='mb-4 space-y-3'>
                 <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
                 <div className='flex w-full gap-2'>
-                  <div role="radiogroup" className='flex w-full gap-2'>
-                    {['25', '50', '100', '250'].map((amount) => (
-                      <label
-                        key={amount}
-                        className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
-                          growthAmount === amount
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-300 text-gray-600'
-                        }`}
+                  {!showGrowthCustom ? (
+                    <>
+                      <div role="radiogroup" className='flex w-full gap-2 transition-all duration-300 ease-in-out'>
+                        {['25', '50', '100', '250'].map((amount) => (
+                          <label
+                            key={amount}
+                            className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                              growthAmount === amount
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-300 text-gray-600'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              value={amount}
+                              checked={growthAmount === amount}
+                              onChange={(e) => setGrowthAmount(e.target.value)}
+                              className="sr-only"
+                            />
+                            ${amount}
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowGrowthCustom(true)}
+                        className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
                       >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className='flex w-full gap-2 animate-in slide-in-from-right-5 duration-300'>
+                      <div className='flex w-full gap-2'>
                         <input
-                          type="radio"
-                          value={amount}
-                          checked={growthAmount === amount}
-                          onChange={(e) => setGrowthAmount(e.target.value)}
-                          className="sr-only"
+                          type="number"
+                          value={growthCustomValue}
+                          onChange={(e) => setGrowthCustomValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleGrowthCustomSubmit();
+                            } else if (e.key === 'Escape') {
+                              handleGrowthCustomCancel();
+                            }
+                          }}
+                          placeholder="Enter amount"
+                          className="flex-1 rounded-[10px] border-[1.5px] border-blue-500 bg-blue-50 px-3 py-2 text-sm text-blue-700 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
                         />
-                        ${amount}
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                  </button>
+                        <button
+                          type="button"
+                          onClick={handleGrowthCustomSubmit}
+                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleGrowthCustomCancel}
+                          className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
