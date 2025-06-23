@@ -11,6 +11,33 @@ interface WalletBalance {
   coinbase: string;
 }
 
+// PYUSD Token Configuration (Sepolia)
+const PYUSD_TOKEN_CONFIG = {
+  address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
+  decimals: 6,
+  symbol: 'PYUSD',
+};
+
+// ERC20 ABI for balanceOf function
+const ERC20_ABI = [
+  {
+    constant: true,
+    inputs: [{ name: '_owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: 'balance', type: 'uint256' }],
+    type: 'function',
+  },
+] as const;
+
+// Helper function to format PYUSD balance
+const formatPyusdBalance = (balance: bigint): string => {
+  const balanceNumber = Number(balance) / 10 ** PYUSD_TOKEN_CONFIG.decimals;
+  return balanceNumber.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
 export default function PyUSDYieldSelector() {
   const [conservativeAmount, setConservativeAmount] = useState('250');
   const [growthAmount, setGrowthAmount] = useState('250');
@@ -34,28 +61,103 @@ export default function PyUSDYieldSelector() {
     }
   }, []);
 
-  // Mock function to fetch PYUSD balance for Venmo wallet
+  // Real function to fetch PYUSD balance for Venmo wallet from Sepolia
   const fetchVenmoBalance = async (address: string) => {
     try {
       setIsLoading(true);
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Fetching PYUSD balance for address:', address);
 
-      // Mock balance - in real implementation, you'd call the actual API with the address
-      // For now, we'll return a mock balance regardless of the address
-      const mockBalance = '8,250.00';
-      console.log('Fetching balance for address:', address);
+      // Import viem utilities dynamically
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      // Use multiple RPC endpoints for better reliability
+      const rpcUrls = [
+        'https://ethereum-sepolia-rpc.publicnode.com',
+        'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+        'https://rpc.sepolia.org',
+        'https://rpc2.sepolia.org',
+      ];
+
+      let publicClient;
+      let workingRpc = '';
+
+      // Try different RPC endpoints for better reliability
+      for (const rpcUrl of rpcUrls) {
+        try {
+          console.log(`Trying RPC: ${rpcUrl}`);
+          publicClient = createPublicClient({
+            chain: sepolia,
+            transport: http(rpcUrl, {
+              timeout: 10_000, // 10 second timeout
+              retryCount: 2,
+            }),
+          });
+
+          // Test the connection with a simple call
+          await publicClient.getBlockNumber();
+          workingRpc = rpcUrl;
+          console.log(`Successfully connected to: ${rpcUrl}`);
+          break;
+        } catch (rpcError) {
+          console.log(`Failed to connect to ${rpcUrl}:`, rpcError);
+          continue;
+        }
+      }
+
+      if (!publicClient) {
+        throw new Error('All Sepolia RPC endpoints failed');
+      }
+
+      console.log('Using RPC:', workingRpc);
+      console.log('Token Contract:', PYUSD_TOKEN_CONFIG.address);
+
+      // Verify the PYUSD contract exists
+      try {
+        const contractCode = await publicClient.getBytecode({
+          address: PYUSD_TOKEN_CONFIG.address,
+        });
+
+        if (!contractCode || contractCode === '0x') {
+          throw new Error(
+            `PYUSD contract not found at ${PYUSD_TOKEN_CONFIG.address} on Sepolia`
+          );
+        }
+        console.log('PYUSD contract verified - bytecode found');
+      } catch (contractError) {
+        console.error('Contract verification failed:', contractError);
+        throw new Error(`PYUSD contract verification failed: ${contractError instanceof Error ? contractError.message : 'Unknown error'}`);
+      }
+
+      // Fetch PYUSD balance
+      console.log('Fetching PYUSD balance...');
+      const balance = await publicClient.readContract({
+        address: PYUSD_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`],
+      });
+
+      console.log('Raw balance:', balance);
+      const formattedBalance = formatPyusdBalance(balance as bigint);
+      console.log('Formatted balance:', formattedBalance);
 
       setBalances(prev => ({
         ...prev,
-        venmo: mockBalance
+        venmo: formattedBalance
       }));
+
     } catch (error) {
-      console.error('Error fetching Venmo balance:', error);
+      console.error('Error fetching Venmo PYUSD balance:', error);
+      // Set balance to 0 on error but show error message
       setBalances(prev => ({
         ...prev,
         venmo: '0'
       }));
+
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to fetch PYUSD balance: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
