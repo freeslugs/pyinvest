@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { Button } from './ui/button';
 
 interface HeaderButtonProps {
@@ -7,8 +9,10 @@ interface HeaderButtonProps {
 }
 
 export function HeaderButton({ isAuthenticated }: HeaderButtonProps) {
+  const router = useRouter();
+
   const handleNavigation = (path: string) => {
-    window.location.href = path;
+    router.push(path);
   };
 
   return isAuthenticated ? (
@@ -34,8 +38,10 @@ interface HeroCTAButtonProps {
 }
 
 export function HeroCTAButton({ isAuthenticated }: HeroCTAButtonProps) {
+  const router = useRouter();
+
   const handleNavigation = (path: string) => {
-    window.location.href = path;
+    router.push(path);
   };
 
   return (
@@ -54,8 +60,10 @@ interface FinalCTAButtonProps {
 }
 
 export function FinalCTAButton({ isAuthenticated }: FinalCTAButtonProps) {
+  const router = useRouter();
+
   const handleNavigation = (path: string) => {
-    window.location.href = path;
+    router.push(path);
   };
 
   return (
