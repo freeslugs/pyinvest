@@ -308,7 +308,15 @@ export default function PyUSDYieldSelector() {
                 </h1>
               </div>
             </div>
-            <NetworkSelector />
+            <div className='flex items-center space-x-3'>
+              <a
+                href='/profile'
+                className='rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors'
+              >
+                Profile
+              </a>
+              <NetworkSelector />
+            </div>
           </div>
           <div className='mb-2 mt-2 border-t border-gray-200'></div>
           <p className='text-base leading-relaxed text-gray-600'>
