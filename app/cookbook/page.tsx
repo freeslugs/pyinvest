@@ -8,13 +8,20 @@ import { encodeFunctionData } from 'viem';
 
 import WalletList from '../../components/WalletList';
 import {
+  ERC20_ABI,
   NETWORKS,
+  PERMIT2_CONFIG,
   UNISWAP_V3_POSITION_MANAGER_ABI,
   UNISWAP_V3_POSITION_MANAGER_ADDRESS,
   UNISWAP_V3_ROUTER_ABI,
   UNISWAP_V3_ROUTER_ADDRESS,
+  WETH_GATEWAY_ABI,
+  formatTokenBalance,
+  getAvailableNetworks,
+  getSepoliaAaveContracts,
   getSepoliaPools,
-  getSepoliaTokens
+  getSepoliaTokens,
+  parseTokenAmount
 } from '../../lib/constants';
 
 // Types for our pool data
@@ -1582,7 +1589,7 @@ export default function CookbookPage() {
         };
       }
     },
-    [PERMIT2_CONFIG.ABI, PERMIT2_CONFIG.ADDRESS]
+    []
   );
 
   // Function to approve ERC20 token to Permit2 contract
@@ -2042,7 +2049,6 @@ export default function CookbookPage() {
       PYUSD_TOKEN,
       USDC_TOKEN,
       checkPermit2Allowance,
-      ERC20_ABI,
       processPosition,
     ]
   );

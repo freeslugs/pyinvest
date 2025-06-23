@@ -6,8 +6,11 @@ import { useEffect, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
 import { NetworkSelector } from '@/components/ui/network-selector';
+
 import {
-  ERC20_ABI
+  ERC20_ABI,
+  formatTokenBalance,
+  getSepoliaTokens,
 } from '../../lib/constants';
 
 // Custom Verified Icon Component
