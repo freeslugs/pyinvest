@@ -244,6 +244,9 @@ export default function PyUSDYieldSelector() {
   // Function to fetch PYUSD balance for MetaMask wallet
   const fetchMetaMaskBalance = useCallback(async () => {
     try {
+      console.log('🔍 Starting MetaMask balance fetch...');
+      console.log('- User linked accounts:', user?.linkedAccounts?.length || 0);
+
       // Find MetaMask wallet from user's linked accounts
       const metaMaskWallet = user?.linkedAccounts?.find(
         (account: any) =>
@@ -251,13 +254,14 @@ export default function PyUSDYieldSelector() {
       ) as { address: string } | undefined;
 
       if (!metaMaskWallet) {
-        console.log('No MetaMask wallet found');
+        console.log('❌ No MetaMask wallet found in linked accounts');
+        console.log('- Available accounts:', user?.linkedAccounts?.map(acc => ({ type: acc.type, clientType: (acc as any).walletClientType })));
         setBalances(prev => ({ ...prev, metaMask: '0' }));
         return;
       }
 
       console.log(
-        'Fetching MetaMask PYUSD balance for address:',
+        '✅ Found MetaMask wallet, fetching PYUSD balance for address:',
         metaMaskWallet.address
       );
 
@@ -299,13 +303,40 @@ export default function PyUSDYieldSelector() {
         return newBalances;
       });
     } catch (error) {
-      console.error('Error fetching MetaMask PYUSD balance:', error);
+      console.error('❌ Error fetching MetaMask PYUSD balance:', error);
+      console.error('- Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        userAccounts: user?.linkedAccounts?.length || 0,
+        smartWalletExists: !!smartWallet
+      });
       setBalances(prev => ({
         ...prev,
         metaMask: '0',
       }));
     }
   }, [user]);
+
+  // Function to refresh all balances
+  const refreshAllBalances = useCallback(async () => {
+    console.log('🔄 Refreshing all balances...');
+
+    // Refresh smart wallet balance if available
+    if (smartWallet) {
+      console.log('🔄 Refreshing smart wallet balance');
+      await fetchSmartWalletBalance(smartWallet.address);
+    }
+
+    // Refresh MetaMask balance if user has connected external wallet
+    const hasEverConnectedWallet = user?.linkedAccounts?.some(
+      (account: any) =>
+        account.type === 'wallet' && account.walletClientType !== 'privy'
+    ) || false;
+
+    if (hasEverConnectedWallet) {
+      console.log('🔄 Refreshing MetaMask balance');
+      await fetchMetaMaskBalance();
+    }
+  }, [user, smartWallet, fetchMetaMaskBalance]);
 
   // Function to check Growth Vault balance (LP token balance)
   const checkGrowthVaultBalance = useCallback(async () => {
@@ -765,6 +796,18 @@ export default function PyUSDYieldSelector() {
     fetchMetaMaskBalance,
   ]);
 
+  // Periodic balance refresh every 30 seconds
+  useEffect(() => {
+    if (!authenticated || !ready) return;
+
+    const refreshInterval = setInterval(() => {
+      console.log('⏰ Periodic balance refresh');
+      refreshAllBalances();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [authenticated, ready, refreshAllBalances]);
+
   // Calculate total balance
   const totalBalance = () => {
     console.log('=== TOTAL BALANCE CALCULATION ===');
@@ -929,10 +972,8 @@ export default function PyUSDYieldSelector() {
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     setIsDepositFlow(false);
-    // Refresh smart wallet balance after onboarding
-    if (smartWallet) {
-      fetchSmartWalletBalance(smartWallet.address);
-    }
+    // Refresh all balances after onboarding
+    refreshAllBalances();
   };
 
   const handleDepositClick = () => {
@@ -1018,7 +1059,9 @@ export default function PyUSDYieldSelector() {
         {showSmartWallet && smartWallet ? (
           <SmartWalletCard
             address={smartWallet.address}
-            balance={smartWalletBalance}
+            balance={totalBalance()}
+            smartWalletBalance={balances.smartWallet}
+            metaMaskBalance={balances.metaMask}
           />
         ) : (
           <div className='space-y-4'>

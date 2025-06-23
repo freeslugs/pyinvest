@@ -10,9 +10,11 @@ import { QRCodeComponent } from './ui/qr-code';
 interface SmartWalletCardProps {
   address: string;
   balance: string;
+  smartWalletBalance?: string;
+  metaMaskBalance?: string;
 }
 
-export function SmartWalletCard({ address, balance }: SmartWalletCardProps) {
+export function SmartWalletCard({ address, balance, smartWalletBalance, metaMaskBalance }: SmartWalletCardProps) {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const copyToClipboard = (text: string) => {
@@ -27,7 +29,7 @@ export function SmartWalletCard({ address, balance }: SmartWalletCardProps) {
     <>
       <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
         <div className='p-6'>
-          <p className='mb-2 text-base text-gray-500'>Smart Wallet Balance</p>
+          <p className='mb-2 text-base text-gray-500'>Total Balance</p>
           <div className='mb-1 flex items-center space-x-2'>
             <span className='font-adelle text-4xl font-light text-gray-300'>
               $
@@ -71,8 +73,41 @@ export function SmartWalletCard({ address, balance }: SmartWalletCardProps) {
             </div>
 
             <p className='mt-2 text-xs text-gray-400'>
-              This is your smart wallet address for receiving PYUSD
+              Total includes PYUSD from your smart wallet and connected wallets
             </p>
+
+            {/* Balance Breakdown */}
+            {(smartWalletBalance || metaMaskBalance) && (
+              <div className='mt-3 rounded-lg bg-gray-50 p-3'>
+                <p className='mb-2 text-xs font-medium text-gray-600 uppercase tracking-wide'>
+                  Balance Breakdown
+                </p>
+                <div className='space-y-1'>
+                  {smartWalletBalance && (
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center space-x-2'>
+                        <div className='flex h-4 w-4 items-center justify-center rounded-full bg-blue-100'>
+                          <span className='text-xs font-semibold text-blue-600'>S</span>
+                        </div>
+                        <span className='text-xs text-gray-600'>Smart Wallet</span>
+                      </div>
+                      <span className='text-xs font-medium text-gray-800'>${smartWalletBalance}</span>
+                    </div>
+                  )}
+                  {metaMaskBalance && (
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center space-x-2'>
+                        <div className='flex h-4 w-4 items-center justify-center rounded-full bg-orange-100'>
+                          <span className='text-xs font-semibold text-orange-600'>M</span>
+                        </div>
+                        <span className='text-xs text-gray-600'>MetaMask</span>
+                      </div>
+                      <span className='text-xs font-medium text-gray-800'>${metaMaskBalance}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
