@@ -2,7 +2,9 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import {
+  AlertCircle,
   ArrowLeft,
+  Award,
   Check,
   ExternalLink,
   Mail,
@@ -11,10 +13,11 @@ import {
   Shield,
   User,
   Wallet,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -37,11 +40,49 @@ export default function ProfilePage() {
     unlinkDiscord,
   } = usePrivy();
 
+  // KYC state management
+  const [kycStatus, setKycStatus] = useState<'not_started' | 'passed' | 'claimed'>('not_started');
+  const [kycTokenBalance, setKycTokenBalance] = useState(0);
+  const [isClaimingToken, setIsClaimingToken] = useState(false);
+
   useEffect(() => {
     if (ready && !authenticated) {
       router.push('/');
     }
   }, [ready, authenticated, router]);
+
+  // Mock KYC status - in real app this would come from backend
+  useEffect(() => {
+    if (user?.id) {
+      // Mock logic - simulate different states based on user ID
+      const userId = user.id;
+      if (userId.endsWith('1') || userId.endsWith('2')) {
+        setKycStatus('passed');
+        setKycTokenBalance(0);
+      } else if (userId.endsWith('3') || userId.endsWith('4')) {
+        setKycStatus('claimed');
+        setKycTokenBalance(1);
+      } else {
+        setKycStatus('not_started');
+        setKycTokenBalance(0);
+      }
+    }
+  }, [user?.id]);
+
+  const handleClaimKycToken = async () => {
+    setIsClaimingToken(true);
+    try {
+      // Mock claiming process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setKycStatus('claimed');
+      setKycTokenBalance(1);
+      alert('KYC token claimed successfully! You now have access to premium support.');
+    } catch (error) {
+      alert('Failed to claim KYC token. Please try again.');
+    } finally {
+      setIsClaimingToken(false);
+    }
+  };
 
   if (!ready || !authenticated || !user) {
     return (
@@ -242,6 +283,132 @@ export default function ProfilePage() {
                     >
                       Connect
                     </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* KYC Compliance */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Award className="h-5 w-5 mr-2" />
+                  KYC Compliance
+                </h2>
+              </div>
+              <div className="px-6 py-4">
+                {kycStatus === 'not_started' && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full">
+                        <AlertCircle className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">KYC Not Started</p>
+                        <p className="text-xs text-gray-500">Complete KYC to unlock premium features</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => alert('KYC process would start here')}
+                      className="rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 transition-colors"
+                    >
+                      Start KYC
+                    </button>
+                  </div>
+                )}
+
+                {kycStatus === 'passed' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                          <Check className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">KYC Verified</p>
+                          <p className="text-xs text-gray-500">Ready to claim your KYC token</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleClaimKycToken}
+                        disabled={isClaimingToken}
+                        className="rounded-md bg-gradient-to-r from-yellow-400 to-yellow-500 px-4 py-2 text-sm font-medium text-white hover:from-yellow-500 hover:to-yellow-600 transition-all disabled:opacity-50"
+                      >
+                        {isClaimingToken ? 'Claiming...' : 'Claim KYC Token'}
+                      </button>
+                    </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <Zap className="h-5 w-5 text-yellow-600 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-medium text-yellow-800">KYC Token Benefits</h4>
+                          <ul className="mt-2 text-xs text-yellow-700 space-y-1">
+                            <li>• Access to American tech support</li>
+                            <li>• Priority customer service</li>
+                            <li>• Enhanced security features</li>
+                            <li>• Early access to new features</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {kycStatus === 'claimed' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                          <Award className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">KYC Token Claimed</p>
+                          <p className="text-xs text-gray-500">You have access to premium features</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                          <Shield className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium">
+                          Premium User
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <Shield className="h-5 w-5 text-green-600 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-green-800 mb-2">Token Details</h4>
+                          <div className="text-xs text-green-700 space-y-1">
+                            <p><span className="font-medium">Balance:</span> {kycTokenBalance} KYC Token</p>
+                            <p><span className="font-medium">Network:</span> BNB Smart Chain</p>
+                            <p><span className="font-medium">Contract:</span> 0x742d35Cc6634C0532925a3b8D</p>
+                          </div>
+                          <div className="mt-3 flex space-x-2">
+                            <a
+                              href="https://bscscan.com/token/0x742d35Cc6634C0532925a3b8D"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              View on BscScan
+                            </a>
+                            <a
+                              href="https://pancakeswap.finance/info/token/0x742d35Cc6634C0532925a3b8D"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              View on PancakeSwap
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
