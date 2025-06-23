@@ -26,10 +26,16 @@ async function checkAuth() {
 
   const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   const PRIVY_APP_SECRET = process.env.PRIVY_APP_SECRET;
-  const client = new PrivyClient(PRIVY_APP_ID!, PRIVY_APP_SECRET!);
+
+  if (!PRIVY_APP_ID || !PRIVY_APP_SECRET) {
+    console.error('Missing Privy environment variables');
+    return false;
+  }
+
+  const client = new PrivyClient(PRIVY_APP_ID, PRIVY_APP_SECRET);
 
   try {
-    const claims = await client.verifyAuthToken(cookieAuthToken);
+    await client.verifyAuthToken(cookieAuthToken);
     return true;
   } catch (error) {
     return false;

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 import { Modal } from '@/components/ui/modal';
+import { NetworkSelector } from '@/components/ui/network-selector';
 
 // Custom Verified Icon Component
 const VerifiedIcon = ({ className }: { className?: string }) => (
@@ -104,7 +105,7 @@ export default function PyUSDYieldSelector() {
 
       // Use multiple RPC endpoints for better reliability
       const rpcUrls = [
-        'https://ethereum-sepolia-rpc.publicnode.com',
+        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
         'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
         'https://rpc.sepolia.org',
         'https://rpc2.sepolia.org',
@@ -290,22 +291,25 @@ export default function PyUSDYieldSelector() {
       <div className='mx-auto max-w-md space-y-8'>
         {/* Header */}
         <div className='px-2 pb-4 pt-12'>
-          <div className='mb-2 flex items-center' style={{ gap: '10px' }}>
-            <div className='flex h-10 w-10 items-center justify-center'>
-              <Image
-                src='/assets/PyInvest-logomark.png'
-                alt='PyInvest logo'
-                width={28}
-                height={28}
-                className='h-7 w-7'
-                unoptimized
-              />
+          <div className='mb-2 flex items-center justify-between'>
+            <div className='flex items-center' style={{ gap: '10px' }}>
+              <div className='flex h-10 w-10 items-center justify-center'>
+                <Image
+                  src='/assets/PyInvest-logomark.png'
+                  alt='PyInvest logo'
+                  width={28}
+                  height={28}
+                  className='h-7 w-7'
+                  unoptimized
+                />
+              </div>
+              <div className='flex-1'>
+                <h1 className='text-3xl font-medium leading-tight tracking-tight text-gray-900'>
+                  PyInvest
+                </h1>
+              </div>
             </div>
-            <div className='flex-1'>
-              <h1 className='text-3xl font-medium leading-tight tracking-tight text-gray-900'>
-                PyInvest
-              </h1>
-            </div>
+            <NetworkSelector />
           </div>
           <div className='mb-2 mt-2 border-t border-gray-200'></div>
           <p className='text-base leading-relaxed text-gray-600'>

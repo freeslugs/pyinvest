@@ -24,6 +24,18 @@ export const NETWORKS = {
     rpcUrl: 'https://sepolia.base.org',
     explorerUrl: 'https://base-sepolia.blockscout.com',
   },
+  FLOW_TESTNET: {
+    id: 545,
+    name: 'Flow Testnet',
+    rpcUrl: 'https://testnet.evm.nodes.onflow.org',
+    explorerUrl: 'https://evm-testnet.flowscan.io',
+  },
+  BSC_TESTNET: {
+    id: 97,
+    name: 'BSC Testnet',
+    rpcURL: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+    explorerUrl: 'https://testnet.bscscan.com',
+  },
 } as const;
 
 // Token configurations by network
@@ -42,6 +54,14 @@ export const TOKENS = {
       name: 'USD Coin (Testnet)',
     },
   },
+  [NETWORKS.BSC_TESTNET.id]: {
+    USDC: {
+      address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d' as const,
+      decimals: 6,
+      symbol: 'USDC',
+      name: 'USD Coin (Testnet)',
+    },
+  },
 } as const;
 
 // Pool configurations
@@ -55,7 +75,28 @@ export const POOLS = {
       name: 'PYUSD/USDC',
     },
   },
+  [NETWORKS.BSC_TESTNET.id]: {
+    AAVE: {
+      aaddress: '0x6807dc923806fE8Fd134338EABCA509979a7e0cB' as const,
+    },
+  },
 } as const;
+
+// Aave configurations
+export const AAVE_CONTRACTS = {
+  [NETWORKS.BSC_TESTNET.id]: {
+    POOL: '0x6807dc923806fe8fd134338eabca509979a7e0cb' as const,
+    USDC: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d' as const,
+    AUSDC: '0x00901a076785e0906d1028c7d6372d247bec7d61' as const,
+  },
+  [NETWORKS.SEPOLIA.id]: {
+    POOL: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951' as const,
+    WETH_GATEWAY: '0x387d311e47e80b498169e6fb51d3193167d89f7d' as const,
+    WETH: '0xc558dbdd856501fcd9aaf1e62eae57a9f0629a3c' as const,
+    AWETH: '0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830' as const,
+    AUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80' as const, // aUSDC token address
+  },
+};
 
 // Standard ERC20 ABI
 export const ERC20_ABI = [
@@ -235,8 +276,9 @@ export const UNISWAP_V3_POSITION_MANAGER_ADDRESS =
 export const UNISWAP_V3_FACTORY_ADDRESS =
   '0x0227628f3F023bb0B980b67D528571c95c6DaC1c' as const;
 
-// Helper function to get network config
-export function getNetworkConfig(chainId: number) {
+// AAVE contract addresses by Chain
+export // Helper function to get network config
+function getNetworkConfig(chainId: number) {
   return Object.values(NETWORKS).find(network => network.id === chainId);
 }
 
@@ -245,7 +287,17 @@ export function getTokensForNetwork(chainId: number) {
   return TOKENS[chainId as keyof typeof TOKENS] || {};
 }
 
+// Specific helper for Sepolia tokens to ensure proper typing
+export function getSepoliaTokens() {
+  return TOKENS[NETWORKS.SEPOLIA.id];
+}
+
 // Helper function to get pools for a network
 export function getPoolsForNetwork(chainId: number) {
   return POOLS[chainId as keyof typeof POOLS] || {};
+}
+
+// Specific helper for Sepolia pools to ensure proper typing
+export function getSepoliaPools() {
+  return POOLS[NETWORKS.SEPOLIA.id];
 }
