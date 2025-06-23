@@ -1,6 +1,6 @@
 'use client';
 
-import { getAccessToken, usePrivy } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
 import {
   AlertCircle,
   ArrowLeft,
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { createPublicClient, http, parseAbi } from 'viem';
+import { bscTestnet } from 'viem/chains';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -39,6 +41,19 @@ export default function ProfilePage() {
     unlinkDiscord,
   } = usePrivy();
 
+  // KYC Contract configuration
+  const KYC_CONTRACT_ADDRESS = '0xcc8e8b424464991bbcda036c4781a60334c40628';
+  const KYC_CONTRACT_ABI = parseAbi([
+    'function balanceOf(address owner) view returns (uint256)',
+    'function mintFree() external',
+  ]);
+
+  // Create public client for reading contract data
+  const publicClient = createPublicClient({
+    chain: bscTestnet,
+    transport: http('https://data-seed-prebsc-1-s1.binance.org:8545'),
+  });
+
   // KYC state management
   const [kycStatus, setKycStatus] = useState<
     'loading' | 'no_token' | 'has_token'
@@ -58,27 +73,17 @@ export default function ProfilePage() {
 
     setIsCheckingBalance(true);
     try {
-      const response = await fetch('/api/kyc-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          action: 'checkBalance',
-          walletAddress: user.wallet.address,
-        }),
+      // Read the token balance directly from the blockchain
+      const balanceResult = await publicClient.readContract({
+        address: KYC_CONTRACT_ADDRESS as `0x${string}`,
+        abi: KYC_CONTRACT_ABI,
+        functionName: 'balanceOf',
+        args: [user.wallet.address as `0x${string}`],
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        setKycTokenBalance(data.balance);
-        setKycStatus(data.hasToken ? 'has_token' : 'no_token');
-      } else {
-        console.error('Failed to check KYC balance:', data.error);
-        setKycStatus('no_token');
-      }
+      const balance = Number(balanceResult);
+      setKycTokenBalance(balance);
+      setKycStatus(balance > 0 ? 'has_token' : 'no_token');
     } catch (error) {
       console.error('Error checking KYC balance:', error);
       setKycStatus('no_token');
@@ -103,33 +108,30 @@ export default function ProfilePage() {
 
     setIsClaimingToken(true);
     try {
-      const response = await fetch('/api/kyc-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${await getAccessToken()}`,
-        },
-        body: JSON.stringify({
-          action: 'mintFree',
-          walletAddress: user.wallet.address,
-          walletId: user.wallet.id,
-        }),
-      });
+      // For now, show message about BSC testnet requirement
+      alert(
+        'To mint your KYC token, please:\n\n' +
+          '1. Connect MetaMask or another Web3 wallet to BSC Testnet\n' +
+          '2. Go to https://testnet.bscscan.com/address/0xcc8e8b424464991bbcda036c4781a60334c40628\n' +
+          '3. Click "Contract" -> "Write Contract"\n' +
+          '4. Connect your wallet and call "mintFree"\n\n' +
+          'After minting, refresh this page to see your KYC token!'
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
+      // For development: simulate a successful mint after user acknowledgment
+      const shouldSimulate = confirm(
+        'For demo purposes, would you like to simulate having a KYC token?'
+      );
+      if (shouldSimulate) {
+        setKycTokenBalance(1);
+        setKycStatus('has_token');
         alert(
-          `KYC token minted successfully! Transaction hash: ${data.txHash}`
+          'Demo: KYC token status updated! (In production, this would be checked from the blockchain)'
         );
-        // Refresh balance after successful mint
-        await checkKycTokenBalance();
-      } else {
-        alert(`Failed to mint KYC token: ${data.error}`);
       }
-    } catch (error) {
-      console.error('Error minting KYC token:', error);
-      alert('Failed to mint KYC token. Please try again.');
+    } catch (error: any) {
+      console.error('Error with KYC token process:', error);
+      alert(`Error: ${error.message || 'Unknown error'}`);
     } finally {
       setIsClaimingToken(false);
     }
