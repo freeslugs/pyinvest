@@ -94,7 +94,7 @@ export function FinalCTAButton({ isAuthenticated }: FinalCTAButtonProps) {
       size='lg'
       className='w-full rounded-2xl bg-white px-8 py-4 text-base font-medium text-blue-600 shadow-lg transition-all duration-200 hover:bg-gray-50 hover:shadow-xl sm:w-auto sm:px-12 sm:py-6 sm:text-lg'
     >
-      Get Started - It&apos;s Free
+      Get Started
     </Button>
   );
 }
