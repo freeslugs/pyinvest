@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Edit3, Shield, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle, Edit3, Globe, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
@@ -62,7 +62,7 @@ export default function PyUSDYieldSelector() {
 
   return (
     <div className='min-h-screen bg-white p-4'>
-      <div className='mx-auto max-w-md space-y-6'>
+      <div className='mx-auto max-w-md space-y-8'>
         {/* Header */}
         <div className='pb-4 pt-12 px-2'>
           <div className='mb-2 flex items-start space-x-5'>
@@ -143,115 +143,114 @@ export default function PyUSDYieldSelector() {
           {/* Conservative Vault */}
           <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
             <div className='p-6'>
-              <div className='mb-6 flex items-center justify-between'>
-                <div className='flex items-center space-x-4'>
-                  <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-green-50'>
-                    <Shield className='h-6 w-6 text-green-600' />
-                  </div>
-                  <div>
-                    <h3 className='text-xl font-medium text-gray-900'>
-                      Conservative Vault
-                    </h3>
-                    <p className={`text-lg font-medium mt-1 ${conservativeYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}>
-                      4.2% - 5.8% APY
-                    </p>
-                  </div>
+              {/* Header Bar */}
+              <div className='mb-5 flex items-center justify-between border-b border-gray-100 pb-4'>
+                <div className='flex items-center space-x-2'>
+                  <Globe className='h-4 w-4 text-gray-400' />
+                  <span className='text-base font-medium text-gray-700'>Conservative Vault</span>
                 </div>
-                <div className='flex items-center'>
-                  <button
-                    onClick={() => setConservativeYieldEnabled(!conservativeYieldEnabled)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
-                      conservativeYieldEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                <div className='flex items-center space-x-1'>
+                  <CheckCircle className='h-4 w-4 text-blue-500' />
+                  <span className={`text-sm font-medium ${conservativeYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}>4.2% - 5.8% APY</span>
+                </div>
+              </div>
+
+              {/* Toggle Section */}
+              <div className='mb-5 flex items-center justify-between'>
+                <span className='text-sm font-medium text-gray-700'>Yield Active</span>
+                <button
+                  onClick={() => setConservativeYieldEnabled(!conservativeYieldEnabled)}
+                  className={`relative inline-flex h-8 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    conservativeYieldEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                  role="switch"
+                  aria-checked={conservativeYieldEnabled}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      conservativeYieldEnabled ? 'translate-x-4' : 'translate-x-0'
                     }`}
-                    role="switch"
-                    aria-checked={conservativeYieldEnabled}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        conservativeYieldEnabled ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
+                  />
+                </button>
               </div>
 
               {/* Amount Selection */}
               <div className='mb-5 space-y-4'>
                 <div className='text-base font-medium text-gray-900'>Select amount to invest</div>
-                                 <div className='flex w-full gap-2'>
-                   <div className="relative w-full overflow-hidden">
-                     <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
-                       showConservativeCustom ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
-                     }`}>
-                       <div role="radiogroup" className='flex w-full gap-2'>
-                         {['25', '50', '100', '250'].map((amount) => (
-                           <button
-                             key={amount}
-                             type="button"
-                             onClick={() => {
-                               if (conservativeAmount === amount) {
-                                 setConservativeAmount('');
-                               } else {
-                                 setConservativeAmount(amount);
-                               }
-                             }}
-                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2.5 px-3 text-center text-base font-medium leading-normal transition-colors hover:bg-gray-50 ${
-                               conservativeAmount === amount
-                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                 : 'border-gray-300 text-gray-600'
-                             }`}
-                           >
-                             ${amount}
-                           </button>
-                         ))}
-                       </div>
-                       <button
-                         type="button"
-                         onClick={() => setShowConservativeCustom(true)}
-                         className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
-                       >
-                         <Edit3 className="h-4 w-4" />
-                       </button>
-                     </div>
-                     <div className={`absolute inset-0 flex w-full gap-2 transition-all duration-250 ease-in-out ${
-                       showConservativeCustom ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'
-                     }`}>
-                       <input
-                         type="number"
-                         value={conservativeCustomValue}
-                         onChange={(e) => setConservativeCustomValue(e.target.value)}
-                         onKeyDown={(e) => {
-                           if (e.key === 'Enter') {
-                             handleConservativeCustomSubmit();
-                           } else if (e.key === 'Escape') {
-                             handleConservativeCustomCancel();
-                           }
-                         }}
-                         placeholder="Enter amount"
-                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
-                         autoFocus={showConservativeCustom}
-                       />
-                       <button
-                         type="button"
-                         onClick={handleConservativeCustomSubmit}
-                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
-                       >
-                         ✓
-                       </button>
-                       <button
-                         type="button"
-                         onClick={handleConservativeCustomCancel}
-                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
-                       >
-                         ✕
-                       </button>
-                     </div>
-                   </div>
-                 </div>
+                <div className='flex w-full gap-2'>
+                  <div className="relative w-full overflow-hidden">
+                    <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                      showConservativeCustom ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
+                    }`}>
+                      <div role="radiogroup" className='flex w-full gap-2'>
+                        {['25', '50', '100', '250'].map((amount) => (
+                          <button
+                            key={amount}
+                            type="button"
+                            onClick={() => {
+                              if (conservativeAmount === amount) {
+                                setConservativeAmount('');
+                              } else {
+                                setConservativeAmount(amount);
+                              }
+                            }}
+                            className={`flex w-full cursor-pointer justify-center rounded-md border py-2 px-2 text-center text-sm font-normal leading-normal transition-colors hover:bg-gray-50 ${
+                              conservativeAmount === amount
+                                ? 'border-blue-500 bg-blue-50 text-blue-600'
+                                : 'border-gray-200 text-gray-500'
+                            }`}
+                          >
+                            ${amount}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowConservativeCustom(true)}
+                        className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className={`absolute inset-0 flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                      showConservativeCustom ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'
+                    }`}>
+                      <input
+                        type="number"
+                        value={conservativeCustomValue}
+                        onChange={(e) => setConservativeCustomValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleConservativeCustomSubmit();
+                          } else if (e.key === 'Escape') {
+                            handleConservativeCustomCancel();
+                          }
+                        }}
+                        placeholder="Enter amount"
+                        className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                        autoFocus={showConservativeCustom}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleConservativeCustomSubmit}
+                        className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConservativeCustomCancel}
+                        className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-                                          {/* Press to Confirm Button */}
+              {/* Press to Confirm Button */}
               <div className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
                 conservativeAmount && conservativeYieldEnabled ? 'bg-blue-600' : 'bg-blue-600/30'
               }`}>
@@ -270,7 +269,7 @@ export default function PyUSDYieldSelector() {
                   </span>
                   {conservativeAmount && conservativeYieldEnabled && <ArrowRight className='ml-2 h-4 w-4' />}
                 </div>
-                                                {/* Explosion animation */}
+                {/* Explosion animation */}
                 <div
                   className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-base font-medium text-white transition-all duration-200 ease-out ${
                     conservativeSliding
@@ -307,115 +306,114 @@ export default function PyUSDYieldSelector() {
           {/* Growth Vault */}
           <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
             <div className='p-6'>
-              <div className='mb-6 flex items-center justify-between'>
-                <div className='flex items-center space-x-4'>
-                  <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50'>
-                    <TrendingUp className='h-6 w-6 text-blue-600' />
-                  </div>
-                  <div>
-                    <h3 className='text-xl font-medium text-gray-900'>
-                      Growth Vault
-                    </h3>
-                    <p className={`text-lg font-medium mt-1 ${growthYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}>
-                      8.5% - 12.3% APY
-                    </p>
-                  </div>
+              {/* Header Bar */}
+              <div className='mb-5 flex items-center justify-between border-b border-gray-100 pb-4'>
+                <div className='flex items-center space-x-2'>
+                  <Globe className='h-4 w-4 text-gray-400' />
+                  <span className='text-base font-medium text-gray-700'>Growth Vault</span>
                 </div>
-                <div className='flex items-center'>
-                  <button
-                    onClick={() => setGrowthYieldEnabled(!growthYieldEnabled)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
-                      growthYieldEnabled ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                    role="switch"
-                    aria-checked={growthYieldEnabled}
-                  >
+                <div className='flex items-center space-x-1'>
+                  <CheckCircle className='h-4 w-4 text-blue-500' />
+                  <span className={`text-sm font-medium ${growthYieldEnabled ? 'text-blue-600' : 'text-gray-400'}`}>8.5% - 12.3% APY</span>
+                </div>
+              </div>
+
+              {/* Toggle Section */}
+              <div className='mb-5 flex items-center justify-between'>
+                <span className='text-sm font-medium text-gray-700'>Yield Active</span>
+                <button
+                  onClick={() => setGrowthYieldEnabled(!growthYieldEnabled)}
+                  className={`relative inline-flex h-8 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    growthYieldEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                  role="switch"
+                  aria-checked={growthYieldEnabled}
+                >
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        growthYieldEnabled ? 'translate-x-5' : 'translate-x-0'
+                      className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        growthYieldEnabled ? 'translate-x-4' : 'translate-x-0'
                       }`}
                     />
-                  </button>
-                </div>
+                </button>
               </div>
 
               {/* Amount Selection */}
               <div className='mb-5 space-y-4'>
                 <div className='text-base font-medium text-gray-900'>Select amount to invest</div>
-                                 <div className='flex w-full gap-2'>
-                   <div className="relative w-full overflow-hidden">
-                     <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
-                       showGrowthCustom ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
-                     }`}>
-                       <div role="radiogroup" className='flex w-full gap-2'>
-                         {['25', '50', '100', '250'].map((amount) => (
-                           <button
-                             key={amount}
-                             type="button"
-                             onClick={() => {
-                               if (growthAmount === amount) {
-                                 setGrowthAmount('');
-                               } else {
-                                 setGrowthAmount(amount);
-                               }
-                             }}
-                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2.5 px-3 text-center text-base font-medium leading-normal transition-colors hover:bg-gray-50 ${
-                               growthAmount === amount
-                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                 : 'border-gray-300 text-gray-600'
-                             }`}
-                           >
-                             ${amount}
-                           </button>
-                         ))}
-                       </div>
-                       <button
-                         type="button"
-                         onClick={() => setShowGrowthCustom(true)}
-                         className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
-                       >
-                         <Edit3 className="h-4 w-4" />
-                       </button>
-                     </div>
-                     <div className={`absolute inset-0 flex w-full gap-2 transition-all duration-250 ease-in-out ${
-                       showGrowthCustom ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'
-                     }`}>
-                       <input
-                         type="number"
-                         value={growthCustomValue}
-                         onChange={(e) => setGrowthCustomValue(e.target.value)}
-                         onKeyDown={(e) => {
-                           if (e.key === 'Enter') {
-                             handleGrowthCustomSubmit();
-                           } else if (e.key === 'Escape') {
-                             handleGrowthCustomCancel();
-                           }
-                         }}
-                         placeholder="Enter amount"
-                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
-                         autoFocus={showGrowthCustom}
-                       />
-                       <button
-                         type="button"
-                         onClick={handleGrowthCustomSubmit}
-                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
-                       >
-                         ✓
-                       </button>
-                       <button
-                         type="button"
-                         onClick={handleGrowthCustomCancel}
-                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
-                       >
-                         ✕
-                       </button>
-                     </div>
-                   </div>
-                 </div>
+                <div className='flex w-full gap-2'>
+                  <div className="relative w-full overflow-hidden">
+                    <div className={`flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                      showGrowthCustom ? 'transform -translate-x-full opacity-0' : 'transform translate-x-0 opacity-100'
+                    }`}>
+                      <div role="radiogroup" className='flex w-full gap-2'>
+                        {['25', '50', '100', '250'].map((amount) => (
+                          <button
+                            key={amount}
+                            type="button"
+                            onClick={() => {
+                              if (growthAmount === amount) {
+                                setGrowthAmount('');
+                              } else {
+                                setGrowthAmount(amount);
+                              }
+                            }}
+                            className={`flex w-full cursor-pointer justify-center rounded-md border py-2 px-2 text-center text-sm font-normal leading-normal transition-colors hover:bg-gray-50 ${
+                              growthAmount === amount
+                                ? 'border-blue-500 bg-blue-50 text-blue-600'
+                                : 'border-gray-200 text-gray-500'
+                            }`}
+                          >
+                            ${amount}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowGrowthCustom(true)}
+                        className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className={`absolute inset-0 flex w-full gap-2 transition-all duration-250 ease-in-out ${
+                      showGrowthCustom ? 'transform translate-x-0 opacity-100' : 'transform translate-x-full opacity-0'
+                    }`}>
+                      <input
+                        type="number"
+                        value={growthCustomValue}
+                        onChange={(e) => setGrowthCustomValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleGrowthCustomSubmit();
+                          } else if (e.key === 'Escape') {
+                            handleGrowthCustomCancel();
+                          }
+                        }}
+                        placeholder="Enter amount"
+                        className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                        autoFocus={showGrowthCustom}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGrowthCustomSubmit}
+                        className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleGrowthCustomCancel}
+                        className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-                                          {/* Press to Confirm Button */}
+              {/* Press to Confirm Button */}
               <div className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
                 growthAmount && growthYieldEnabled ? 'bg-blue-600' : 'bg-blue-600/30'
               }`}>
@@ -434,7 +432,7 @@ export default function PyUSDYieldSelector() {
                   </span>
                   {growthAmount && growthYieldEnabled && <ArrowRight className='ml-2 h-4 w-4' />}
                 </div>
-                                                {/* Explosion animation */}
+                {/* Explosion animation */}
                 <div
                   className={`absolute top-1/2 left-1/2 rounded-full flex items-center justify-center text-base font-medium text-white transition-all duration-200 ease-out ${
                     growthSliding
