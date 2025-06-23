@@ -63,8 +63,8 @@ export default function PyUSDYieldSelector() {
 
   // Yield toggle states
   const [conservativeYieldEnabled, setConservativeYieldEnabled] =
-    useState(true);
-  const [growthYieldEnabled, setGrowthYieldEnabled] = useState(true);
+    useState(false);
+  const [growthYieldEnabled, setGrowthYieldEnabled] = useState(false);
 
   // Load Venmo address from localStorage on component mount
   useEffect(() => {
