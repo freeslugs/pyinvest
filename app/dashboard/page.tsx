@@ -7,6 +7,12 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { NetworkSelector } from '@/components/ui/network-selector';
 
+import {
+  ERC20_ABI,
+  formatTokenBalance,
+  getSepoliaTokens,
+} from '../../lib/constants';
+
 // Custom Verified Icon Component
 const VerifiedIcon = ({ className }: { className?: string }) => (
   <svg viewBox='0 0 24 24' width='1.2em' height='1.2em' className={className}>
@@ -28,27 +34,12 @@ interface WalletBalance {
   coinbase: string;
 }
 
-// PYUSD Token Configuration (Sepolia)
-const PYUSD_TOKEN_CONFIG = {
-  address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
-  decimals: 6,
-  symbol: 'PYUSD',
-};
-
-// ERC20 ABI for balanceOf function
-const ERC20_ABI = [
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function',
-  },
-] as const;
+// Get token configuration from centralized constants
+const PYUSD_TOKEN = getSepoliaTokens().PYUSD;
 
 // Helper function to format PYUSD balance
 const formatPyusdBalance = (balance: bigint): string => {
-  const balanceNumber = Number(balance) / 10 ** PYUSD_TOKEN_CONFIG.decimals;
+  const balanceNumber = formatTokenBalance(balance, PYUSD_TOKEN.decimals);
   return balanceNumber.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -142,17 +133,17 @@ export default function PyUSDYieldSelector() {
       }
 
       console.log('Using RPC:', workingRpc);
-      console.log('Token Contract:', PYUSD_TOKEN_CONFIG.address);
+      console.log('Token Contract:', PYUSD_TOKEN.address);
 
       // Verify the PYUSD contract exists
       try {
         const contractCode = await publicClient.getBytecode({
-          address: PYUSD_TOKEN_CONFIG.address,
+          address: PYUSD_TOKEN.address,
         });
 
         if (!contractCode || contractCode === '0x') {
           throw new Error(
-            `PYUSD contract not found at ${PYUSD_TOKEN_CONFIG.address} on Sepolia`
+            `PYUSD contract not found at ${PYUSD_TOKEN.address} on Sepolia`
           );
         }
         console.log('PYUSD contract verified - bytecode found');
@@ -166,7 +157,7 @@ export default function PyUSDYieldSelector() {
       // Fetch PYUSD balance
       console.log('Fetching PYUSD balance...');
       const balance = await publicClient.readContract({
-        address: PYUSD_TOKEN_CONFIG.address,
+        address: PYUSD_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [address as `0x${string}`],

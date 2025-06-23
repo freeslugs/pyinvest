@@ -3,18 +3,25 @@
 import { getAccessToken, usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { encodeFunctionData } from 'viem';
 
 import WalletList from '../../components/WalletList';
 import {
+  ERC20_ABI,
   NETWORKS,
+  PERMIT2_CONFIG,
   UNISWAP_V3_POSITION_MANAGER_ABI,
   UNISWAP_V3_POSITION_MANAGER_ADDRESS,
   UNISWAP_V3_ROUTER_ABI,
   UNISWAP_V3_ROUTER_ADDRESS,
+  WETH_GATEWAY_ABI,
+  formatTokenBalance,
+  getAvailableNetworks,
+  getSepoliaAaveContracts,
   getSepoliaPools,
   getSepoliaTokens,
+  parseTokenAmount
 } from '../../lib/constants';
 
 // Types for our pool data
@@ -146,147 +153,15 @@ export default function CookbookPage() {
   const twitterSubject = user?.twitter?.subject || null;
   const discordSubject = user?.discord?.subject || null;
 
-  // Available networks for switching
-  const availableNetworks = [
-    { id: 1, name: 'Ethereum Mainnet', rpcUrl: 'https://cloudflare-eth.com' },
-    {
-      id: 11155111,
-      name: 'Sepolia Testnet',
-      // rpcUrl: 'https://rpc.sepolia.org',
-      rpcUrl:
-        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
-    },
-    { id: 8453, name: 'Base', rpcUrl: 'https://mainnet.base.org' },
-    { id: 84532, name: 'Base Sepolia', rpcUrl: 'https://sepolia.base.org' },
-  ];
-  // PYUSD Token Configuration (Sepolia)
-  const PYUSD_TOKEN_CONFIG = {
-    address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
-    decimals: 6,
-    symbol: 'PYUSD',
-  };
-
-  // USDC Token Configuration (Sepolia)
-  const USDC_TOKEN_CONFIG = {
-    address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as const,
-    decimals: 6,
-    symbol: 'USDC',
-  };
-
-  // AAVE Configuration (Sepolia)
-  const AAVE_CONFIG = {
-    POOL: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951' as const,
-    WETH_GATEWAY: '0x387d311e47e80b498169e6fb51d3193167d89f7d' as const,
-    WETH: '0xc558dbdd856501fcd9aaf1e62eae57a9f0629a3c' as const,
-    AWETH: '0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830' as const,
-    AUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80' as const, // aUSDC token address
-    MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11' as const,
-  };
-
-  // Add Permit2 configuration after AAVE_CONFIG
-  const PERMIT2_CONFIG = {
-    ADDRESS: '0x000000000022d473030f116ddee9f6b43ac78ba3' as const,
-    ABI: [
-      {
-        inputs: [
-          { name: 'owner', type: 'address' },
-          { name: 'token', type: 'address' },
-          { name: 'spender', type: 'address' },
-        ],
-        name: 'allowance',
-        outputs: [
-          { name: 'amount', type: 'uint160' },
-          { name: 'expiration', type: 'uint48' },
-          { name: 'nonce', type: 'uint48' },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [
-          { name: 'token', type: 'address' },
-          { name: 'spender', type: 'address' },
-          { name: 'amount', type: 'uint160' },
-          { name: 'expiration', type: 'uint48' },
-        ],
-        name: 'approve',
-        outputs: [],
-        stateMutability: 'nonpayable',
-        type: 'function',
-      },
-    ] as const,
-  };
-
-  // ERC20 ABI for approve and transfer functions
-  const ERC20_ABI = useMemo(
-    () =>
-      [
-        {
-          constant: true,
-          inputs: [{ name: '_owner', type: 'address' }],
-          name: 'balanceOf',
-          outputs: [{ name: 'balance', type: 'uint256' }],
-          type: 'function',
-        },
-        {
-          constant: false,
-          inputs: [
-            { name: '_spender', type: 'address' },
-            { name: '_value', type: 'uint256' },
-          ],
-          name: 'approve',
-          outputs: [{ name: '', type: 'bool' }],
-          type: 'function',
-        },
-        {
-          constant: false,
-          inputs: [
-            { name: '_to', type: 'address' },
-            { name: '_value', type: 'uint256' },
-          ],
-          name: 'transfer',
-          outputs: [{ name: '', type: 'bool' }],
-          type: 'function',
-        },
-        {
-          constant: false,
-          inputs: [
-            { name: '_from', type: 'address' },
-            { name: '_to', type: 'address' },
-            { name: '_value', type: 'uint256' },
-          ],
-          name: 'transferFrom',
-          outputs: [{ name: '', type: 'bool' }],
-          type: 'function',
-        },
-        {
-          constant: true,
-          inputs: [
-            { name: '_owner', type: 'address' },
-            { name: '_spender', type: 'address' },
-          ],
-          name: 'allowance',
-          outputs: [{ name: '', type: 'uint256' }],
-          type: 'function',
-        },
-      ] as const,
-    []
-  );
-
-  // WETH Gateway ABI for depositing ETH
-  const WETH_GATEWAY_ABI = [
-    {
-      name: 'depositETH',
-      type: 'function',
-      stateMutability: 'payable',
-      inputs: [
-        { name: 'lendingPool', type: 'address' },
-        { name: 'onBehalfOf', type: 'address' },
-        { name: 'referralCode', type: 'uint16' },
-      ],
-      outputs: [],
-    },
-  ] as const;
+  // Get available networks from constants
+  const availableNetworks = getAvailableNetworks();
+  // Get configurations from constants
+  const AAVE_CONFIG = getSepoliaAaveContracts();
+  const SEPOLIA_TOKENS = getSepoliaTokens();
+  const SEPOLIA_POOLS = getSepoliaPools();
+  const PYUSD_TOKEN = SEPOLIA_TOKENS.PYUSD;
+  const USDC_TOKEN = SEPOLIA_TOKENS.USDC;
+  const PYUSD_USDC_POOL = SEPOLIA_POOLS.PYUSD_USDC;
 
   // Get the connected MetaMask wallet
   const metamaskWallet = wallets.find(
@@ -334,12 +209,7 @@ export default function CookbookPage() {
   >('PYUSD_TO_USDC');
   const [slippageTolerance, setSlippageTolerance] = useState<string>('15'); // Default to 15% for more flexibility
 
-  // Get token and pool configurations for Sepolia
-  const SEPOLIA_TOKENS = getSepoliaTokens();
-  const SEPOLIA_POOLS = getSepoliaPools();
-  const PYUSD_TOKEN = SEPOLIA_TOKENS.PYUSD;
-  const USDC_TOKEN = SEPOLIA_TOKENS.USDC;
-  const PYUSD_USDC_POOL = SEPOLIA_POOLS.PYUSD_USDC;
+
 
   // Function to switch networks
   const switchNetwork = async (chainId: number) => {
@@ -555,18 +425,18 @@ export default function CookbookPage() {
       console.log('Checking balances for:');
       console.log('MetaMask:', metamaskWallet.address);
       console.log('Smart Wallet:', smartWallet.address);
-      console.log('Token Contract:', PYUSD_TOKEN_CONFIG.address);
+      console.log('Token Contract:', PYUSD_TOKEN.address);
       console.log('Using RPC:', workingRpc);
 
       // First, let's verify the contract exists
       try {
         const contractCode = await publicClient.getBytecode({
-          address: PYUSD_TOKEN_CONFIG.address,
+          address: PYUSD_TOKEN.address,
         });
 
         if (!contractCode || contractCode === '0x') {
           throw new Error(
-            `Token contract not found at ${PYUSD_TOKEN_CONFIG.address} on Sepolia`
+            `Token contract not found at ${PYUSD_TOKEN.address} on Sepolia`
           );
         }
         console.log('Contract verified - bytecode found');
@@ -584,7 +454,7 @@ export default function CookbookPage() {
       try {
         console.log('Checking MetaMask balance...');
         metamaskBalance = await publicClient.readContract({
-          address: PYUSD_TOKEN_CONFIG.address,
+          address: PYUSD_TOKEN.address,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
           args: [metamaskWallet.address as `0x${string}`],
@@ -598,7 +468,7 @@ export default function CookbookPage() {
       try {
         console.log('Checking Smart Wallet balance...');
         smartWalletBalance = await publicClient.readContract({
-          address: PYUSD_TOKEN_CONFIG.address,
+          address: PYUSD_TOKEN.address,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
           args: [smartWallet.address as `0x${string}`],
@@ -610,7 +480,7 @@ export default function CookbookPage() {
       }
 
       const formatBalance = (balance: bigint) => {
-        return (Number(balance) / 10 ** PYUSD_TOKEN_CONFIG.decimals).toFixed(2);
+        return formatTokenBalance(balance, PYUSD_TOKEN.decimals).toFixed(2);
       };
 
       setTokenTestResults(prev => ({
@@ -740,7 +610,7 @@ export default function CookbookPage() {
       const { encodeFunctionData } = await import('viem');
 
       // Approve 100 PYUSD (with 6 decimals)
-      const approveAmount = BigInt(100 * 10 ** PYUSD_TOKEN_CONFIG.decimals);
+      const approveAmount = parseTokenAmount(100, PYUSD_TOKEN.decimals);
 
       const data = encodeFunctionData({
         abi: ERC20_ABI,
@@ -749,16 +619,16 @@ export default function CookbookPage() {
       });
 
       // Send transaction directly through MetaMask provider
-      const txHash = await metamaskProvider.request({
-        method: 'eth_sendTransaction',
-        params: [
-          {
-            from: metamaskWallet.address,
-            to: PYUSD_TOKEN_CONFIG.address,
-            data,
-          },
-        ],
-      });
+              const txHash = await metamaskProvider.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: metamaskWallet.address,
+              to: PYUSD_TOKEN.address,
+              data,
+            },
+          ],
+        });
 
       setTokenTestResults({
         approveStatus: 'Approval successful!',
@@ -812,7 +682,7 @@ export default function CookbookPage() {
       }
 
       // Transfer 1 PYUSD (with 6 decimals)
-      const transferAmount = BigInt(1 * 10 ** PYUSD_TOKEN_CONFIG.decimals);
+      const transferAmount = parseTokenAmount(1, PYUSD_TOKEN.decimals);
 
       const data = encodeFunctionData({
         abi: ERC20_ABI,
@@ -832,7 +702,7 @@ export default function CookbookPage() {
 
       // This will be signed by the smart wallet
       const txHash = await client.sendTransaction({
-        to: PYUSD_TOKEN_CONFIG.address,
+        to: PYUSD_TOKEN.address,
         data,
         value: 0n,
       });
@@ -926,36 +796,36 @@ export default function CookbookPage() {
 
       console.log('MetaMask wallet address:', metamaskWallet.address);
       console.log('Smart wallet address:', smartWallet.address);
-      console.log('USDC token address:', USDC_TOKEN_CONFIG.address);
+      console.log('USDC token address:', USDC_TOKEN.address);
 
       // Check MetaMask wallet USDC balance
       console.log('Checking MetaMask USDC balance...');
       const metamaskBalanceRaw = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
+        address: USDC_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [metamaskWallet.address as `0x${string}`],
       });
 
       console.log('MetaMask balance raw:', metamaskBalanceRaw);
-      const metamaskBalance = (
-        Number(metamaskBalanceRaw) /
-        10 ** USDC_TOKEN_CONFIG.decimals
+      const metamaskBalance = formatTokenBalance(
+        metamaskBalanceRaw as bigint,
+        USDC_TOKEN.decimals
       ).toFixed(6);
 
       // Check Smart Wallet USDC balance
       console.log('Checking Smart Wallet USDC balance...');
       const smartWalletBalanceRaw = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
+        address: USDC_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [smartWallet.address as `0x${string}`],
       });
 
       console.log('Smart Wallet balance raw:', smartWalletBalanceRaw);
-      const smartWalletBalance = (
-        Number(smartWalletBalanceRaw) /
-        10 ** USDC_TOKEN_CONFIG.decimals
+      const smartWalletBalance = formatTokenBalance(
+        smartWalletBalanceRaw as bigint,
+        USDC_TOKEN.decimals
       ).toFixed(6);
 
       console.log('Balances calculated successfully:', {
@@ -1088,7 +958,7 @@ export default function CookbookPage() {
       const { encodeFunctionData } = await import('viem');
 
       // Approve 100 USDC (with 6 decimals)
-      const approveAmount = BigInt(100 * 10 ** USDC_TOKEN_CONFIG.decimals);
+      const approveAmount = parseTokenAmount(100, USDC_TOKEN.decimals);
 
       const data = encodeFunctionData({
         abi: ERC20_ABI,
@@ -1097,12 +967,12 @@ export default function CookbookPage() {
       });
 
       // Send transaction directly through MetaMask provider
-      const txHash = await metamaskProvider.request({
-        method: 'eth_sendTransaction',
-        params: [
-          {
-            from: metamaskWallet.address,
-            to: USDC_TOKEN_CONFIG.address,
+              const txHash = await metamaskProvider.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: metamaskWallet.address,
+              to: USDC_TOKEN.address,
             data,
           },
         ],
@@ -1154,7 +1024,7 @@ export default function CookbookPage() {
       console.log('Using smart wallet:', smartWallet.address);
 
       // Transfer 1 USDC (with 6 decimals)
-      const transferAmount = BigInt(1 * 10 ** USDC_TOKEN_CONFIG.decimals);
+      const transferAmount = parseTokenAmount(1, USDC_TOKEN.decimals);
 
       const recipientAddress = '0x7A33615d12A12f58b25c653dc5E44188D44f6898'; // freeslugs.eth
 
@@ -1174,7 +1044,7 @@ export default function CookbookPage() {
 
       // This will be signed by the smart wallet
       const txHash = await client.sendTransaction({
-        to: USDC_TOKEN_CONFIG.address,
+        to: USDC_TOKEN.address,
         data,
         value: 0n,
       });
@@ -1475,7 +1345,7 @@ export default function CookbookPage() {
 
       // Test: Get USDC balance
       const balance = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
+        address: USDC_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [metamaskWallet.address as `0x${string}`],
@@ -1489,7 +1359,7 @@ export default function CookbookPage() {
 
       // Test: Get current allowance for AAVE Pool
       const allowance = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
+        address: USDC_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'allowance',
         args: [metamaskWallet.address as `0x${string}`, AAVE_CONFIG.POOL],
@@ -1571,13 +1441,13 @@ export default function CookbookPage() {
       // Check USDC balances
       const [eoaUsdcBalance, smartWalletUsdcBalance] = await Promise.all([
         publicClient.readContract({
-          address: USDC_TOKEN_CONFIG.address,
+          address: USDC_TOKEN.address,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
           args: [eoaWallet.address as `0x${string}`],
         }),
         publicClient.readContract({
-          address: USDC_TOKEN_CONFIG.address,
+          address: USDC_TOKEN.address,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
           args: [smartWallet.address as `0x${string}`],
@@ -1632,11 +1502,11 @@ export default function CookbookPage() {
         usdcBalances: {
           eoaUsdc: formatTokenBalance(
             eoaUsdcBalance as bigint,
-            USDC_TOKEN_CONFIG.decimals
+            USDC_TOKEN.decimals
           ),
           smartWalletUsdc: formatTokenBalance(
             smartWalletUsdcBalance as bigint,
-            USDC_TOKEN_CONFIG.decimals
+            USDC_TOKEN.decimals
           ),
         },
         aavePositions: {
@@ -1644,11 +1514,11 @@ export default function CookbookPage() {
           smartWalletAweth: formatEther(smartWalletAwethBalance as bigint),
           eoaAusdc: formatTokenBalance(
             eoaAusdcBalance as bigint,
-            USDC_TOKEN_CONFIG.decimals
+            USDC_TOKEN.decimals
           ),
           smartWalletAusdc: formatTokenBalance(
             smartWalletAusdcBalance as bigint,
-            USDC_TOKEN_CONFIG.decimals
+            USDC_TOKEN.decimals
           ),
         },
         loading: false,
@@ -1723,7 +1593,7 @@ export default function CookbookPage() {
         };
       }
     },
-    [PERMIT2_CONFIG.ABI, PERMIT2_CONFIG.ADDRESS]
+    []
   );
 
   // Function to approve ERC20 token to Permit2 contract
@@ -2183,7 +2053,6 @@ export default function CookbookPage() {
       PYUSD_TOKEN,
       USDC_TOKEN,
       checkPermit2Allowance,
-      ERC20_ABI,
       processPosition,
     ]
   );
@@ -3776,7 +3645,7 @@ export default function CookbookPage() {
                 {/* Token Info */}
                 <div className='rounded bg-gray-50 p-3 text-sm text-gray-600'>
                   <p>
-                    <strong>Token:</strong> PYUSD ({PYUSD_TOKEN_CONFIG.address})
+                    <strong>Token:</strong> PYUSD ({PYUSD_TOKEN.address})
                   </p>
                   <p>
                     <strong>Test Flow:</strong> Approve Smart Wallet → Transfer
@@ -3933,7 +3802,7 @@ export default function CookbookPage() {
                 {/* Token Info */}
                 <div className='rounded bg-gray-50 p-3 text-sm text-gray-600'>
                   <p>
-                    <strong>Token:</strong> USDC ({USDC_TOKEN_CONFIG.address})
+                    <strong>Token:</strong> USDC ({USDC_TOKEN.address})
                   </p>
                   <p>
                     <strong>Test Flow:</strong> Approve Smart Wallet → Transfer
