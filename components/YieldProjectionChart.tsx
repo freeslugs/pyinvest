@@ -3,14 +3,14 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
+    Area,
+    CartesianGrid,
+    ComposedChart,
+    Line,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
 } from 'recharts';
 
 interface YieldProjectionProps {
@@ -37,7 +37,7 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
   title = 'Yield Projection',
   className = '',
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<'1Y' | '2Y' | '3Y'>('1Y');
+  const [selectedPeriod, setSelectedPeriod] = useState<'1Y' | '2Y' | '3Y'>('3Y');
 
   // Calculate compound interest data
   const calculateYieldData = (years: number): DataPoint[] => {
@@ -106,15 +106,15 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white p-4 rounded-lg shadow-lg border border-gray-200"
         >
-          <p className="font-semibold text-gray-800">{data.displayMonth}</p>
+          <p className="font-medium text-gray-900">{data.displayMonth}</p>
           <p className="text-sm text-gray-600">
-            Principal: <span className="font-medium text-privy-navy">${data.principal.toLocaleString()}</span>
+            Principal: <span className="font-medium text-gray-900">${data.principal.toLocaleString()}</span>
           </p>
           <p className="text-sm text-gray-600">
             Interest: <span className="font-medium text-green-600">+${data.interest.toLocaleString()}</span>
           </p>
-          <p className="text-sm font-semibold text-gray-800">
-            Total: <span className="text-privy-navy">${data.total.toLocaleString()}</span>
+          <p className="text-sm font-medium text-gray-900">
+            Total: <span className="text-blue-600">${data.total.toLocaleString()}</span>
           </p>
         </motion.div>
       );
@@ -122,34 +122,32 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
     return null;
   };
 
-
-
   return (
     <motion.div
       variants={chartVariants}
       initial="hidden"
       animate="visible"
-      className={`bg-white rounded-2xl shadow-lg p-6 ${className}`}
+      className={`bg-white p-6 ${className}`}
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5">
         <motion.div variants={statVariants}>
-          <h3 className="text-xl font-bold text-gray-900 mb-1">{title}</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="text-xl font-medium text-gray-900 mb-1">{title}</h3>
+          <p className="text-base text-gray-600">
             {initialDeposit.toLocaleString()} {symbol} @ {apy}% APY
           </p>
         </motion.div>
 
         {/* Period Selector */}
-        <motion.div variants={statVariants} className="flex space-x-1 mt-4 sm:mt-0">
+        <motion.div variants={statVariants} className="flex gap-2 mt-4 sm:mt-0">
           {(['1Y', '2Y', '3Y'] as const).map((period) => (
             <button
               key={period}
               onClick={() => setSelectedPeriod(period)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex cursor-pointer justify-center rounded-md border px-3 py-2 text-center text-sm font-normal leading-normal transition-colors hover:bg-gray-50 ${
                 selectedPeriod === period
-                  ? 'bg-privy-navy text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'border-blue-500 bg-blue-50 text-blue-600'
+                  : 'border-gray-200 text-gray-500'
               }`}
             >
               {period}
@@ -159,33 +157,33 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
       </div>
 
       {/* Key Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <motion.div
           variants={statVariants}
-          className="bg-gradient-to-r from-privy-light-blue to-privy-blueish rounded-lg p-4"
+          className="rounded-xl border border-gray-200 bg-white shadow-sm p-4"
         >
-          <p className="text-sm text-gray-600 mb-1">Final Value</p>
-          <p className="text-2xl font-bold text-privy-navy">
+          <p className="text-base font-medium text-gray-600 mb-1">Final Value</p>
+          <p className="text-xl font-medium text-gray-900">
             ${finalValue.total.toLocaleString()}
           </p>
         </motion.div>
 
         <motion.div
           variants={statVariants}
-          className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4"
+          className="rounded-xl border border-gray-200 bg-white shadow-sm p-4"
         >
-          <p className="text-sm text-gray-600 mb-1">Total Interest</p>
-          <p className="text-2xl font-bold text-green-600">
+          <p className="text-base font-medium text-gray-600 mb-1">Total Interest</p>
+          <p className="text-xl font-medium text-green-600">
             +${finalValue.interest.toLocaleString()}
           </p>
         </motion.div>
 
         <motion.div
           variants={statVariants}
-          className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4"
+          className="rounded-xl border border-gray-200 bg-white shadow-sm p-4"
         >
-          <p className="text-sm text-gray-600 mb-1">Growth</p>
-          <p className="text-2xl font-bold text-purple-600">
+          <p className="text-base font-medium text-gray-600 mb-1">Growth</p>
+          <p className="text-xl font-medium text-blue-600">
             +{((finalValue.interest / initialDeposit) * 100).toFixed(1)}%
           </p>
         </motion.div>
@@ -200,8 +198,8 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
           <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <defs>
               <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#160B45" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#160B45" stopOpacity={0.1}/>
+                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#2563eb" stopOpacity={0.1}/>
               </linearGradient>
               <linearGradient id="interestGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
@@ -237,10 +235,10 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
             <Line
               type="monotone"
               dataKey="total"
-              stroke="#160B45"
+              stroke="#2563eb"
               strokeWidth={3}
-              dot={{ fill: '#160B45', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: '#160B45', strokeWidth: 2, fill: '#fff' }}
+              dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: '#2563eb', strokeWidth: 2, fill: '#fff' }}
               animationDuration={2000}
               animationBegin={0}
             />
@@ -265,7 +263,7 @@ const YieldProjectionChart: React.FC<YieldProjectionProps> = ({
         className="flex flex-wrap justify-center gap-6 mt-4 text-sm"
       >
         <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-privy-navy"></div>
+          <div className="w-4 h-0.5 bg-blue-600"></div>
           <span className="text-gray-600">Total Value</span>
         </div>
         <div className="flex items-center gap-2">

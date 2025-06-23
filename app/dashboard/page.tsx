@@ -5,7 +5,6 @@ import {
   CheckCircle,
   Edit3,
   Globe,
-  TrendingUp,
   Zap
 } from 'lucide-react';
 import Image from 'next/image';
@@ -73,32 +72,26 @@ export default function PyUSDYieldSelector() {
       <div className='mx-auto max-w-md space-y-8'>
         {/* Header */}
         <div className='px-2 pb-4 pt-12'>
-          <div className='mb-2 flex items-start space-x-5'>
-            <div className='mt-1 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-2.5'>
+          <div className='mb-2 flex items-center space-x-4'>
+            <div className='flex h-10 w-10 items-center justify-center'>
               <Image
                 src='/assets/PyInvest-logomark.png'
                 alt='PyInvest logo'
-                width={36}
-                height={36}
-                className='h-9 w-9'
+                width={28}
+                height={28}
+                className='h-7 w-7'
               />
             </div>
-            <div className='flex-1 pt-1'>
-              <h1 className='text-3xl font-semibold leading-tight tracking-tight text-gray-900'>
+            <div className='flex-1'>
+              <h1 className='text-3xl font-medium leading-tight tracking-tight text-gray-900'>
                 PyInvest
               </h1>
-              <p className='mt-2 max-w-sm text-base leading-relaxed text-gray-600'>
-                Easily & securely put digital money to work in 1 click
-              </p>
             </div>
-            <a
-              href='/analytics'
-              className='flex items-center rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200'
-            >
-              <TrendingUp className='mr-1 h-4 w-4' />
-              Analytics
-            </a>
           </div>
+          <div className='mt-2 mb-2 border-t border-gray-200'></div>
+          <p className='text-base leading-relaxed text-gray-600'>
+            Easily & securely put digital money to work in 1 click
+          </p>
         </div>
 
         {/* Balance Display */}
@@ -156,10 +149,21 @@ export default function PyUSDYieldSelector() {
         </div>
 
         {/* Investment Options */}
-        <div className='space-y-4'>
+        <div className='space-y-6'>
           <h2 className='px-2 text-2xl font-medium text-gray-900'>
             Earn Strategies
           </h2>
+
+          {/* Analytics Callout */}
+          <div className='px-2'>
+            <a
+              href='/analytics'
+              className='flex w-full items-center justify-center rounded-lg bg-gray-100 border border-gray-200 px-4 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-200 hover:border-gray-300'
+            >
+              Explore potential earnings
+              <ArrowRight className='ml-2 h-5 w-5' />
+            </a>
+          </div>
 
           {/* Conservative Vault */}
           <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
