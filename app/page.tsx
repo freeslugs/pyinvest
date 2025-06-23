@@ -125,68 +125,68 @@ export default async function HomePage() {
                 <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Earn up to 8-12% APY with digital assets compared to 0.5-2% with traditional savings accounts.
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Traditional CD</span>
-                    <span className="text-red-500 font-medium">0.5-2% APY</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
+                    <span className="text-red-500 font-medium text-xs sm:text-sm">0.5-2% APY</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">High-yield Savings</span>
-                    <span className="text-orange-500 font-medium">2-4% APY</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">High-yield Savings</span>
+                    <span className="text-orange-500 font-medium text-xs sm:text-sm">2-4% APY</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-900 font-normal">PyInvest</span>
-                    <span className="text-green-600 font-medium">8-12% APY</span>
+                    <span className="text-gray-900 font-normal text-xs sm:text-sm">PyInvest</span>
+                    <span className="text-green-600 font-medium text-xs sm:text-sm">8-12% APY</span>
                   </div>
                 </div>
               </div>
 
               {/* Instant Liquidity */}
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-green-50 p-4 rounded-2xl w-fit mb-6">
-                  <span className="text-4xl">💰</span>
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="bg-green-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
+                  <span className="text-3xl sm:text-4xl">💰</span>
                 </div>
-                <h3 className="text-2xl font-medium text-gray-900 mb-4">Instant Access</h3>
-                <p className="text-gray-600 mb-6">
+                <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Instant Access</h3>
+                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Access your funds anytime without penalties, unlike CDs that lock up your money for months or years.
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Traditional CD</span>
-                    <span className="text-red-500 font-medium">Locked 6mo-5yr</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
+                    <span className="text-red-500 font-medium text-xs sm:text-sm">Locked 6mo-5yr</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Savings Account</span>
-                    <span className="text-orange-500 font-medium">Limited transfers</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">Savings Account</span>
+                    <span className="text-orange-500 font-medium text-xs sm:text-sm">Limited transfers</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-900 font-normal">PyInvest</span>
-                    <span className="text-green-600 font-medium">Instant access</span>
+                    <span className="text-gray-900 font-normal text-xs sm:text-sm">PyInvest</span>
+                    <span className="text-green-600 font-medium text-xs sm:text-sm">Instant access</span>
                   </div>
                 </div>
               </div>
 
               {/* Simple Setup */}
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-purple-50 p-4 rounded-2xl w-fit mb-6">
-                  <span className="text-4xl">⚡</span>
+              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="bg-purple-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
+                  <span className="text-3xl sm:text-4xl">⚡</span>
                 </div>
-                <h3 className="text-2xl font-medium text-gray-900 mb-4">Simple Setup</h3>
-                <p className="text-gray-600 mb-6">
+                <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Simple Setup</h3>
+                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Get started in under 3 minutes with no minimum deposits, paperwork, or lengthy approval processes.
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Traditional CD</span>
-                    <span className="text-red-500 font-medium">Days to weeks</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
+                    <span className="text-red-500 font-medium text-xs sm:text-sm">Days to weeks</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Bank Account</span>
-                    <span className="text-orange-500 font-medium">1-3 days</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">Bank Account</span>
+                    <span className="text-orange-500 font-medium text-xs sm:text-sm">1-3 days</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-900 font-normal">PyInvest</span>
-                    <span className="text-green-600 font-medium">Under 3 minutes</span>
+                    <span className="text-gray-900 font-normal text-xs sm:text-sm">PyInvest</span>
+                    <span className="text-green-600 font-medium text-xs sm:text-sm">Under 3 minutes</span>
                   </div>
                 </div>
               </div>
@@ -195,12 +195,12 @@ export default async function HomePage() {
         </section>
 
         {/* Final CTA Section */}
-        <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-20">
+        <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-12 sm:py-16 lg:py-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-4xl font-medium text-white mb-6">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-white mb-4 sm:mb-6">
               Ready to put your money to work?
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 px-4 sm:px-0">
               Join thousands of users who have already started earning more with PyInvest.
             </p>
             <FinalCTAButton isAuthenticated={isAuthenticated} />

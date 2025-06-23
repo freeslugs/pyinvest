@@ -48,7 +48,7 @@ export function HeroCTAButton({ isAuthenticated }: HeroCTAButtonProps) {
     <Button
       onClick={() => handleNavigation(isAuthenticated ? '/dashboard' : '/login')}
       size="lg"
-      className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-xl text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+      className="bg-blue-600 hover:bg-blue-700 text-white px-8 sm:px-12 py-4 sm:py-6 rounded-xl text-base sm:text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
     >
       Get Started
     </Button>
@@ -70,7 +70,7 @@ export function FinalCTAButton({ isAuthenticated }: FinalCTAButtonProps) {
     <Button
       onClick={() => handleNavigation(isAuthenticated ? '/dashboard' : '/login')}
       size="lg"
-      className="bg-white text-blue-600 hover:bg-gray-50 px-12 py-6 rounded-2xl text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+      className="bg-white text-blue-600 hover:bg-gray-50 px-8 sm:px-12 py-4 sm:py-6 rounded-2xl text-base sm:text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
     >
       Get Started - It&apos;s Free
     </Button>
