@@ -1287,6 +1287,40 @@ export default function CookbookPage() {
             <h2 className='text-xl font-bold'>Your Wallets</h2>
             <WalletList />
           </div>
+
+          {/* Humbleicons Integration */}
+          <div className='mt-12 border-t pt-8'>
+            <div className='rounded-lg border border-blue-200 bg-blue-50 p-6'>
+              <h2 className='mb-4 text-xl font-bold text-blue-900'>
+                🎨 Humbleicons Successfully Integrated!
+              </h2>
+              <div className='space-y-3'>
+                <p className='text-blue-800'>
+                  <strong>Humbleicons</strong> has been installed and is ready to use in your app.
+                </p>
+                <div className='text-sm text-blue-700'>
+                  <h3 className='font-medium mb-2'>What's been added:</h3>
+                  <ul className='list-disc list-inside space-y-1'>
+                    <li>✅ Package installed: <code className='bg-white px-1 rounded'>humbleicons@1.15.0</code></li>
+                    <li>✅ SVG sprite copied to <code className='bg-white px-1 rounded'>public/humbleicons.svg</code></li>
+                    <li>✅ React component created: <code className='bg-white px-1 rounded'>components/ui/humbleicon.tsx</code></li>
+                    <li>✅ CSS styling added to global styles</li>
+                  </ul>
+                </div>
+                <div className='mt-4 p-3 bg-white rounded border'>
+                  <h4 className='font-medium text-blue-900 mb-2'>Quick Usage Example:</h4>
+                  <code className='text-sm text-gray-700'>
+                    {`import { HumbleIcon } from '../components/ui/humbleicon';`}<br />
+                    {`<HumbleIcon name="shield" size="lg" className="text-blue-600" />`}
+                  </code>
+                </div>
+                <p className='text-sm text-blue-600'>
+                  📖 Check the complete integration guide: <code className='bg-white px-1 rounded'>docs/humbleicons-integration.md</code>
+                </p>
+              </div>
+            </div>
+          </div>
+
           <p className='mt-6 text-sm font-bold uppercase text-gray-600'>
             User object
           </p>

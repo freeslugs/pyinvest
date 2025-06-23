@@ -26,6 +26,7 @@
     "@tailwindcss/forms": "^0.5.3",
     "axios": "^1.9.0",
     "clsx": "^2.1.1",
+    "humbleicons": "^1.15.0",
     "lucide-react": "^0.522.0",
     "next": "latest",
     "permissionless": "^0.2.47",

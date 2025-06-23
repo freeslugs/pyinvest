@@ -22,3 +22,15 @@
     font-weight: 600;
   }
 }
+
+/* Humbleicons styling */
+.humbleicons {
+  width: 1.3em;
+  height: 1.3em;
+  display: inline-block;
+  align-self: center;
+  vertical-align: text-top;
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}

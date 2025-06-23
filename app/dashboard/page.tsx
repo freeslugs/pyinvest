@@ -274,6 +274,43 @@ export default function PyUSDYieldSelector() {
           </div>
         </div>
 
+        {/* Icon Libraries Available */}
+        <div className='rounded-lg border border-gray-200 bg-white p-6'>
+          <h3 className='mb-4 text-lg font-semibold text-gray-900'>
+            🎨 Icon Libraries Available
+          </h3>
+          <div className='space-y-4'>
+            <div>
+              <h4 className='mb-2 text-sm font-medium text-gray-700'>
+                Lucide Icons (Currently Used)
+              </h4>
+              <div className='flex items-center space-x-4'>
+                <div className='flex items-center space-x-2'>
+                  <Shield className='h-5 w-5 text-green-600' />
+                  <span className='text-sm'>Shield</span>
+                </div>
+                <div className='flex items-center space-x-2'>
+                  <TrendingUp className='h-5 w-5 text-blue-600' />
+                  <span className='text-sm'>Trending Up</span>
+                </div>
+                <div className='flex items-center space-x-2'>
+                  <Zap className='h-5 w-5 text-yellow-600' />
+                  <span className='text-sm'>Zap</span>
+                </div>
+              </div>
+            </div>
+
+            <div className='rounded-lg bg-blue-50 p-3'>
+              <p className='text-sm text-blue-800'>
+                ✨ <strong>Humbleicons now installed!</strong> Check out the complete integration guide in <code className='bg-white px-1 rounded'>docs/humbleicons-integration.md</code>
+              </p>
+              <p className='text-xs text-blue-600 mt-2'>
+                Visit the /cookbook page to see the full Humbleicons showcase with examples and usage patterns.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Footer */}
         <div className='pb-8 text-center text-xs text-gray-500'>
           <p>Powered by institutional-grade DeFi protocols</p>
