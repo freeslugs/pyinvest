@@ -14,13 +14,13 @@ export function Logo(props: LogoPropsType) {
   const height = props.height || '40';
 
   return (
-    <div className="flex items-center space-x-3">
+    <div className='flex items-center space-x-3'>
       <Image
-        src="/assets/PyInvest-logomark.png"
-        alt="PyInvest Logo"
+        src='/assets/PyInvest-logomark.png'
+        alt='PyInvest Logo'
         width={32}
         height={32}
-        className="flex-shrink-0"
+        className='flex-shrink-0'
       />
       <span
         className={`text-2xl font-medium ${adelleSans.className}`}

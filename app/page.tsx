@@ -1,4 +1,10 @@
-import { BoltIcon, ChartBarIcon, ClockIcon, CurrencyDollarIcon, ShieldCheckIcon } from '@heroicons/react/24/solid';
+import {
+  BoltIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/solid';
 import { PrivyClient } from '@privy-io/server-auth';
 import { cookies } from 'next/headers';
 import Image from 'next/image';
@@ -41,11 +47,11 @@ export default async function HomePage() {
   return (
     <>
       {/* Header */}
-      <header className="bg-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4 sm:py-6">
-            <div className="flex items-center">
-              <Logo fontColor="#000000" />
+      <header className='bg-transparent'>
+        <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+          <div className='flex items-center justify-between py-4 sm:py-6'>
+            <div className='flex items-center'>
+              <Logo fontColor='#000000' />
             </div>
             <div>
               <HeaderButton isAuthenticated={isAuthenticated} />
@@ -54,47 +60,56 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <main className="min-h-screen bg-white">
+      <main className='min-h-screen bg-white'>
         {/* Hero Section */}
-        <section className="bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-            <div className="text-center">
-              <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-gray-900 mb-4 sm:mb-6 leading-tight sm:leading-relaxed ${adelleSans.className} animate-fade-in`}>
-                The easiest way to put<br className="hidden sm:block" />
-                <span className="sm:hidden"> </span>
-                <span className="text-blue-600 inline-flex items-center gap-2 sm:gap-4 flex-wrap justify-center">
+        <section className='bg-white'>
+          <div className='mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20'>
+            <div className='text-center'>
+              <h1
+                className={`mb-4 text-3xl font-semibold leading-tight text-gray-900 sm:mb-6 sm:text-4xl sm:leading-relaxed md:text-5xl lg:text-6xl ${adelleSans.className} animate-fade-in`}
+              >
+                The easiest way to put
+                <br className='hidden sm:block' />
+                <span className='sm:hidden'> </span>
+                <span className='inline-flex flex-wrap items-center justify-center gap-2 text-blue-600 sm:gap-4'>
                   digital money
                   <Image
-                    src="/assets/pyusd_logo.png"
-                    alt="PyUSD"
+                    src='/assets/pyusd_logo.png'
+                    alt='PyUSD'
                     width={36}
                     height={36}
-                    className="inline-block sm:w-12 sm:h-12"
+                    className='inline-block sm:h-12 sm:w-12'
                     style={{ marginTop: '4px' }}
                   />
                   to work.
-                </span><br />
+                </span>
+                <br />
               </h1>
-              <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto font-extralight animate-fade-in-delay px-4 sm:px-0">
-                Skip the complexity of traditional investing. Get started with PyInvest and
-                watch your digital assets grow with institutional-grade security.
+              <p className='animate-fade-in-delay mx-auto mb-6 max-w-2xl px-4 text-lg font-extralight text-gray-600 sm:mb-8 sm:px-0 sm:text-xl'>
+                Skip the complexity of traditional investing. Get started with
+                PyInvest and watch your digital assets grow with
+                institutional-grade security.
               </p>
 
               {/* CTA Button with Trust Indicators */}
-              <div className="flex flex-col items-center space-y-4 sm:space-y-6">
-                <div className="animate-fade-in-delay-2">
+              <div className='flex flex-col items-center space-y-4 sm:space-y-6'>
+                <div className='animate-fade-in-delay-2'>
                   <HeroCTAButton isAuthenticated={isAuthenticated} />
                 </div>
 
                 {/* Trust Indicators */}
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 text-gray-500 animate-fade-in-delay-3">
-                  <div className="flex items-center space-x-2">
-                    <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <span className="text-xs sm:text-sm font-light">Under 3 minutes</span>
+                <div className='animate-fade-in-delay-3 flex flex-col items-center space-y-2 text-gray-500 sm:flex-row sm:space-x-6 sm:space-y-0'>
+                  <div className='flex items-center space-x-2'>
+                    <ClockIcon className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                    <span className='text-xs font-light sm:text-sm'>
+                      Under 3 minutes
+                    </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                    <span className="text-xs sm:text-sm font-light">Bank-grade security</span>
+                  <div className='flex items-center space-x-2'>
+                    <ShieldCheckIcon className='h-4 w-4 text-gray-400 sm:h-5 sm:w-5' />
+                    <span className='text-xs font-light sm:text-sm'>
+                      Bank-grade security
+                    </span>
                   </div>
                 </div>
               </div>
@@ -103,90 +118,135 @@ export default async function HomePage() {
         </section>
 
         {/* Benefits Section */}
-        <section className="py-12 sm:py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-gray-900 mb-3 sm:mb-4">
+        <section className='py-12 sm:py-16 lg:py-20'>
+          <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
+            <div className='mb-8 text-center sm:mb-12 lg:mb-16'>
+              <h2 className='mb-3 text-2xl font-medium text-gray-900 sm:mb-4 sm:text-3xl lg:text-4xl'>
                 Why PyInvest beats traditional savings
               </h2>
-              <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4 sm:px-0">
+              <p className='mx-auto max-w-3xl px-4 text-lg text-gray-600 sm:px-0 sm:text-xl'>
                 Compare the advantages of digital investing with PyInvest versus
                 traditional CDs and high-yield savings accounts.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            <div className='grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-3'>
               {/* Higher Returns */}
-              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
-                  <ChartBarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
+              <div className='rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-8'>
+                <div className='mb-4 w-fit rounded-2xl bg-blue-50 p-3 sm:mb-6 sm:p-4'>
+                  <ChartBarIcon className='h-8 w-8 text-blue-600 sm:h-10 sm:w-10' />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Higher Returns</h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
-                  Earn up to 8-12% APY with digital assets compared to 0.5-2% with traditional savings accounts.
+                <h3 className='mb-3 text-xl font-medium text-gray-900 sm:mb-4 sm:text-2xl'>
+                  Higher Returns
+                </h3>
+                <p className='mb-4 text-sm text-gray-600 sm:mb-6 sm:text-base'>
+                  Earn up to 8-12% APY with digital assets compared to 0.5-2%
+                  with traditional savings accounts.
                 </p>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
-                    <span className="text-gray-400 font-medium text-xs sm:text-sm">0.5-2% APY</span>
+                <div className='space-y-2 sm:space-y-3'>
+                  <div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
+                    <span className='text-xs text-gray-500 sm:text-sm'>
+                      Traditional CD
+                    </span>
+                    <span className='text-xs font-medium text-gray-400 sm:text-sm'>
+                      0.5-2% APY
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">High-yield Savings</span>
-                    <span className="text-gray-400 font-medium text-xs sm:text-sm">2-4% APY</span>
+                  <div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
+                    <span className='text-xs text-gray-500 sm:text-sm'>
+                      High-yield Savings
+                    </span>
+                    <span className='text-xs font-medium text-gray-400 sm:text-sm'>
+                      2-4% APY
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <span className="text-blue-900 font-semibold text-xs sm:text-sm">PyInvest</span>
-                    <span className="text-blue-600 font-bold text-xs sm:text-sm">8-12% APY</span>
+                  <div className='flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-3 py-2'>
+                    <span className='text-xs font-semibold text-blue-900 sm:text-sm'>
+                      PyInvest
+                    </span>
+                    <span className='text-xs font-bold text-blue-600 sm:text-sm'>
+                      8-12% APY
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Instant Liquidity */}
-              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
-                  <CurrencyDollarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
+              <div className='rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-8'>
+                <div className='mb-4 w-fit rounded-2xl bg-blue-50 p-3 sm:mb-6 sm:p-4'>
+                  <CurrencyDollarIcon className='h-8 w-8 text-blue-600 sm:h-10 sm:w-10' />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Instant Access</h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
-                  Access your funds anytime without penalties, unlike CDs that lock up your money for months or years.
+                <h3 className='mb-3 text-xl font-medium text-gray-900 sm:mb-4 sm:text-2xl'>
+                  Instant Access
+                </h3>
+                <p className='mb-4 text-sm text-gray-600 sm:mb-6 sm:text-base'>
+                  Access your funds anytime without penalties, unlike CDs that
+                  lock up your money for months or years.
                 </p>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
-                    <span className="text-gray-400 font-medium text-xs sm:text-sm">Locked 6mo-5yr</span>
+                <div className='space-y-2 sm:space-y-3'>
+                  <div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
+                    <span className='text-xs text-gray-500 sm:text-sm'>
+                      Traditional CD
+                    </span>
+                    <span className='text-xs font-medium text-gray-400 sm:text-sm'>
+                      Locked 6mo-5yr
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">Savings Account</span>
-                    <span className="text-gray-400 font-medium text-xs sm:text-sm">Limited transfers</span>
+                  <div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
+                    <span className='text-xs text-gray-500 sm:text-sm'>
+                      Savings Account
+                    </span>
+                    <span className='text-xs font-medium text-gray-400 sm:text-sm'>
+                      Limited transfers
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <span className="text-blue-900 font-semibold text-xs sm:text-sm">PyInvest</span>
-                    <span className="text-blue-600 font-bold text-xs sm:text-sm">Instant access</span>
+                  <div className='flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-3 py-2'>
+                    <span className='text-xs font-semibold text-blue-900 sm:text-sm'>
+                      PyInvest
+                    </span>
+                    <span className='text-xs font-bold text-blue-600 sm:text-sm'>
+                      Instant access
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Simple Setup */}
-              <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
-                  <BoltIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
+              <div className='rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:p-8'>
+                <div className='mb-4 w-fit rounded-2xl bg-blue-50 p-3 sm:mb-6 sm:p-4'>
+                  <BoltIcon className='h-8 w-8 text-blue-600 sm:h-10 sm:w-10' />
                 </div>
-                <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Simple Setup</h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
-                  Get started in under 3 minutes with no minimum deposits, paperwork, or lengthy approval processes.
+                <h3 className='mb-3 text-xl font-medium text-gray-900 sm:mb-4 sm:text-2xl'>
+                  Simple Setup
+                </h3>
+                <p className='mb-4 text-sm text-gray-600 sm:mb-6 sm:text-base'>
+                  Get started in under 3 minutes with no minimum deposits,
+                  paperwork, or lengthy approval processes.
                 </p>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
-                    <span className="text-gray-400 font-medium text-xs sm:text-sm">Days to weeks</span>
+                <div className='space-y-2 sm:space-y-3'>
+                  <div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
+                    <span className='text-xs text-gray-500 sm:text-sm'>
+                      Traditional CD
+                    </span>
+                    <span className='text-xs font-medium text-gray-400 sm:text-sm'>
+                      Days to weeks
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">Bank Account</span>
-                    <span className="text-gray-400 font-medium text-xs sm:text-sm">1-3 days</span>
+                  <div className='flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2'>
+                    <span className='text-xs text-gray-500 sm:text-sm'>
+                      Bank Account
+                    </span>
+                    <span className='text-xs font-medium text-gray-400 sm:text-sm'>
+                      1-3 days
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <span className="text-blue-900 font-semibold text-xs sm:text-sm">PyInvest</span>
-                    <span className="text-blue-600 font-bold text-xs sm:text-sm">Under 3 minutes</span>
+                  <div className='flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-3 py-2'>
+                    <span className='text-xs font-semibold text-blue-900 sm:text-sm'>
+                      PyInvest
+                    </span>
+                    <span className='text-xs font-bold text-blue-600 sm:text-sm'>
+                      Under 3 minutes
+                    </span>
                   </div>
                 </div>
               </div>
@@ -195,13 +255,14 @@ export default async function HomePage() {
         </section>
 
         {/* Final CTA Section */}
-        <section className="bg-gradient-to-r from-blue-600 to-blue-700 py-12 sm:py-16 lg:py-20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-white mb-4 sm:mb-6">
+        <section className='bg-gradient-to-r from-blue-600 to-blue-700 py-12 sm:py-16 lg:py-20'>
+          <div className='mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8'>
+            <h2 className='mb-4 text-2xl font-medium text-white sm:mb-6 sm:text-3xl lg:text-4xl'>
               Ready to put your money to work?
             </h2>
-            <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 px-4 sm:px-0">
-              Join thousands of users who have already started earning more with PyInvest.
+            <p className='mb-6 px-4 text-lg text-blue-100 sm:mb-8 sm:px-0 sm:text-xl'>
+              Join thousands of users who have already started earning more with
+              PyInvest.
             </p>
             <FinalCTAButton isAuthenticated={isAuthenticated} />
           </div>
