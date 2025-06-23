@@ -10,6 +10,14 @@ import { encodeFunctionData } from 'viem';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { SmartWalletCard } from '@/components/SmartWalletCard';
 import { NetworkSelector } from '@/components/ui/network-selector';
+import {
+  ERC20_ABI,
+  UNISWAP_V3_POSITION_MANAGER_ABI,
+  UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+  UNISWAP_V3_ROUTER_ABI,
+  UNISWAP_V3_ROUTER_ADDRESS,
+  formatPyusdBalance
+} from '@/lib/constants';
 
 // Custom Verified Icon Component
 const VerifiedIcon = ({ className }: { className?: string }) => (
@@ -39,147 +47,22 @@ interface WalletBalance {
   metaMask: string;
 }
 
-// PYUSD Token Configuration (Sepolia)
-const PYUSD_TOKEN_CONFIG = {
+// Token configurations for Sepolia
+const PYUSD_TOKEN = {
   address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
   decimals: 6,
   symbol: 'PYUSD',
+  name: 'PayPal USD (Testnet)',
 };
 
-// USDC Token Configuration (Sepolia)
-const USDC_TOKEN_CONFIG = {
+const USDC_TOKEN = {
   address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238' as const,
   decimals: 6,
   symbol: 'USDC',
+  name: 'USD Coin (Testnet)',
 };
 
-// Uniswap V3 Configuration (Sepolia)
-const UNISWAP_CONFIG = {
-  ROUTER_ADDRESS: '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as const,
-  POSITION_MANAGER_ADDRESS:
-    '0x1238536071E1c677A632429e3655c799b22cDA52' as const,
-  PYUSD_USDC_POOL: {
-    address: '0x1eA26f380A71E15E75E61c6D66B4242c1f652FEd' as const,
-    fee: 3000, // 0.3%
-  },
-};
 
-// ERC20 ABI for balanceOf function
-const ERC20_ABI = [
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_spender', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'approve',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'transfer',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function',
-  },
-  {
-    constant: false,
-    inputs: [
-      { name: '_from', type: 'address' },
-      { name: '_to', type: 'address' },
-      { name: '_value', type: 'uint256' },
-    ],
-    name: 'transferFrom',
-    outputs: [{ name: '', type: 'bool' }],
-    type: 'function',
-  },
-  {
-    constant: true,
-    inputs: [
-      { name: '_owner', type: 'address' },
-      { name: '_spender', type: 'address' },
-    ],
-    name: 'allowance',
-    outputs: [{ name: '', type: 'uint256' }],
-    type: 'function',
-  },
-] as const;
-
-// Uniswap V3 Router ABI (simplified)
-const UNISWAP_V3_ROUTER_ABI = [
-  {
-    inputs: [
-      { name: 'commands', type: 'bytes' },
-      { name: 'inputs', type: 'bytes[]' },
-      { name: 'deadline', type: 'uint256' },
-    ],
-    name: 'execute',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-] as const;
-
-// Uniswap V3 Position Manager ABI (for liquidity positions)
-const UNISWAP_V3_POSITION_MANAGER_ABI = [
-  {
-    inputs: [
-      {
-        components: [
-          { name: 'token0', type: 'address' },
-          { name: 'token1', type: 'address' },
-          { name: 'fee', type: 'uint24' },
-          { name: 'tickLower', type: 'int24' },
-          { name: 'tickUpper', type: 'int24' },
-          { name: 'amount0Desired', type: 'uint256' },
-          { name: 'amount1Desired', type: 'uint256' },
-          { name: 'amount0Min', type: 'uint256' },
-          { name: 'amount1Min', type: 'uint256' },
-          { name: 'recipient', type: 'address' },
-          { name: 'deadline', type: 'uint256' },
-        ],
-        name: 'params',
-        type: 'tuple',
-      },
-    ],
-    name: 'mint',
-    outputs: [
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'liquidity', type: 'uint128' },
-      { name: 'amount0', type: 'uint256' },
-      { name: 'amount1', type: 'uint256' },
-    ],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const;
-
-// Helper function to format PYUSD balance
-const formatPyusdBalance = (balance: bigint): string => {
-  const balanceNumber = Number(balance) / 10 ** PYUSD_TOKEN_CONFIG.decimals;
-  return balanceNumber.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-};
 
 export default function PyUSDYieldSelector() {
   const { user, authenticated, ready } = usePrivy();
@@ -278,13 +161,13 @@ export default function PyUSDYieldSelector() {
 
       // Fetch PYUSD balance
       const balance = await publicClient.readContract({
-        address: PYUSD_TOKEN_CONFIG.address,
+        address: PYUSD_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [metaMaskWallet.address as `0x${string}`],
       });
 
-      const formattedBalance = formatPyusdBalance(balance as bigint);
+      const formattedBalance = formatPyusdBalance(balance as bigint, PYUSD_TOKEN.decimals);
       console.log('🟠 METAMASK BALANCE UPDATE:');
       console.log('- Raw balance from contract:', balance);
       console.log('- Formatted balance:', formattedBalance);
@@ -327,7 +210,7 @@ export default function PyUSDYieldSelector() {
 
       // Check how many NFT positions the smart wallet has in the Position Manager
       const nftBalance = (await publicClient.readContract({
-        address: UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS,
+        address: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
         abi: UNISWAP_V3_POSITION_MANAGER_ABI,
         functionName: 'balanceOf',
         args: [smartWallet.address as `0x${string}`],
@@ -371,7 +254,7 @@ export default function PyUSDYieldSelector() {
     });
 
     const balance = await publicClient.readContract({
-      address: PYUSD_TOKEN_CONFIG.address,
+      address: PYUSD_TOKEN.address,
       abi: ERC20_ABI,
       functionName: 'balanceOf',
       args: [smartWallet.address as `0x${string}`],
@@ -415,7 +298,7 @@ export default function PyUSDYieldSelector() {
       params: [
         {
           from: metamaskWallet.address,
-          to: PYUSD_TOKEN_CONFIG.address,
+          to: PYUSD_TOKEN.address,
           data: transferData,
         },
       ],
@@ -441,12 +324,12 @@ export default function PyUSDYieldSelector() {
     const approveData = encodeFunctionData({
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [UNISWAP_CONFIG.ROUTER_ADDRESS, swapAmount],
+      args: [UNISWAP_V3_ROUTER_ADDRESS, swapAmount],
     });
 
     console.log('Approving router to spend PYUSD...');
     const approveTx = await client.sendTransaction({
-      to: PYUSD_TOKEN_CONFIG.address,
+      to: PYUSD_TOKEN.address,
       data: approveData,
       value: 0n,
     });
@@ -477,7 +360,7 @@ export default function PyUSDYieldSelector() {
         swapAmount,
         minAmountOut,
         // Path: PYUSD -> 0.3% fee -> USDC
-        `0x${PYUSD_TOKEN_CONFIG.address.slice(2)}${UNISWAP_CONFIG.PYUSD_USDC_POOL.fee.toString(16).padStart(6, '0')}${USDC_TOKEN_CONFIG.address.slice(2)}` as `0x${string}`,
+        `0x${PYUSD_TOKEN.address.slice(2)}${'bb8'.padStart(6, '0')}${USDC_TOKEN.address.slice(2)}` as `0x${string}`,
         true,
       ]
     );
@@ -490,7 +373,7 @@ export default function PyUSDYieldSelector() {
 
     console.log('Executing swap...');
     const swapTx = await client.sendTransaction({
-      to: UNISWAP_CONFIG.ROUTER_ADDRESS,
+      to: UNISWAP_V3_ROUTER_ADDRESS,
       data: executeCalldata,
       value: 0n,
     });
@@ -514,25 +397,25 @@ export default function PyUSDYieldSelector() {
     const pyusdApproveData = encodeFunctionData({
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS, pyusdAmount],
+      args: [UNISWAP_V3_POSITION_MANAGER_ADDRESS, pyusdAmount],
     });
 
     const usdcApproveData = encodeFunctionData({
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS, usdcAmount],
+      args: [UNISWAP_V3_POSITION_MANAGER_ADDRESS, usdcAmount],
     });
 
     console.log('Approving position manager for PYUSD...');
     const pyusdApproveTx = await client.sendTransaction({
-      to: PYUSD_TOKEN_CONFIG.address,
+      to: PYUSD_TOKEN.address,
       data: pyusdApproveData,
       value: 0n,
     });
 
     console.log('Approving position manager for USDC...');
     const usdcApproveTx = await client.sendTransaction({
-      to: USDC_TOKEN_CONFIG.address,
+      to: USDC_TOKEN.address,
       data: usdcApproveData,
       value: 0n,
     });
@@ -544,14 +427,14 @@ export default function PyUSDYieldSelector() {
 
     // Determine correct token order (token0 < token1 by address)
     const isUSDCToken0 =
-      USDC_TOKEN_CONFIG.address.toLowerCase() <
-      PYUSD_TOKEN_CONFIG.address.toLowerCase();
+      USDC_TOKEN.address.toLowerCase() <
+      PYUSD_TOKEN.address.toLowerCase();
     const token0Address = isUSDCToken0
-      ? USDC_TOKEN_CONFIG.address
-      : PYUSD_TOKEN_CONFIG.address;
+      ? USDC_TOKEN.address
+      : PYUSD_TOKEN.address;
     const token1Address = isUSDCToken0
-      ? PYUSD_TOKEN_CONFIG.address
-      : USDC_TOKEN_CONFIG.address;
+      ? PYUSD_TOKEN.address
+      : USDC_TOKEN.address;
 
     // Assign amounts according to token order
     const amount0Desired = isUSDCToken0 ? usdcAmount : pyusdAmount;
@@ -570,7 +453,7 @@ export default function PyUSDYieldSelector() {
     const mintParams = {
       token0: token0Address,
       token1: token1Address,
-      fee: UNISWAP_CONFIG.PYUSD_USDC_POOL.fee,
+      fee: 3000, // 0.3% fee tier
       tickLower,
       tickUpper,
       amount0Desired,
@@ -599,7 +482,7 @@ export default function PyUSDYieldSelector() {
 
     console.log('Minting liquidity position...');
     const mintTx = await client.sendTransaction({
-      to: UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS,
+      to: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
       data: mintData,
       value: 0n,
     });
@@ -630,13 +513,13 @@ export default function PyUSDYieldSelector() {
 
       // Fetch PYUSD balance
       const balance = await publicClient.readContract({
-        address: PYUSD_TOKEN_CONFIG.address,
+        address: PYUSD_TOKEN.address,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [address as `0x${string}`],
       });
 
-      const formattedBalance = formatPyusdBalance(balance as bigint);
+      const formattedBalance = formatPyusdBalance(balance as bigint, PYUSD_TOKEN.decimals);
       console.log('🔵 SMART WALLET BALANCE UPDATE:');
       console.log('- Raw balance from contract:', balance);
       console.log('- Formatted balance:', formattedBalance);
@@ -836,7 +719,7 @@ export default function PyUSDYieldSelector() {
 
     try {
       const investmentAmountWei = BigInt(
-        Number(growthAmount) * 10 ** PYUSD_TOKEN_CONFIG.decimals
+        Number(growthAmount) * 10 ** PYUSD_TOKEN.decimals
       );
 
       console.log(
@@ -858,7 +741,7 @@ export default function PyUSDYieldSelector() {
         });
 
         const metamaskBalance = (await publicClient.readContract({
-          address: PYUSD_TOKEN_CONFIG.address,
+          address: PYUSD_TOKEN.address,
           abi: ERC20_ABI,
           functionName: 'balanceOf',
           args: [metamaskWallet.address as `0x${string}`],

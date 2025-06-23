@@ -276,9 +276,17 @@ export const UNISWAP_V3_POSITION_MANAGER_ADDRESS =
 export const UNISWAP_V3_FACTORY_ADDRESS =
   '0x0227628f3F023bb0B980b67D528571c95c6DaC1c' as const;
 
-// AAVE contract addresses by Chain
-export // Helper function to get network config
-function getNetworkConfig(chainId: number) {
+// Helper function to format PYUSD balance
+export const formatPyusdBalance = (balance: bigint, decimals = 6): string => {
+  const balanceNumber = Number(balance) / 10 ** decimals;
+  return balanceNumber.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+// Helper function to get network config
+export function getNetworkConfig(chainId: number) {
   return Object.values(NETWORKS).find(network => network.id === chainId);
 }
 
