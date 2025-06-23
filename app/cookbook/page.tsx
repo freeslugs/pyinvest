@@ -383,13 +383,16 @@ export default function CookbookPage() {
 
        // Execute swap transaction
        console.log('🚀 Executing Universal Router swap transaction...');
+       const swapGasLimit = '0x7A120'; // 500k gas limit (sufficient for swaps)
+       console.log('📊 Swap gas limit:', parseInt(swapGasLimit, 16).toLocaleString(), 'gas');
+
        const swapTx = await provider.request({
          method: 'eth_sendTransaction',
          params: [{
            from: metamaskWallet.address,
            to: UNISWAP_V3_ROUTER_ADDRESS,
            data: executeCalldata,
-           gas: '0x7A120', // 500k gas limit
+           gas: swapGasLimit,
          }],
        });
 
@@ -668,17 +671,21 @@ export default function CookbookPage() {
       console.log('📞 === TRANSACTION PREPARATION ===');
       console.log('📞 Position Manager Address:', UNISWAP_V3_POSITION_MANAGER_ADDRESS);
       console.log('📞 Mint Calldata:', mintCalldata);
-      console.log('📞 Gas Limit: 500,000');
 
-      // Execute mint transaction
+      // Execute mint transaction with higher gas limit
       console.log('🚀 === EXECUTING LIQUIDITY ADDITION ===');
+
+      // Use higher gas limit for full-range positions (800k gas)
+      const gasLimit = '0xC3500'; // 800,000 gas limit for full-range positions
+      console.log('📊 Gas limit set to:', parseInt(gasLimit, 16).toLocaleString(), 'gas');
+
       const mintTx = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: metamaskWallet.address,
           to: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
           data: mintCalldata,
-          gas: '0x7A120', // 500k gas limit
+          gas: gasLimit,
         }],
       });
 
