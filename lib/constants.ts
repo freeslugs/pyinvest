@@ -30,7 +30,7 @@ export const NETWORKS = {
 export const TOKENS = {
   [NETWORKS.SEPOLIA.id]: {
     PYUSD: {
-      address: '0x669e9c75c6aebba41f86d39e727fcedd89d5ea53' as const,
+      address: '0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9' as const,
       decimals: 6,
       symbol: 'PYUSD',
       name: 'PayPal USD',

@@ -136,7 +136,7 @@ export default function CookbookPage() {
     name: 'PayPal USD',
   };
   const USDC_TOKEN_CONFIG = currentNetworkTokens.USDC;
-  const PYUSD_USDC_POOL = currentNetworkPools.PYUSD_USDC;
+  const PYUSD_USDC_POOL = (currentNetworkPools as any)?.PYUSD_USDC;
 
   // Function to switch networks
   const switchNetwork = async (chainId: number) => {
@@ -675,12 +675,21 @@ export default function CookbookPage() {
       !client?.chain ||
       client.chain.id !== NETWORKS.SEPOLIA.id ||
       !smartWallet ||
-      !PYUSD_USDC_POOL
+      !PYUSD_TOKEN_CONFIG
     ) {
       setPoolData(prev => ({
         ...prev,
         error:
-          'Must be on Sepolia network with smart wallet and pool available',
+          'Must be on Sepolia network with smart wallet and PYUSD token available',
+      }));
+      return;
+    }
+
+    if (!PYUSD_USDC_POOL) {
+      setPoolData(prev => ({
+        ...prev,
+        error:
+          'PYUSD/USDC pool not available. The pool address needs to be configured in constants.ts',
       }));
       return;
     }
@@ -826,11 +835,19 @@ export default function CookbookPage() {
     if (
       !client?.chain ||
       client.chain.id !== NETWORKS.SEPOLIA.id ||
-      !PYUSD_USDC_POOL
+      !PYUSD_TOKEN_CONFIG
     ) {
       setPoolData(prev => ({
         ...prev,
-        error: 'Must be on Sepolia network with pool available',
+        error: 'Must be on Sepolia network with PYUSD token available',
+      }));
+      return;
+    }
+
+    if (!PYUSD_USDC_POOL) {
+      setPoolData(prev => ({
+        ...prev,
+        error: 'PYUSD/USDC pool not available. The pool address needs to be configured.',
       }));
       return;
     }
@@ -933,11 +950,19 @@ export default function CookbookPage() {
     if (
       !client?.chain ||
       client.chain.id !== NETWORKS.SEPOLIA.id ||
-      !PYUSD_USDC_POOL
+      !PYUSD_TOKEN_CONFIG
     ) {
       setPoolData(prev => ({
         ...prev,
-        error: 'Must be on Sepolia network with pool available',
+        error: 'Must be on Sepolia network with PYUSD token available',
+      }));
+      return;
+    }
+
+    if (!PYUSD_USDC_POOL) {
+      setPoolData(prev => ({
+        ...prev,
+        error: 'PYUSD/USDC pool not available. The pool address needs to be configured.',
       }));
       return;
     }
@@ -1645,6 +1670,54 @@ export default function CookbookPage() {
                       </p>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+          {/* Pool Not Available Notice */}
+          {smartWallet &&
+            client?.chain?.id === NETWORKS.SEPOLIA.id &&
+            PYUSD_TOKEN_CONFIG &&
+            !PYUSD_USDC_POOL && (
+              <div className='mt-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4'>
+                <h3 className='mb-3 text-lg font-semibold text-yellow-800'>
+                  🏊 PYUSD/USDC Pool (Sepolia) - Configuration Needed
+                </h3>
+                <div className='space-y-3'>
+                  <p className='text-sm text-yellow-700'>
+                    <strong>Pool functionality is not available yet.</strong>
+                  </p>
+                  <p className='text-sm text-yellow-700'>
+                    The pool address provided was invalid (32 bytes instead of
+                    20 bytes required for Ethereum addresses). This appears to
+                    be a pool identifier or transaction hash rather than the
+                    actual pool contract address.
+                  </p>
+                  <div className='rounded bg-yellow-100 p-3 text-sm text-yellow-800'>
+                    <p className='font-medium'>What you can do:</p>
+                    <ul className='mt-2 list-disc space-y-1 pl-5'>
+                      <li>
+                        Use the PYUSD token testing section above to test basic
+                        token functionality
+                      </li>
+                      <li>
+                        Find the correct PYUSD/USDC pool address on Sepolia
+                        testnet
+                      </li>
+                      <li>
+                        Update the pool configuration in{' '}
+                        <code className='bg-white px-1 py-0.5 text-xs font-mono'>
+                          lib/constants.ts
+                        </code>
+                      </li>
+                    </ul>
+                  </div>
+                  <p className='text-xs text-yellow-600'>
+                    Invalid address:{' '}
+                    <code className='font-mono'>
+                      0x812386b8094518e5d9da06d93bcc9b7eb796a1fa2cc82119700d887266a0d2d9
+                    </code>
+                  </p>
                 </div>
               </div>
             )}
