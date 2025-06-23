@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowRight, CheckCircle, Copy, Edit3, Globe, Zap } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
+import { AlertCircle, ArrowRight, Award, CheckCircle, Copy, Edit3, Globe, Shield, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -56,6 +57,7 @@ const formatPyusdBalance = (balance: bigint): string => {
 };
 
 export default function PyUSDYieldSelector() {
+  const { user } = usePrivy();
   const [conservativeAmount, setConservativeAmount] = useState('');
   const [growthAmount, setGrowthAmount] = useState('');
   const [isVenmoModalOpen, setIsVenmoModalOpen] = useState(false);
@@ -67,6 +69,24 @@ export default function PyUSDYieldSelector() {
     venmo: '0',
     coinbase: '4,200.00', // Hardcoded for now
   });
+
+  // KYC state management
+  const [kycStatus, setKycStatus] = useState<'not_started' | 'passed' | 'claimed'>('not_started');
+
+  // Mock KYC status - in real app this would come from backend
+  useEffect(() => {
+    if (user?.id) {
+      // Mock logic - simulate different states based on user ID
+      const userId = user.id;
+      if (userId.endsWith('1') || userId.endsWith('2')) {
+        setKycStatus('passed');
+      } else if (userId.endsWith('3') || userId.endsWith('4')) {
+        setKycStatus('claimed');
+      } else {
+        setKycStatus('not_started');
+      }
+    }
+  }, [user?.id]);
 
   // Custom input states
   const [showConservativeCustom, setShowConservativeCustom] = useState(false);
@@ -312,9 +332,18 @@ export default function PyUSDYieldSelector() {
             <div className='flex items-center space-x-3'>
               <a
                 href='/profile'
-                className='rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors'
+                className='rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center space-x-2'
               >
-                Profile
+                {kycStatus === 'not_started' && (
+                  <AlertCircle className='h-4 w-4 text-gray-400' />
+                )}
+                {kycStatus === 'passed' && (
+                  <Award className='h-4 w-4 text-yellow-500' />
+                )}
+                {kycStatus === 'claimed' && (
+                  <Shield className='h-4 w-4 text-green-500' />
+                )}
+                <span>Profile</span>
               </a>
               <NetworkSelector />
             </div>
