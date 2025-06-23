@@ -1,6 +1,6 @@
 'use client';
 
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import {
   AlertCircle,
   ArrowLeft,
@@ -26,6 +26,7 @@ import { Modal } from '@/components/ui/modal';
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { wallets } = useWallets();
   const {
     ready,
     authenticated,
@@ -149,13 +150,9 @@ export default function ProfilePage() {
 
     setIsClaimingToken(true);
     try {
-      // TODO: Import viem utilities for transaction when implementing actual minting
-      // const { encodeFunctionData } = await import('viem');
-
-      // Get the embedded wallet for transaction signing
-      const embeddedWallet = user.linkedAccounts?.find(
-        account =>
-          account.type === 'wallet' && account.walletClientType === 'privy'
+      // Find the embedded wallet in the wallets list
+      const embeddedWallet = wallets.find(
+        wallet => wallet.walletClientType === 'privy'
       );
 
       if (!embeddedWallet) {
@@ -165,33 +162,88 @@ export default function ProfilePage() {
         return;
       }
 
-      // Switch to BSC testnet first
-      // Note: This depends on Privy's wallet switching capabilities
+      // Import viem utilities for the transaction
+      const { createWalletClient, custom } = await import('viem');
+
+      // Get the provider from the embedded wallet
+      const provider = await embeddedWallet.getEthereumProvider();
+
+      if (!provider) {
+        alert('Could not access wallet provider. Please try again.');
+        return;
+      }
+
+      // Create wallet client with the Privy provider
+      const walletClient = createWalletClient({
+        chain: bscTestnet,
+        transport: custom(provider),
+        account: embeddedWallet.address as `0x${string}`,
+      });
+
       console.log('Switching to BSC testnet...');
 
-      // TODO: Encode the mintFree function call when implementing actual transaction
-      // const mintData = encodeFunctionData({
-      //   abi: KYC_CONTRACT_ABI,
-      //   functionName: 'mintFree',
-      //   args: [],
-      // });
+      // Switch to BSC testnet (chain ID 97)
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x61' }], // 97 in hex
+        });
+      } catch (switchError: any) {
+        // If the chain doesn't exist, add it
+        if (switchError.code === 4902) {
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: '0x61',
+                chainName: 'BSC Testnet',
+                nativeCurrency: {
+                  name: 'BNB',
+                  symbol: 'BNB',
+                  decimals: 18,
+                },
+                rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
+                blockExplorerUrls: ['https://testnet.bscscan.com'],
+              },
+            ],
+          });
+        } else {
+          throw switchError;
+        }
+      }
 
-      // For now, show instructions since direct embedded wallet transaction sending
-      // needs proper Privy client setup
-      alert(
-        'Ready to mint KYC token!\n\n' +
-          `BNB Balance: ${currentBnbBalance.toFixed(4)} BNB\n` +
-          `Contract: ${KYC_CONTRACT_ADDRESS}\n\n` +
-          'The transaction will be sent using your embedded wallet.'
-      );
+      console.log('Calling mintFree function...');
 
-      // TODO: Implement actual transaction sending with Privy embedded wallet
-      // This would require proper Privy client configuration for BSC testnet
+      // Call the mintFree function on the contract
+      const txHash = await walletClient.writeContract({
+        address: KYC_CONTRACT_ADDRESS as `0x${string}`,
+        abi: KYC_CONTRACT_ABI,
+        functionName: 'mintFree',
+        args: [],
+      });
 
-      // For demo purposes, simulate successful mint
-      setKycTokenBalance(1);
-      setKycStatus('has_token');
-      alert('KYC token minted successfully! (Demo mode)');
+      console.log('Transaction sent:', txHash);
+
+      // Wait for transaction confirmation
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+
+      console.log('Transaction confirmed:', receipt);
+
+      if (receipt.status === 'success') {
+        // Refresh the KYC token balance after successful mint
+        await checkKycTokenBalance();
+
+        alert(
+          `🎉 KYC token minted successfully!\n\n` +
+            `Transaction: ${txHash}\n` +
+            `Block: ${receipt.blockNumber}\n\n` +
+            `View on BSCScan: https://testnet.bscscan.com/tx/${txHash}`
+        );
+      } else {
+        throw new Error('Transaction failed');
+      }
     } catch (error: any) {
       console.error('Error minting KYC token:', error);
       alert(`Failed to mint KYC token: ${error.message || 'Unknown error'}`);
