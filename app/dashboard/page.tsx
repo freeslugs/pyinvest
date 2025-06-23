@@ -1,9 +1,13 @@
 'use client';
 
-import { ArrowRight, Shield, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, Edit3, Shield, TrendingUp, Zap } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 
 export default function PyUSDYieldSelector() {
+  const [conservativeAmount, setConservativeAmount] = useState('250');
+  const [growthAmount, setGrowthAmount] = useState('250');
+
   return (
     <div className='min-h-screen bg-gray-50 p-4'>
       <div className='mx-auto max-w-md space-y-6'>
@@ -117,9 +121,46 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
-                <span>1-click invest</span>
-                <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
+              {/* Amount Selection */}
+              <div className='mb-4 space-y-3'>
+                <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
+                <div className='flex w-full gap-2'>
+                  <div role="radiogroup" className='flex w-full gap-2'>
+                    {['25', '50', '100', '250'].map((amount) => (
+                      <label
+                        key={amount}
+                        className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                          conservativeAmount === amount
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={amount}
+                          checked={conservativeAmount === amount}
+                          onChange={(e) => setConservativeAmount(e.target.value)}
+                          className="sr-only"
+                        />
+                        ${amount}
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type='button'
+                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
+              >
+                <span>Invest ${conservativeAmount}</span>
+                <ArrowRight className='ml-2 h-4 w-4' />
               </button>
             </div>
           </div>
@@ -165,9 +206,46 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
-                <span>1-click invest</span>
-                <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
+              {/* Amount Selection */}
+              <div className='mb-4 space-y-3'>
+                <div className='text-sm font-medium text-gray-900'>Select amount to invest</div>
+                <div className='flex w-full gap-2'>
+                  <div role="radiogroup" className='flex w-full gap-2'>
+                    {['25', '50', '100', '250'].map((amount) => (
+                      <label
+                        key={amount}
+                        className={`flex w-full cursor-pointer justify-center rounded-[10px] border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                          growthAmount === amount
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={amount}
+                          checked={growthAmount === amount}
+                          onChange={(e) => setGrowthAmount(e.target.value)}
+                          className="sr-only"
+                        />
+                        ${amount}
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type='button'
+                className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white transition-colors hover:bg-blue-700 group-hover:bg-blue-700'
+              >
+                <span>Invest ${growthAmount}</span>
+                <ArrowRight className='ml-2 h-4 w-4' />
               </button>
             </div>
           </div>
