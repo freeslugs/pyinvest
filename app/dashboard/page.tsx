@@ -57,7 +57,7 @@ export default function PyUSDYieldSelector() {
   };
 
   return (
-    <div className='min-h-screen bg-gray-50 p-4'>
+    <div className='min-h-screen bg-white p-4'>
       <div className='mx-auto max-w-md space-y-6'>
         {/* Header */}
         <div className='pb-4 pt-8'>
@@ -81,7 +81,7 @@ export default function PyUSDYieldSelector() {
         </div>
 
         {/* Balance Display */}
-        <div className='rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm'>
+        <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
           <div className='p-6'>
             <p className='mb-2 text-sm text-gray-500'>Amount</p>
             <div className='mb-1 flex items-center space-x-2'>
@@ -137,7 +137,7 @@ export default function PyUSDYieldSelector() {
           </h2>
 
           {/* Conservative Vault */}
-          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white transition-all duration-200'>
+          <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
             <div className='p-5'>
               <div className='mb-4 flex items-center justify-between'>
                 <div className='flex items-center space-x-3'>
@@ -195,7 +195,7 @@ export default function PyUSDYieldSelector() {
                                  setConservativeAmount(amount);
                                }
                              }}
-                             className={`flex w-full cursor-pointer justify-center rounded-md border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
                                conservativeAmount === amount
                                  ? 'border-blue-600 bg-blue-50 text-blue-700'
                                  : 'border-gray-300 text-gray-600'
@@ -208,7 +208,7 @@ export default function PyUSDYieldSelector() {
                        <button
                          type="button"
                          onClick={() => setShowConservativeCustom(true)}
-                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                         className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
                        >
                          <Edit3 className="h-4 w-4" />
                        </button>
@@ -228,20 +228,20 @@ export default function PyUSDYieldSelector() {
                            }
                          }}
                          placeholder="Enter amount"
-                         className="flex-1 rounded-md border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                          autoFocus={showConservativeCustom}
                        />
                        <button
                          type="button"
                          onClick={handleConservativeCustomSubmit}
-                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
                        >
                          ✓
                        </button>
                        <button
                          type="button"
                          onClick={handleConservativeCustomCancel}
-                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
                        >
                          ✕
                        </button>
@@ -251,7 +251,7 @@ export default function PyUSDYieldSelector() {
               </div>
 
                                           {/* Press to Confirm Button */}
-              <div className={`relative h-11 w-full overflow-hidden rounded-md transition-all duration-500 ease-in-out ${
+              <div className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
                 conservativeAmount ? 'bg-blue-600' : 'bg-blue-600/30'
               }`}>
                 <div
@@ -297,7 +297,7 @@ export default function PyUSDYieldSelector() {
           </div>
 
           {/* Growth Vault */}
-          <div className='group cursor-pointer rounded-xl border border-gray-200 bg-white transition-all duration-200'>
+          <div className='group cursor-pointer rounded-2xl border border-gray-200 bg-white transition-all duration-200'>
             <div className='p-5'>
               <div className='mb-4 flex items-center justify-between'>
                 <div className='flex items-center space-x-3'>
@@ -357,7 +357,7 @@ export default function PyUSDYieldSelector() {
                                  setGrowthAmount(amount);
                                }
                              }}
-                             className={`flex w-full cursor-pointer justify-center rounded-md border-[1.5px] py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
+                             className={`flex w-full cursor-pointer justify-center rounded-lg border py-2 text-center text-sm leading-normal transition-colors hover:bg-gray-50 ${
                                growthAmount === amount
                                  ? 'border-blue-600 bg-blue-50 text-blue-700'
                                  : 'border-gray-300 text-gray-600'
@@ -370,7 +370,7 @@ export default function PyUSDYieldSelector() {
                        <button
                          type="button"
                          onClick={() => setShowGrowthCustom(true)}
-                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                         className="flex min-w-[42px] items-center justify-center rounded-lg border border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
                        >
                          <Edit3 className="h-4 w-4" />
                        </button>
@@ -390,20 +390,20 @@ export default function PyUSDYieldSelector() {
                            }
                          }}
                          placeholder="Enter amount"
-                         className="flex-1 rounded-md border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                         className="flex-1 rounded-lg border-[1.5px] border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                          autoFocus={showGrowthCustom}
                        />
                        <button
                          type="button"
                          onClick={handleGrowthCustomSubmit}
-                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
+                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-green-500 bg-green-50 py-2 text-green-600 hover:bg-green-100 transition-colors font-bold"
                        >
                          ✓
                        </button>
                        <button
                          type="button"
                          onClick={handleGrowthCustomCancel}
-                         className="flex min-w-[42px] items-center justify-center rounded-md border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
+                         className="flex min-w-[42px] items-center justify-center rounded-lg border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
                        >
                          ✕
                        </button>
@@ -413,7 +413,7 @@ export default function PyUSDYieldSelector() {
               </div>
 
                                           {/* Press to Confirm Button */}
-              <div className={`relative h-11 w-full overflow-hidden rounded-md transition-all duration-500 ease-in-out ${
+              <div className={`relative h-11 w-full overflow-hidden rounded-lg transition-all duration-500 ease-in-out ${
                 growthAmount ? 'bg-blue-600' : 'bg-blue-600/30'
               }`}>
                 <div
@@ -460,7 +460,7 @@ export default function PyUSDYieldSelector() {
         </div>
 
         {/* Quick Stats */}
-        <div className='rounded-lg border-0 bg-gradient-to-r from-blue-600 to-blue-700'>
+        <div className='rounded-xl border-0 bg-gradient-to-r from-blue-600 to-blue-700'>
           <div className='p-6 text-white'>
             <div className='mb-3 flex items-center space-x-2'>
               <Zap className='h-5 w-5' />
