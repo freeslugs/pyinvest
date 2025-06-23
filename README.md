@@ -39,5 +39,3 @@ In your project directory, run `npm run dev`. You can now visit http://localhost
 - `app/dashboard/page.tsx` - How to use the `usePrivy` hook and implement wallet linking features
 
 **Check out [Privy's docs](https://docs.privy.io/) for more guidance around using Privy in your app!**
-
-- 
