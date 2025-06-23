@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     request,
     client
   );
-  
+
   // If it's a NextResponse, it means there was an error
   if (errorOrVerifiedClaims instanceof NextResponse) {
     return errorOrVerifiedClaims;
@@ -21,12 +21,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('Request body:', body);
-    
+
     const { wallet_id, transactions, amount } = body;
 
     if (!wallet_id || !transactions || !Array.isArray(transactions)) {
-      console.error('Validation failed:', { wallet_id, transactions: !!transactions, isArray: Array.isArray(transactions) });
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      console.error('Validation failed:', {
+        wallet_id,
+        transactions: !!transactions,
+        isArray: Array.isArray(transactions),
+      });
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
 
     console.log('Executing approve transaction...');
@@ -57,17 +64,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      txHash: (supplyResult as any).transactionHash || (supplyResult as any).hash,
-      approveHash: (approveResult as any).transactionHash || (approveResult as any).hash,
+      txHash:
+        (supplyResult as any).transactionHash || (supplyResult as any).hash,
+      approveHash:
+        (approveResult as any).transactionHash || (approveResult as any).hash,
       message: `Successfully deposited ${amount} PyUSD to AAVE on Sepolia`,
     });
-
   } catch (error: any) {
     console.error('AAVE deposit error:', error);
-    
-    return NextResponse.json({
-      success: false,
-      error: error.message || 'Failed to execute AAVE deposit transaction',
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to execute AAVE deposit transaction',
+      },
+      { status: 500 }
+    );
   }
 }

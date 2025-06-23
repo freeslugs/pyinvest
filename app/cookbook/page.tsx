@@ -187,22 +187,6 @@ export default function CookbookPage() {
     },
   ] as const;
 
-  // AAVE Pool ABI
-  const AAVE_POOL_ABI = [
-    {
-      name: 'supply',
-      type: 'function',
-      stateMutability: 'nonpayable',
-      inputs: [
-        { name: 'asset', type: 'address' },
-        { name: 'amount', type: 'uint256' },
-        { name: 'onBehalfOf', type: 'address' },
-        { name: 'referralCode', type: 'uint16' },
-      ],
-      outputs: [],
-    },
-  ] as const;
-
   // WETH Gateway ABI for depositing ETH
   const WETH_GATEWAY_ABI = [
     {
@@ -215,35 +199,6 @@ export default function CookbookPage() {
         { name: 'referralCode', type: 'uint16' },
       ],
       outputs: [],
-    },
-  ] as const;
-
-  // Multicall3 contract ABI for batch transactions
-  const MULTICALL3_ABI = [
-    {
-      name: 'aggregate3',
-      type: 'function',
-      inputs: [
-        {
-          name: 'calls',
-          type: 'tuple[]',
-          components: [
-            { name: 'target', type: 'address' },
-            { name: 'allowFailure', type: 'bool' },
-            { name: 'callData', type: 'bytes' },
-          ],
-        },
-      ],
-      outputs: [
-        {
-          name: 'returnData',
-          type: 'tuple[]',
-          components: [
-            { name: 'success', type: 'bool' },
-            { name: 'returnData', type: 'bytes' },
-          ],
-        },
-      ],
     },
   ] as const;
 
@@ -1107,7 +1062,10 @@ export default function CookbookPage() {
       return;
     }
 
-    setUsdcTestResults({ aaveDepositStatus: 'Preparing ETH deposit to AAVE...', error: '' });
+    setUsdcTestResults({
+      aaveDepositStatus: 'Preparing ETH deposit to AAVE...',
+      error: '',
+    });
 
     try {
       console.log('Starting ETH deposit to AAVE via smart wallet...');
@@ -1116,21 +1074,21 @@ export default function CookbookPage() {
       // Check if smart wallet has enough ETH balance
       const { createPublicClient, http } = await import('viem');
       const { sepolia } = await import('viem/chains');
-      
+
       const publicClient = createPublicClient({
         chain: sepolia,
         transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
       });
-      
+
       const currentBalanceWei = await publicClient.getBalance({
         address: smartWallet.address as `0x${string}`,
       });
-      
+
       const currentBalance = Number(currentBalanceWei) / 10 ** 18; // ETH has 18 decimals
       const requiredAmount = 0.01; // We're depositing 0.01 ETH
       console.log('Smart wallet ETH balance:', currentBalance);
       console.log('Required amount:', requiredAmount);
-      
+
       if (currentBalance < requiredAmount) {
         setUsdcTestResults({
           error: `Insufficient ETH balance in smart wallet. Have: ${currentBalance.toFixed(4)}, Need: ${requiredAmount}. Send ETH to smart wallet first.`,
@@ -1144,7 +1102,10 @@ export default function CookbookPage() {
       const { encodeFunctionData } = await import('viem');
 
       // Deposit ETH directly via WETH Gateway (no approval needed for ETH)
-      setUsdcTestResults({ aaveDepositStatus: 'Depositing ETH to AAVE...', error: '' });
+      setUsdcTestResults({
+        aaveDepositStatus: 'Depositing ETH to AAVE...',
+        error: '',
+      });
 
       const depositData = encodeFunctionData({
         abi: WETH_GATEWAY_ABI,
@@ -1188,7 +1149,10 @@ export default function CookbookPage() {
       return;
     }
 
-    setUsdcTestResults({ aaveDepositStatus: 'Preparing EOA AAVE deposit...', error: '' });
+    setUsdcTestResults({
+      aaveDepositStatus: 'Preparing EOA AAVE deposit...',
+      error: '',
+    });
 
     try {
       // Get MetaMask wallet address
@@ -1245,21 +1209,21 @@ export default function CookbookPage() {
       // Check if user has enough ETH balance
       const { createPublicClient, http } = await import('viem');
       const { sepolia } = await import('viem/chains');
-      
+
       const publicClient = createPublicClient({
         chain: sepolia,
         transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
       });
-      
+
       const currentBalanceWei = await publicClient.getBalance({
         address: metamaskWallet.address as `0x${string}`,
       });
-      
+
       const currentBalance = Number(currentBalanceWei) / 10 ** 18;
       const requiredAmount = 0.01; // We're depositing 0.01 ETH
       console.log('Current ETH balance:', currentBalance);
       console.log('Required amount:', requiredAmount);
-      
+
       if (currentBalance < requiredAmount) {
         setUsdcTestResults({
           error: `Insufficient ETH balance. Have: ${currentBalance.toFixed(4)}, Need: ${requiredAmount}`,
@@ -1270,7 +1234,10 @@ export default function CookbookPage() {
       const { encodeFunctionData } = await import('viem');
 
       // Deposit ETH directly via WETH Gateway (no approval needed for ETH)
-      setUsdcTestResults({ aaveDepositStatus: 'EOA: Depositing ETH to AAVE...', error: '' });
+      setUsdcTestResults({
+        aaveDepositStatus: 'EOA: Depositing ETH to AAVE...',
+        error: '',
+      });
 
       const depositData = encodeFunctionData({
         abi: WETH_GATEWAY_ABI,
@@ -1288,12 +1255,14 @@ export default function CookbookPage() {
 
       const depositTxHash = await metamaskProvider.request({
         method: 'eth_sendTransaction',
-        params: [{
-          from: metamaskWallet.address,
-          to: AAVE_CONFIG.WETH_GATEWAY,
-          data: depositData,
-          value: `0x${depositAmount.toString(16)}`,
-        }],
+        params: [
+          {
+            from: metamaskWallet.address,
+            to: AAVE_CONFIG.WETH_GATEWAY,
+            data: depositData,
+            value: `0x${depositAmount.toString(16)}`,
+          },
+        ],
       });
 
       console.log('EOA ETH AAVE deposit transaction hash:', depositTxHash);
@@ -1310,7 +1279,7 @@ export default function CookbookPage() {
     } catch (error) {
       console.error('Error depositing to AAVE via EOA:', error);
       console.error('Full error object:', JSON.stringify(error, null, 2));
-      
+
       // Try to extract more specific error information
       let errorMessage = 'Unknown error';
       if (error instanceof Error) {
@@ -1319,7 +1288,7 @@ export default function CookbookPage() {
           errorMessage = `Transaction reverted: ${error.message}`;
         }
       }
-      
+
       setUsdcTestResults({
         ...usdcTestResults,
         aaveDepositStatus: 'EOA AAVE deposit failed',
@@ -1332,9 +1301,10 @@ export default function CookbookPage() {
   const testUsdcContract = async () => {
     try {
       console.log('Testing USDC contract...');
-      
+
       const metamaskWallet = user?.linkedAccounts?.find(
-        account => account.type === 'wallet' && account.walletClientType !== 'privy'
+        account =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
       ) as { address: string } | undefined;
 
       if (!metamaskWallet) {
@@ -1358,8 +1328,11 @@ export default function CookbookPage() {
         args: [metamaskWallet.address as `0x${string}`],
       });
 
-      console.log('USDC balance (raw):', balance.toString());
-      console.log('USDC balance (formatted):', (Number(balance) / 10**6).toFixed(6));
+      console.log('USDC balance (raw):', (balance as bigint).toString());
+      console.log(
+        'USDC balance (formatted):',
+        (Number(balance as bigint) / 10 ** 6).toFixed(6)
+      );
 
       // Test: Get current allowance for AAVE Pool
       const allowance = await publicClient.readContract({
@@ -1369,14 +1342,19 @@ export default function CookbookPage() {
         args: [metamaskWallet.address as `0x${string}`, AAVE_CONFIG.POOL],
       });
 
-      console.log('Current AAVE allowance (raw):', allowance.toString());
-      console.log('Current AAVE allowance (formatted):', (Number(allowance) / 10**6).toFixed(6));
+      console.log(
+        'Current AAVE allowance (raw):',
+        (allowance as bigint).toString()
+      );
+      console.log(
+        'Current AAVE allowance (formatted):',
+        (Number(allowance as bigint) / 10 ** 6).toFixed(6)
+      );
 
       setUsdcTestResults({
-        aaveDepositStatus: `USDC Contract Test: Balance=${(Number(balance) / 10**6).toFixed(6)}, Allowance=${(Number(allowance) / 10**6).toFixed(6)}`,
+        aaveDepositStatus: `USDC Contract Test: Balance=${(Number(balance as bigint) / 10 ** 6).toFixed(6)}, Allowance=${(Number(allowance as bigint) / 10 ** 6).toFixed(6)}`,
         error: '',
       });
-
     } catch (error) {
       console.error('USDC contract test failed:', error);
       setUsdcTestResults({
@@ -2018,7 +1996,7 @@ export default function CookbookPage() {
                 </div>
 
                 {/* Check Balances */}
-                <div className="flex gap-3">
+                <div className='flex gap-3'>
                   <button
                     type='button'
                     onClick={checkUsdcBalances}
@@ -2156,7 +2134,8 @@ export default function CookbookPage() {
                     Step 3A: Deposit ETH to AAVE (Smart Wallet)
                   </h4>
                   <p className='mb-3 text-sm text-gray-600'>
-                    Use your smart wallet to deposit 0.01 ETH to AAVE v3 via WETH Gateway (no approval needed)
+                    Use your smart wallet to deposit 0.01 ETH to AAVE v3 via
+                    WETH Gateway (no approval needed)
                   </p>
                   <button
                     type='button'
@@ -2174,7 +2153,8 @@ export default function CookbookPage() {
                     Step 3B: Deposit ETH to AAVE (EOA/MetaMask)
                   </h4>
                   <p className='mb-3 text-sm text-gray-600'>
-                    Use your MetaMask wallet to deposit 0.01 ETH to AAVE v3 via WETH Gateway (no approval needed)
+                    Use your MetaMask wallet to deposit 0.01 ETH to AAVE v3 via
+                    WETH Gateway (no approval needed)
                   </p>
                   <button
                     type='button'

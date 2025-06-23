@@ -23,10 +23,13 @@ export async function POST(request: NextRequest) {
     const { walletAddress, tokenAddress } = body;
 
     if (!walletAddress || !tokenAddress) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing walletAddress or tokenAddress' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing walletAddress or tokenAddress',
+        },
+        { status: 400 }
+      );
     }
 
     // Read the token balance
@@ -45,13 +48,15 @@ export async function POST(request: NextRequest) {
       balance: formattedBalance,
       raw: (balanceResult as bigint).toString(),
     });
-
   } catch (error: any) {
     console.error('Balance fetch error:', error);
-    
-    return NextResponse.json({
-      success: false,
-      error: error.message || 'Failed to fetch balance',
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to fetch balance',
+      },
+      { status: 500 }
+    );
   }
 }
