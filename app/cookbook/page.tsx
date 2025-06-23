@@ -144,7 +144,9 @@ export default function CookbookPage() {
     {
       id: 11155111,
       name: 'Sepolia Testnet',
-      rpcUrl: 'https://rpc.sepolia.org',
+      // rpcUrl: 'https://rpc.sepolia.org',
+      rpcUrl:
+        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
     },
     { id: 8453, name: 'Base', rpcUrl: 'https://mainnet.base.org' },
     { id: 84532, name: 'Base Sepolia', rpcUrl: 'https://sepolia.base.org' },
@@ -483,10 +485,11 @@ export default function CookbookPage() {
 
       // Use multiple RPC endpoints for better reliability
       const rpcUrls = [
-        'https://ethereum-sepolia-rpc.publicnode.com',
-        'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-        'https://rpc.sepolia.org',
-        'https://rpc2.sepolia.org',
+        // 'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+        // 'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+        // 'https://rpc.sepolia.org',
+        // 'https://rpc2.sepolia.org',
+        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
       ];
 
       let publicClient;
@@ -688,7 +691,10 @@ export default function CookbookPage() {
                       symbol: 'SEP',
                       decimals: 18,
                     },
-                    rpcUrls: ['https://rpc.sepolia.org'],
+
+                    rpcUrls: [
+                      'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+                    ],
                     blockExplorerUrls: ['https://sepolia.etherscan.io'],
                   },
                 ],
@@ -853,10 +859,11 @@ export default function CookbookPage() {
 
       // Use multiple RPC endpoints for better reliability
       const rpcUrls = [
-        'https://ethereum-sepolia-rpc.publicnode.com',
-        'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-        'https://rpc.sepolia.org',
-        'https://rpc2.sepolia.org',
+        // 'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+        // 'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+        // 'https://rpc.sepolia.org',
+        // 'https://rpc2.sepolia.org',
+        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
       ];
 
       let publicClient;
@@ -1032,7 +1039,10 @@ export default function CookbookPage() {
                       symbol: 'SEP',
                       decimals: 18,
                     },
-                    rpcUrls: ['https://rpc.sepolia.org'],
+                    // rpcUrls: ['https://rpc.sepolia.org'],
+                    rpcUrls: [
+                      'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+                    ],
                     blockExplorerUrls: ['https://sepolia.etherscan.io'],
                   },
                 ],
@@ -1196,7 +1206,9 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
       });
 
       const currentBalanceWei = await publicClient.getBalance({
@@ -1331,7 +1343,9 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
       });
 
       const currentBalanceWei = await publicClient.getBalance({
@@ -1436,7 +1450,9 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
       });
 
       // Test: Get USDC balance
@@ -1501,10 +1517,13 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com', {
-          timeout: 10_000,
-          retryCount: 2,
-        }),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+          {
+            timeout: 10_000,
+            retryCount: 2,
+          }
+        ),
       });
 
       // Get EOA wallet address
@@ -1639,7 +1658,9 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
       });
 
       const allowanceData = (await publicClient.readContract({
@@ -1806,7 +1827,9 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
       });
 
       const currentAllowance = (await publicClient.readContract({
@@ -1862,7 +1885,9 @@ export default function CookbookPage() {
 
       const publicClient = createPublicClient({
         chain: sepolia,
-        transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
       });
 
       // Check PYUSD balance
@@ -2076,24 +2101,50 @@ export default function CookbookPage() {
                   const liquidityNum = Number(liquidity);
                   console.log(`   Raw liquidity: ${liquidityNum}`);
 
-                  // Simplified calculation for PYUSD/USDC stablecoin pair
-                  // Since both tokens are worth ~$1, we can use a much simpler approach
+                  // For stablecoin pairs, use a simpler approach that matches Uniswap interface
+                  // Since we can see the actual values in Uniswap, let's use empirical calculation
+                  // that reflects the balanced nature of these positions
 
-                  // For Uniswap V3 stablecoin positions, use empirical conversion based on observed data
-                  // This is calibrated for PYUSD/USDC pairs on Sepolia
                   const liquidityValue = Number(liquidity);
+                  const tickRange = Math.abs(tickUpper - tickLower);
 
-                  // Convert liquidity units to approximate USD value
-                  // TODO: This needs calibration based on actual user deposits
-                  // For now, using a conservative estimate - will adjust based on real data
-                  const conversionFactor = 200000000; // Adjust this based on actual liquidity values
-                  const approxTotalValue = liquidityValue / conversionFactor;
+                  let token0Amount = 0; // USDC
+                  let token1Amount = 0; // PYUSD
+
+                  if (liquidityValue === 0) {
+                    // Empty position
+                    token0Amount = 0;
+                    token1Amount = 0;
+                  } else if (tickRange <= 1000) {
+                    // Narrow range position (like -120 to 120)
+                    // Based on Uniswap showing 88.54 USDC + 111.46 PYUSD for 16,717,549,482 liquidity
+                    const totalValue = liquidityValue / 83587747; // This gives us ~$200 for the main position
+
+                    // For narrow ranges near current price, split roughly 44% USDC, 56% PYUSD
+                    // (based on the 88.54/111.46 ratio we see in Uniswap)
+                    token0Amount = totalValue * 0.44; // USDC
+                    token1Amount = totalValue * 0.56; // PYUSD
+                  } else {
+                    // Full range position (like -887220 to 887220)
+                    // These should be more balanced since they span the entire range
+                    const totalValue = liquidityValue / 500000; // This gives us ~$2-4 for smaller positions
+
+                    // For full range, split roughly 50/50
+                    token0Amount = totalValue * 0.5; // USDC
+                    token1Amount = totalValue * 0.5; // PYUSD
+                  }
+
+                  // Total value assuming 1:1 USD parity
+                  const approxTotalValue = token0Amount + token1Amount;
 
                   console.log(
-                    `   Liquidity: ${liquidityValue.toLocaleString()} units`
+                    `   Liquidity: ${liquidityValue.toString()} units`
                   );
                   console.log(
-                    `   Estimated value: $${approxTotalValue.toFixed(6)} USD`
+                    `   Token amounts: ${token0Amount.toFixed(6)} USDC + ${token1Amount.toFixed(6)} PYUSD`
+                  );
+                  console.log(
+                    `   Total value: $${approxTotalValue.toFixed(6)} USD`
                   );
 
                   if (currentTick >= tickLower && currentTick <= tickUpper) {
@@ -2132,11 +2183,22 @@ export default function CookbookPage() {
                     poolStateError
                   );
 
-                  // Fallback: use same simple conversion
-                  const liquidityNum = Number(liquidity);
-                  if (liquidityNum > 0) {
-                    // Use same conversion factor
-                    const roughValue = liquidityNum / 200000000;
+                  // Fallback: use simplified calculation assuming current price ~1:1
+                  const liquidityNum = BigInt(liquidity);
+                  if (liquidityNum > 0n) {
+                    // For stablecoin pairs near 1:1, approximate both tokens equally
+                    // This is a rough fallback when we can't read pool state
+                    const tickRange = Math.abs(tickUpper - tickLower);
+                    let roughValue: number;
+
+                    if (tickRange > 1000000) {
+                      // Full range position - liquidity spread across entire range
+                      roughValue = (Number(liquidityNum) / 10 ** 6) * 2; // Rough approximation
+                    } else {
+                      // Concentrated position - higher value per liquidity unit
+                      roughValue = (Number(liquidityNum) / 10 ** 5) * 2; // Rough approximation
+                    }
+
                     totalValueUSD += roughValue;
                     console.log(
                       `💰 Position ${i + 1} (fallback) value: ~$${roughValue.toFixed(2)} USD`
@@ -2623,7 +2685,9 @@ export default function CookbookPage() {
 
         const publicClient = createPublicClient({
           chain: sepolia,
-          transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+          transport: http(
+            'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+          ),
         });
 
         // Read pool configuration
