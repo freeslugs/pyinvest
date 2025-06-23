@@ -1,7 +1,7 @@
 'use client';
 
 import { usePrivy } from '@privy-io/react-auth';
-import { AlertCircle, ArrowRight, Award, Edit3, Globe, Shield, Zap } from 'lucide-react';
+import { AlertCircle, ArrowRight, Award, Edit3, Globe, Shield, User, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -71,6 +71,8 @@ export default function PyUSDYieldSelector() {
   const [smartWalletBalance, setSmartWalletBalance] = useState('0');
   const [showSmartWallet, setShowSmartWallet] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false);
 
   // Privy hooks
   const { user, authenticated, ready } = usePrivy();
@@ -456,22 +458,91 @@ export default function PyUSDYieldSelector() {
               </div>
             </div>
             <div className='flex items-center space-x-3'>
-              <a
-                href='/profile'
-                className='rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center space-x-2'
-              >
-                {kycStatus === 'not_started' && (
-                  <AlertCircle className='h-4 w-4 text-gray-400' />
+              {/* Profile Dropdown */}
+              <div className='relative'>
+                <button
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className='flex items-center justify-center p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors'
+                >
+                  {kycStatus === 'not_started' && (
+                    <AlertCircle className='h-5 w-5 text-gray-400' />
+                  )}
+                  {kycStatus === 'passed' && (
+                    <Award className='h-5 w-5 text-yellow-500' />
+                  )}
+                  {kycStatus === 'claimed' && (
+                    <Shield className='h-5 w-5 text-green-500' />
+                  )}
+                  {kycStatus === 'not_started' && !kycStatus && (
+                    <User className='h-5 w-5 text-gray-600' />
+                  )}
+                </button>
+
+                {/* Profile Dropdown Menu */}
+                {isProfileMenuOpen && (
+                  <>
+                    <div className='absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50'>
+                      <div className='py-1'>
+                        <a
+                          href='/profile'
+                          className='flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
+                          onClick={() => setIsProfileMenuOpen(false)}
+                        >
+                          {kycStatus === 'not_started' && (
+                            <AlertCircle className='h-4 w-4 text-gray-400' />
+                          )}
+                          {kycStatus === 'passed' && (
+                            <Award className='h-4 w-4 text-yellow-500' />
+                          )}
+                          {kycStatus === 'claimed' && (
+                            <Shield className='h-4 w-4 text-green-500' />
+                          )}
+                          <span>Profile Settings</span>
+                        </a>
+                      </div>
+                    </div>
+                    <div
+                      className='fixed inset-0 z-40'
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    />
+                  </>
                 )}
-                {kycStatus === 'passed' && (
-                  <Award className='h-4 w-4 text-yellow-500' />
+              </div>
+
+              {/* Network Status Dropdown */}
+              <div className='relative'>
+                <button
+                  onClick={() => setIsNetworkMenuOpen(!isNetworkMenuOpen)}
+                  className='flex items-center justify-center p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors relative'
+                >
+                  <Globe className='h-5 w-5 text-gray-600' />
+                  {/* Blinking green dot */}
+                  <div className='absolute -top-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full animate-pulse'>
+                    <div className='absolute inset-0 h-3 w-3 bg-green-500 rounded-full animate-ping opacity-75'></div>
+                  </div>
+                </button>
+
+                {/* Network Dropdown Menu */}
+                {isNetworkMenuOpen && (
+                  <>
+                    <div className='absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50'>
+                      <div className='py-1'>
+                        <div className='px-4 py-3 border-b border-gray-100'>
+                          <div className='flex items-center space-x-2 mb-2'>
+                            <div className='h-2 w-2 bg-green-500 rounded-full animate-pulse'></div>
+                            <span className='text-xs font-medium text-gray-700'>Network Status</span>
+                          </div>
+                          <NetworkSelector />
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className='fixed inset-0 z-40'
+                      onClick={() => setIsNetworkMenuOpen(false)}
+                    />
+                  </>
                 )}
-                {kycStatus === 'claimed' && (
-                  <Shield className='h-4 w-4 text-green-500' />
-                )}
-                <span>Profile</span>
-              </a>
-              <NetworkSelector />
+              </div>
             </div>
           </div>
           <div className='mb-2 mt-2 border-t border-gray-200'></div>

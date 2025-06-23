@@ -188,9 +188,9 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   );
 
   const renderTraditionalDepositStep = () => (
-    <div className="space-y-4">
-      <div className="mb-4">
-        <h2 className="text-xl font-normal text-gray-900 mb-2 text-left">
+    <div className="space-y-3">
+      <div className="mb-3">
+        <h2 className="text-xl font-normal text-gray-900 mb-1 text-left">
           Transfer PYUSD to Your Smart Wallet
         </h2>
         <p className="text-sm text-gray-600 text-left">
@@ -199,37 +199,42 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
       </div>
 
       {smartWallet && (
-        <div className="space-y-4">
-          {/* QR Code */}
-          <div className="flex justify-center">
-            <div className="p-3 bg-white border border-gray-200 rounded-xl">
-              <QRCodeComponent
-                value={smartWallet.address}
-                size={160}
-                className="rounded-lg"
-              />
+        <div className="space-y-3">
+          {/* QR Code and Address in same row on desktop */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-3 sm:space-y-0">
+            {/* QR Code */}
+            <div className="flex justify-center sm:justify-start flex-shrink-0">
+              <div className="p-2 bg-white border border-gray-200 rounded-lg">
+                <QRCodeComponent
+                  value={smartWallet.address}
+                  size={120}
+                  className="rounded"
+                />
+              </div>
+            </div>
+
+            {/* Wallet Address */}
+            <div className="flex-1 min-w-0">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs font-normal text-gray-700 mb-2">Smart Wallet Address:</p>
+                <div className="flex items-center justify-between bg-white border border-gray-200 rounded p-2">
+                  <code className="text-xs font-mono text-gray-800 flex-1 mr-2 break-all">
+                    {smartWallet.address}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(smartWallet.address)}
+                    className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Wallet Address */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-sm font-normal text-gray-700 mb-2">Smart Wallet Address:</p>
-            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
-              <code className="text-sm font-mono text-gray-800 flex-1 mr-2 break-all">
-                {smartWallet.address}
-              </code>
-              <button
-                onClick={() => copyToClipboard(smartWallet.address)}
-                className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-                    {/* Instructions */}
-          <div className="bg-blue-50 rounded-xl p-3">
-            <h3 className="font-normal text-blue-900 mb-2 text-sm">How to send PYUSD:</h3>
+          {/* Instructions */}
+          <div className="bg-blue-50 rounded-lg p-3">
+            <h3 className="font-normal text-blue-900 mb-2 text-xs">How to send PYUSD:</h3>
             <div className="space-y-1 text-xs text-blue-800">
               <div className="flex items-start space-x-2">
                 <span className="font-medium">1.</span>
@@ -241,7 +246,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
               </div>
               <div className="flex items-start space-x-2">
                 <span className="font-medium">3.</span>
-                <p>Choose &quot;Send&quot; or &quot;Transfer&quot; and scan the QR code above</p>
+                <p>Choose &quot;Send&quot; or &quot;Transfer&quot; and scan the QR code</p>
               </div>
               <div className="flex items-start space-x-2">
                 <span className="font-medium">4.</span>
@@ -252,17 +257,17 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
           <button
             onClick={handleContinueToDeposit}
-            className="w-full rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition-colors"
+            className="w-full rounded-lg bg-blue-600 px-6 py-2.5 text-sm text-white hover:bg-blue-700 transition-colors"
           >
             I&apos;ve sent the PYUSD
           </button>
         </div>
       )}
 
-      <div className="text-center">
+      <div className="text-center pt-2">
         <button
           onClick={() => transitionToStep('pyusd-source', 'left')}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-xs text-gray-500 hover:text-gray-700"
         >
           ← Back to options
         </button>
