@@ -48,7 +48,8 @@ export const TOKENS = {
 export const POOLS = {
   [NETWORKS.SEPOLIA.id]: {
     PYUSD_USDC: {
-      address: '0x812386b8094518e5d9da06d93bcc9b7eb796a1fa2cc82119700d887266a0d2d9' as const,
+      address:
+        '0x812386b8094518e5d9da06d93bcc9b7eb796a1fa2cc82119700d887266a0d2d9' as const,
       token0: TOKENS[NETWORKS.SEPOLIA.id].PYUSD,
       token1: TOKENS[NETWORKS.SEPOLIA.id].USDC,
       fee: 500, // 0.05%
@@ -168,7 +169,8 @@ export const UNISWAP_V3_ROUTER_ABI = [
 ] as const;
 
 // Uniswap V3 Router address on Sepolia
-export const UNISWAP_V3_ROUTER_ADDRESS = '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E' as const;
+export const UNISWAP_V3_ROUTER_ADDRESS =
+  '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E' as const;
 
 // Helper function to get network config
 export function getNetworkConfig(chainId: number) {
