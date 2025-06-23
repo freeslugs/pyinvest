@@ -9,6 +9,7 @@ import WalletList from '../../components/WalletList';
 import {
   ERC20_ABI,
   NETWORKS,
+  UNISWAP_V3_POOL_ABI,
   UNISWAP_V3_POSITION_MANAGER_ABI,
   UNISWAP_V3_POSITION_MANAGER_ADDRESS,
   UNISWAP_V3_ROUTER_ABI,
@@ -1028,9 +1029,10 @@ export default function CookbookPage() {
 
       // Step 2: Swap half PYUSD → USDC using Uniswap V3 Router
       const swapAmount = totalDepositAmount / 2n; // Half for swap
-      const remainingPYUSD = totalDepositAmount - swapAmount; // Half to keep as PYUSD
+      let remainingPYUSD = totalDepositAmount - swapAmount; // Half to keep as PYUSD
+      let swapSuccessful = false;
 
-      setPoolData(prev => ({ ...prev, depositStatus: 'Step 2/5: Swapping PYUSD → USDC via Uniswap Router...' }));
+      setPoolData(prev => ({ ...prev, depositStatus: 'Step 2/5: Approving router to spend PYUSD...' }));
 
       // First approve router to spend PYUSD
       const approveRouterData = encodeFunctionData({
@@ -1039,37 +1041,120 @@ export default function CookbookPage() {
         args: [UNISWAP_V3_ROUTER_ADDRESS, swapAmount],
       });
 
-      await client.sendTransaction({
+      const approveRouterTxHash = await client.sendTransaction({
         to: PYUSD_TOKEN_CONFIG.address,
         data: approveRouterData,
       });
 
+      console.log('✅ Step 2a completed - Router approval:', approveRouterTxHash);
+
+      // Wait a bit for the approval to be processed
+      setPoolData(prev => ({ ...prev, depositStatus: 'Step 2/5: Verifying pool and performing swap...' }));
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+
+      // Verify the pool exists and get basic info
+      try {
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
+
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
+        });
+
+        const poolContract = {
+          address: PYUSD_USDC_POOL.address,
+          abi: UNISWAP_V3_POOL_ABI,
+        };
+
+        const [token0Address, token1Address, poolFee] = await Promise.all([
+          publicClient.readContract({
+            ...poolContract,
+            functionName: 'token0',
+          }),
+          publicClient.readContract({
+            ...poolContract,
+            functionName: 'token1',
+          }),
+          publicClient.readContract({
+            ...poolContract,
+            functionName: 'fee',
+          }),
+        ]);
+
+        console.log('Pool verification:', {
+          token0: token0Address,
+          token1: token1Address,
+          fee: poolFee,
+          expectedFee: PYUSD_USDC_POOL.fee,
+        });
+
+        // Verify fee matches
+        if (poolFee !== PYUSD_USDC_POOL.fee) {
+          throw new Error(`Pool fee mismatch: expected ${PYUSD_USDC_POOL.fee}, got ${poolFee}`);
+        }
+
+      } catch (poolError) {
+        console.error('Pool verification failed:', poolError);
+        throw new Error(`Pool verification failed: ${poolError instanceof Error ? poolError.message : 'Unknown error'}`);
+      }
+
       // Perform swap: PYUSD → USDC
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes from now
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1800); // 30 minutes from now
+
+      // Log swap parameters for debugging
+      const swapParams = {
+        tokenIn: PYUSD_TOKEN_CONFIG.address,
+        tokenOut: USDC_TOKEN_CONFIG.address,
+        fee: PYUSD_USDC_POOL.fee,
+        recipient: smartWallet!.address as `0x${string}`,
+        deadline,
+        amountIn: swapAmount,
+        amountOutMinimum: 0n, // Accept any amount of USDC (in production, calculate proper slippage)
+        sqrtPriceLimitX96: 0n,
+      };
+
+      console.log('Swap parameters:', {
+        ...swapParams,
+        amountIn: swapAmount.toString(),
+        deadline: deadline.toString(),
+        router: UNISWAP_V3_ROUTER_ADDRESS,
+      });
 
       const swapData = encodeFunctionData({
         abi: UNISWAP_V3_ROUTER_ABI,
         functionName: 'exactInputSingle',
-        args: [
-          {
-            tokenIn: PYUSD_TOKEN_CONFIG.address,
-            tokenOut: USDC_TOKEN_CONFIG.address,
-            fee: PYUSD_USDC_POOL.fee,
-            recipient: smartWallet!.address as `0x${string}`,
-            deadline,
-            amountIn: swapAmount,
-            amountOutMinimum: 0n, // Accept any amount of USDC (in production, calculate proper slippage)
-            sqrtPriceLimitX96: 0n,
-          },
-        ],
+        args: [swapParams],
       });
 
-      const swapTxHash = await client.sendTransaction({
-        to: UNISWAP_V3_ROUTER_ADDRESS,
-        data: swapData,
-      });
+      console.log('Swap call data:', swapData);
 
-      console.log('✅ Step 2 completed - PYUSD → USDC swap:', swapTxHash);
+      try {
+        const swapTxHash = await client.sendTransaction({
+          to: UNISWAP_V3_ROUTER_ADDRESS,
+          data: swapData,
+          // Add gas limit for complex transactions
+          gas: 500000n,
+        });
+
+                 console.log('✅ Step 2b completed - PYUSD → USDC swap:', swapTxHash);
+         swapSuccessful = true;
+       } catch (swapError) {
+         console.error('Swap failed:', swapError);
+
+         // If swap fails, we'll continue with just PYUSD (no swap)
+         setPoolData(prev => ({
+           ...prev,
+           depositStatus: '⚠️ Swap failed - continuing with PYUSD only. This might be due to insufficient pool liquidity on Sepolia testnet.'
+         }));
+
+         // Set remaining PYUSD to the full amount since swap failed
+         remainingPYUSD = totalDepositAmount;
+         swapSuccessful = false;
+
+         // Continue to step 3 with just PYUSD
+         console.log('Continuing with PYUSD only due to swap failure');
+       }
 
       // Step 3: Approve Position Manager to spend both tokens
       setPoolData(prev => ({ ...prev, depositStatus: 'Step 3/5: Approving tokens for Position Manager...' }));
@@ -1086,22 +1171,40 @@ export default function CookbookPage() {
         data: approvePYUSDData,
       });
 
-      // Approve USDC (use a large amount since we don't know exact swap output)
-      const largeUSDCAmount = BigInt(depositAmount * 10 ** USDC_TOKEN_CONFIG.decimals);
-      const approveUSDCData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [UNISWAP_V3_POSITION_MANAGER_ADDRESS, largeUSDCAmount],
-      });
+      // Set up USDC amount for position creation
+      let largeUSDCAmount = 0n;
+      if (swapSuccessful && USDC_TOKEN_CONFIG) {
+        largeUSDCAmount = BigInt(depositAmount * 10 ** USDC_TOKEN_CONFIG.decimals);
+        const approveUSDCData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [UNISWAP_V3_POSITION_MANAGER_ADDRESS, largeUSDCAmount],
+        });
 
-      await client.sendTransaction({
-        to: USDC_TOKEN_CONFIG.address,
-        data: approveUSDCData,
-      });
+        await client.sendTransaction({
+          to: USDC_TOKEN_CONFIG.address,
+          data: approveUSDCData,
+        });
+      }
 
       console.log('✅ Step 3 completed - Tokens approved for Position Manager');
 
       // Step 4: Create liquidity position using Position Manager
+      if (!swapSuccessful) {
+        setPoolData(prev => ({
+          ...prev,
+          depositStatus: '⚠️ Skipping Uniswap V3 position creation due to swap failure. PYUSD remains in smart wallet.',
+          depositHash: '',
+        }));
+
+        // Refresh balances and exit
+        setTimeout(() => {
+          checkPoolData();
+          checkTokenBalances();
+        }, 2000);
+        return;
+      }
+
       setPoolData(prev => ({ ...prev, depositStatus: 'Step 4/5: Creating Uniswap V3 liquidity position...' }));
 
       // Use full range for simplicity (in production, you'd let user choose price ranges)
@@ -1109,10 +1212,10 @@ export default function CookbookPage() {
       const tickUpper = 887270;  // Full range upper tick
 
       // Determine token order (Uniswap requires token0 < token1 by address)
-      const token0 = PYUSD_TOKEN_CONFIG.address.toLowerCase() < USDC_TOKEN_CONFIG.address.toLowerCase()
-        ? PYUSD_TOKEN_CONFIG.address : USDC_TOKEN_CONFIG.address;
-      const token1 = PYUSD_TOKEN_CONFIG.address.toLowerCase() < USDC_TOKEN_CONFIG.address.toLowerCase()
-        ? USDC_TOKEN_CONFIG.address : PYUSD_TOKEN_CONFIG.address;
+      const token0 = PYUSD_TOKEN_CONFIG.address.toLowerCase() < USDC_TOKEN_CONFIG!.address.toLowerCase()
+        ? PYUSD_TOKEN_CONFIG.address : USDC_TOKEN_CONFIG!.address;
+      const token1 = PYUSD_TOKEN_CONFIG.address.toLowerCase() < USDC_TOKEN_CONFIG!.address.toLowerCase()
+        ? USDC_TOKEN_CONFIG!.address : PYUSD_TOKEN_CONFIG.address;
 
       const amount0Desired = token0 === PYUSD_TOKEN_CONFIG.address ? remainingPYUSD : largeUSDCAmount;
       const amount1Desired = token1 === PYUSD_TOKEN_CONFIG.address ? remainingPYUSD : largeUSDCAmount;
