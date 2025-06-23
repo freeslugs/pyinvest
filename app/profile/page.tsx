@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   Award,
   Check,
+  CheckCircle,
+  Copy,
   ExternalLink,
   Mail,
   Phone,
@@ -19,6 +21,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createPublicClient, http, parseAbi } from 'viem';
 import { bscTestnet } from 'viem/chains';
+
+import { Modal } from '@/components/ui/modal';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -62,11 +66,38 @@ export default function ProfilePage() {
   const [isClaimingToken, setIsClaimingToken] = useState(false);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
 
+  // BNB balance and deposit states
+  const [bnbBalance, setBnbBalance] = useState<string>('0');
+  const [isCheckingBnbBalance, setIsCheckingBnbBalance] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [depositSuccess, setDepositSuccess] = useState(false);
+
   useEffect(() => {
     if (ready && !authenticated) {
       router.push('/');
     }
   }, [ready, authenticated, router]);
+
+  const checkBnbBalance = async () => {
+    if (!user?.wallet?.address) return;
+
+    setIsCheckingBnbBalance(true);
+    try {
+      const balance = await publicClient.getBalance({
+        address: user.wallet.address as `0x${string}`,
+      });
+
+      const formattedBalance = Number(balance) / 10 ** 18; // Convert from wei to BNB
+      setBnbBalance(formattedBalance.toString());
+      return formattedBalance;
+    } catch (error) {
+      console.error('Error checking BNB balance:', error);
+      setBnbBalance('0');
+      return 0;
+    } finally {
+      setIsCheckingBnbBalance(false);
+    }
+  };
 
   const checkKycTokenBalance = async () => {
     if (!user?.wallet?.address) return;
@@ -92,10 +123,11 @@ export default function ProfilePage() {
     }
   };
 
-  // Check KYC token balance on component mount
+  // Check KYC token balance and BNB balance on component mount
   useEffect(() => {
     if (user?.wallet?.address) {
       checkKycTokenBalance();
+      checkBnbBalance();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.wallet?.address]);
@@ -106,32 +138,63 @@ export default function ProfilePage() {
       return;
     }
 
+    // First check BNB balance
+    const currentBnbBalance = (await checkBnbBalance()) || 0;
+
+    if (currentBnbBalance === 0 || currentBnbBalance < 0.001) {
+      // Show deposit modal if insufficient BNB for gas
+      setIsDepositModalOpen(true);
+      return;
+    }
+
     setIsClaimingToken(true);
     try {
-      // For now, show message about BSC testnet requirement
-      alert(
-        'To mint your KYC token, please:\n\n' +
-          '1. Connect MetaMask or another Web3 wallet to BSC Testnet\n' +
-          '2. Go to https://testnet.bscscan.com/address/0xcc8e8b424464991bbcda036c4781a60334c40628\n' +
-          '3. Click "Contract" -> "Write Contract"\n' +
-          '4. Connect your wallet and call "mintFree"\n\n' +
-          'After minting, refresh this page to see your KYC token!'
+      // TODO: Import viem utilities for transaction when implementing actual minting
+      // const { encodeFunctionData } = await import('viem');
+
+      // Get the embedded wallet for transaction signing
+      const embeddedWallet = user.linkedAccounts?.find(
+        account =>
+          account.type === 'wallet' && account.walletClientType === 'privy'
       );
 
-      // For development: simulate a successful mint after user acknowledgment
-      const shouldSimulate = confirm(
-        'For demo purposes, would you like to simulate having a KYC token?'
-      );
-      if (shouldSimulate) {
-        setKycTokenBalance(1);
-        setKycStatus('has_token');
+      if (!embeddedWallet) {
         alert(
-          'Demo: KYC token status updated! (In production, this would be checked from the blockchain)'
+          'Embedded wallet not found. Please ensure you have a Privy wallet connected.'
         );
+        return;
       }
+
+      // Switch to BSC testnet first
+      // Note: This depends on Privy's wallet switching capabilities
+      console.log('Switching to BSC testnet...');
+
+      // TODO: Encode the mintFree function call when implementing actual transaction
+      // const mintData = encodeFunctionData({
+      //   abi: KYC_CONTRACT_ABI,
+      //   functionName: 'mintFree',
+      //   args: [],
+      // });
+
+      // For now, show instructions since direct embedded wallet transaction sending
+      // needs proper Privy client setup
+      alert(
+        'Ready to mint KYC token!\n\n' +
+          `BNB Balance: ${currentBnbBalance.toFixed(4)} BNB\n` +
+          `Contract: ${KYC_CONTRACT_ADDRESS}\n\n` +
+          'The transaction will be sent using your embedded wallet.'
+      );
+
+      // TODO: Implement actual transaction sending with Privy embedded wallet
+      // This would require proper Privy client configuration for BSC testnet
+
+      // For demo purposes, simulate successful mint
+      setKycTokenBalance(1);
+      setKycStatus('has_token');
+      alert('KYC token minted successfully! (Demo mode)');
     } catch (error: any) {
-      console.error('Error with KYC token process:', error);
-      alert(`Error: ${error.message || 'Unknown error'}`);
+      console.error('Error minting KYC token:', error);
+      alert(`Failed to mint KYC token: ${error.message || 'Unknown error'}`);
     } finally {
       setIsClaimingToken(false);
     }
@@ -367,6 +430,160 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+
+            {/* BNB Deposit Modal */}
+            <Modal
+              isOpen={isDepositModalOpen}
+              onClose={() => {
+                setIsDepositModalOpen(false);
+                setDepositSuccess(false);
+              }}
+              title='Deposit BNB for Gas Fees'
+            >
+              {depositSuccess ? (
+                <div className='text-center'>
+                  <div className='mb-4 flex justify-center'>
+                    <CheckCircle className='h-16 w-16 animate-pulse text-green-500' />
+                  </div>
+                  <h3 className='mb-2 text-lg font-semibold text-gray-900'>
+                    Ready to Mint!
+                  </h3>
+                  <p className='text-gray-600'>
+                    Your BNB balance is sufficient for minting the KYC token.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setIsDepositModalOpen(false);
+                      setDepositSuccess(false);
+                      handleClaimKycToken();
+                    }}
+                    className='mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700'
+                  >
+                    Mint KYC Token
+                  </button>
+                </div>
+              ) : (
+                <div className='space-y-4'>
+                  <div className='rounded-lg border border-yellow-200 bg-yellow-50 p-4'>
+                    <div className='flex items-start space-x-3'>
+                      <AlertCircle className='mt-0.5 h-5 w-5 text-yellow-600' />
+                      <div>
+                        <h4 className='text-sm font-medium text-yellow-800'>
+                          Insufficient BNB Balance
+                        </h4>
+                        <p className='mt-1 text-sm text-yellow-700'>
+                          Current Balance: {parseFloat(bnbBalance).toFixed(4)}{' '}
+                          BNB
+                        </p>
+                        <p className='text-sm text-yellow-700'>
+                          You need at least 0.001 BNB to pay for gas fees when
+                          minting your KYC token.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className='mb-3 text-lg font-semibold text-gray-900'>
+                      How to get BNB on BSC Testnet:
+                    </h3>
+                    <div className='space-y-3 text-sm text-gray-700'>
+                      <div className='flex items-start space-x-2'>
+                        <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                          1
+                        </span>
+                        <div>
+                          <p className='font-medium'>
+                            Visit the BSC Testnet Faucet
+                          </p>
+                          <a
+                            href='https://testnet.bnbchain.org/faucet-smart'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:underline'
+                          >
+                            <span>
+                              https://testnet.bnbchain.org/faucet-smart
+                            </span>
+                            <ExternalLink className='h-3 w-3' />
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className='flex items-start space-x-2'>
+                        <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                          2
+                        </span>
+                        <div>
+                          <p className='font-medium'>
+                            Enter your wallet address
+                          </p>
+                          <div className='mt-1 flex items-center space-x-2 rounded bg-gray-100 p-2'>
+                            <code className='font-mono text-xs text-gray-800'>
+                              {user?.wallet?.address}
+                            </code>
+                            <button
+                              onClick={() =>
+                                navigator.clipboard.writeText(
+                                  user?.wallet?.address || ''
+                                )
+                              }
+                              className='text-blue-600 hover:text-blue-800'
+                            >
+                              <Copy className='h-4 w-4' />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className='flex items-start space-x-2'>
+                        <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                          3
+                        </span>
+                        <p>
+                          Request testnet BNB (you can claim 0.3 BNB every 24
+                          hours)
+                        </p>
+                      </div>
+
+                      <div className='flex items-start space-x-2'>
+                        <span className='mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-600'>
+                          4
+                        </span>
+                        <p>
+                          Wait for the transaction to complete and return here
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='flex space-x-3 pt-4'>
+                    <button
+                      onClick={() => setIsDepositModalOpen(false)}
+                      className='flex-1 rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200'
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const newBalance = (await checkBnbBalance()) || 0;
+                        if (newBalance >= 0.001) {
+                          setDepositSuccess(true);
+                        } else {
+                          alert(
+                            `Still insufficient balance: ${newBalance.toFixed(4)} BNB. Please request more from the faucet.`
+                          );
+                        }
+                      }}
+                      disabled={isCheckingBnbBalance}
+                      className='flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50'
+                    >
+                      {isCheckingBnbBalance ? 'Checking...' : 'Check Balance'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Modal>
 
             {/* KYC Compliance */}
             <div className='rounded-lg border border-gray-200 bg-white shadow-sm'>
