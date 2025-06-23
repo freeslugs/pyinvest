@@ -1001,7 +1001,7 @@ export default function CookbookPage() {
         depositAmount * 10 ** PYUSD_TOKEN_CONFIG.decimals
       );
 
-      setPoolData(prev => ({ ...prev, depositStatus: 'Transferring PYUSD to smart wallet...' }));
+            setPoolData(prev => ({ ...prev, depositStatus: 'Transferring PYUSD to smart wallet...' }));
 
       // First, transfer PYUSD from MetaMask to Smart Wallet using transferFrom
       const transferFromData = encodeFunctionData({
@@ -1024,34 +1024,37 @@ export default function CookbookPage() {
 
       setPoolData(prev => ({
         ...prev,
-        depositStatus: 'PYUSD transferred to smart wallet. Swapping half to USDC...'
+        depositStatus: 'PYUSD transferred to smart wallet. Preparing demo transfer...'
       }));
 
-      // Step 2: Swap half of PYUSD to USDC (simplified - direct transfer to pool for now)
-      // In a real implementation, you'd use Uniswap Router to swap PYUSD → USDC
+      // Step 2: Demo transfer (simplified - NOT real liquidity provision)
+      // ⚠️ WARNING: This just sends tokens to the pool address - they don't provide liquidity!
+      // In production, you'd use Uniswap V3's Position Manager to create proper LP positions
       const halfAmount = totalDepositAmount / 2n;
 
-      // For now, we'll simulate the pool deposit by transferring both halves
-      // In production, you'd use Uniswap V3's position manager
-      const depositData = encodeFunctionData({
+      console.log(`⚠️ Demo transfer: Sending ${halfAmount.toString()} PYUSD tokens to pool address`);
+      console.log('⚠️ This is NOT real liquidity provision - tokens will just sit in the pool contract');
+
+      const demoTransferData = encodeFunctionData({
         abi: ERC20_ABI,
         functionName: 'transfer',
         args: [PYUSD_USDC_POOL.address, halfAmount],
       });
 
-      setPoolData(prev => ({ ...prev, depositStatus: 'Depositing into pool...' }));
+      setPoolData(prev => ({ ...prev, depositStatus: 'Executing demo transfer to pool address...' }));
 
-      const poolDepositTxHash = await client.sendTransaction({
+      const demoTransferTxHash = await client.sendTransaction({
         to: PYUSD_TOKEN_CONFIG.address,
-        data: depositData,
+        data: demoTransferData,
       });
 
-      console.log('Pool deposit completed:', poolDepositTxHash);
+      console.log('Demo transfer completed:', demoTransferTxHash);
+      console.log('⚠️ Note: Tokens are now in pool contract but NOT providing liquidity');
 
               setPoolData(prev => ({
           ...prev,
-          depositStatus: 'Deposit successful! PYUSD transferred and deposited into pool.',
-          depositHash: poolDepositTxHash,
+          depositStatus: '⚠️ Demo transfer completed! Tokens sent to pool address (not real liquidity provision).',
+          depositHash: demoTransferTxHash,
         }));
 
       // Refresh balances after deposit
@@ -1707,12 +1710,30 @@ export default function CookbookPage() {
                     <p>
                       <strong>Fee Tier:</strong> {PYUSD_USDC_POOL.fee / 100}%
                     </p>
-                    <p>
-                      <strong>Note:</strong> This is a simplified
-                      implementation. In production, you&apos;d use
-                      Uniswap&apos;s Position Manager for proper liquidity
-                      provision.
-                    </p>
+                  </div>
+
+                  {/* Important Demo Warning */}
+                  <div className='rounded border border-red-200 bg-red-50 p-4'>
+                    <h4 className='mb-2 font-medium text-red-800'>
+                      🚨 Important: Demo Implementation Only
+                    </h4>
+                    <div className='space-y-2 text-sm text-red-700'>
+                      <p>
+                        <strong>Current Implementation:</strong> This demo only transfers tokens to the pool contract address.
+                      </p>
+                      <p>
+                        <strong>What&apos;s Missing:</strong> Real Uniswap V3 liquidity provision requires:
+                      </p>
+                      <ul className='ml-4 list-disc space-y-1'>
+                                                 <li>Using Uniswap&apos;s Position Manager contract</li>
+                         <li>Swapping half of PYUSD to USDC via Uniswap Router</li>
+                        <li>Creating a liquidity position with price ranges</li>
+                        <li>Receiving an NFT representing your liquidity position</li>
+                      </ul>
+                      <p>
+                        <strong>Current Status:</strong> Your transferred tokens are sitting in the pool contract but not earning fees or providing liquidity.
+                      </p>
+                    </div>
                   </div>
 
                   {/* Check Pool Data */}
@@ -1825,10 +1846,16 @@ export default function CookbookPage() {
                   {poolData.approvals?.smartWalletApproved && (
                     <div className='border-t border-gray-200 pt-4'>
                       <h4 className='mb-2 font-medium text-gray-800'>
-                        Step 2: Deposit PYUSD into Pool
+                        Step 2: Demo Pool Transfer (Simplified)
                       </h4>
+                      <div className='mb-3 rounded border border-amber-200 bg-amber-50 p-3'>
+                        <p className='text-sm text-amber-800'>
+                          <strong>⚠️ Demo Implementation:</strong> This is a simplified demo that transfers tokens to the pool address.
+                          In production, you&apos;d use Uniswap&apos;s Position Manager to create proper liquidity positions and receive LP NFT tokens.
+                        </p>
+                      </div>
                       <p className='mb-3 text-sm text-gray-600'>
-                        Enter the amount of PYUSD to deposit. Half will be swapped to USDC, then both tokens will be deposited into the pool via your smart wallet.
+                        Enter the amount of PYUSD to transfer. Half will be sent to the pool address as a demonstration.
                       </p>
 
                       <div className='mb-4 flex items-center space-x-3'>
@@ -1849,19 +1876,19 @@ export default function CookbookPage() {
                         <span className='text-sm text-gray-600'>PYUSD</span>
                       </div>
 
-                      <button
-                        type='button'
-                        onClick={depositIntoPool}
-                        disabled={
-                          !client ||
-                          client.chain?.id !== NETWORKS.SEPOLIA.id ||
-                          !poolData.depositAmount ||
-                          parseFloat(poolData.depositAmount) <= 0
-                        }
-                        className='rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:bg-gray-400'
-                      >
-                        Deposit into Pool
-                      </button>
+                                              <button
+                          type='button'
+                          onClick={depositIntoPool}
+                          disabled={
+                            !client ||
+                            client.chain?.id !== NETWORKS.SEPOLIA.id ||
+                            !poolData.depositAmount ||
+                            parseFloat(poolData.depositAmount) <= 0
+                          }
+                          className='rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:bg-gray-400'
+                        >
+                          Demo Transfer to Pool Address
+                        </button>
                     </div>
                   )}
 
