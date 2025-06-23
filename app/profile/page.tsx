@@ -2,19 +2,19 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import {
-  AlertCircle,
-  ArrowLeft,
-  Award,
-  Check,
-  ExternalLink,
-  Mail,
-  Phone,
-  Plus,
-  Shield,
-  User,
-  Wallet,
-  X,
-  Zap
+    AlertCircle,
+    ArrowLeft,
+    Award,
+    Check,
+    ExternalLink,
+    Mail,
+    Phone,
+    Plus,
+    Shield,
+    User,
+    Wallet,
+    X,
+    Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -116,10 +116,10 @@ export default function ProfilePage() {
   ) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 mb-8 shadow-sm">
           <div className="px-6 py-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -133,13 +133,13 @@ export default function ProfilePage() {
                   <User className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
+                  <h1 className="text-2xl font-medium text-gray-900">Profile Settings</h1>
                   <p className="text-gray-600">Manage your account and connected services</p>
                 </div>
               </div>
               <button
                 onClick={logout}
-                className="rounded-md bg-red-100 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-200 transition-colors"
+                className="rounded-md bg-red-100 px-4 py-2 text-sm font-normal text-red-700 hover:bg-red-200 transition-colors"
               >
                 Sign Out
               </button>
@@ -150,9 +150,9 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Account Information */}
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   <User className="h-5 w-5 mr-2" />
                   Account Information
                 </h2>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
                   <div className="flex items-center space-x-3">
                     <Shield className="h-4 w-4 text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">User ID</p>
+                      <p className="text-sm font-normal text-gray-900">User ID</p>
                       <p className="text-xs text-gray-500">Your unique identifier</p>
                     </div>
                   </div>
@@ -177,7 +177,7 @@ export default function ProfilePage() {
                   <div className="flex items-center space-x-3">
                     <Shield className="h-4 w-4 text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Account Created</p>
+                      <p className="text-sm font-normal text-gray-900">Account Created</p>
                       <p className="text-xs text-gray-500">Member since</p>
                     </div>
                   </div>
@@ -189,9 +189,9 @@ export default function ProfilePage() {
             </div>
 
             {/* Email Settings */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   <Mail className="h-5 w-5 mr-2" />
                   Email
                 </h2>
@@ -204,7 +204,7 @@ export default function ProfilePage() {
                         <Check className="h-4 w-4 text-green-600" />
                       </div>
                       <div>
-                                                 <p className="text-sm font-medium text-gray-900">{email.address}</p>
+                        <p className="text-sm font-normal text-gray-900">{email.address}</p>
                          <p className="text-xs text-gray-500">Verified email address</p>
                       </div>
                     </div>
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                         <X className="h-4 w-4 text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">No email connected</p>
+                        <p className="text-sm font-normal text-gray-900">No email connected</p>
                         <p className="text-xs text-gray-500">Add an email for account recovery</p>
                       </div>
                     </div>
@@ -239,9 +239,9 @@ export default function ProfilePage() {
             </div>
 
             {/* Phone Settings */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   <Phone className="h-5 w-5 mr-2" />
                   Phone
                 </h2>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                         <Check className="h-4 w-4 text-green-600" />
                       </div>
                       <div>
-                                                 <p className="text-sm font-medium text-gray-900">{phone.number}</p>
+                        <p className="text-sm font-normal text-gray-900">{phone.number}</p>
                          <p className="text-xs text-gray-500">Verified phone number</p>
                       </div>
                     </div>
@@ -273,7 +273,7 @@ export default function ProfilePage() {
                         <X className="h-4 w-4 text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">No phone connected</p>
+                        <p className="text-sm font-normal text-gray-900">No phone connected</p>
                         <p className="text-xs text-gray-500">Add a phone for 2FA security</p>
                       </div>
                     </div>
@@ -289,9 +289,9 @@ export default function ProfilePage() {
             </div>
 
             {/* KYC Compliance */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   <Award className="h-5 w-5 mr-2" />
                   KYC Compliance
                 </h2>
@@ -304,7 +304,7 @@ export default function ProfilePage() {
                         <AlertCircle className="h-4 w-4 text-gray-400" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">KYC Not Started</p>
+                        <p className="text-sm font-normal text-gray-900">KYC Not Started</p>
                         <p className="text-xs text-gray-500">Complete KYC to unlock premium features</p>
                       </div>
                     </div>
@@ -325,23 +325,23 @@ export default function ProfilePage() {
                           <Check className="h-4 w-4 text-green-600" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">KYC Verified</p>
+                          <p className="text-sm font-normal text-gray-900">KYC Verified</p>
                           <p className="text-xs text-gray-500">Ready to claim your KYC token</p>
                         </div>
                       </div>
                       <button
                         onClick={handleClaimKycToken}
                         disabled={isClaimingToken}
-                        className="rounded-md bg-gradient-to-r from-yellow-400 to-yellow-500 px-4 py-2 text-sm font-medium text-white hover:from-yellow-500 hover:to-yellow-600 transition-all disabled:opacity-50"
+                        className="rounded-md bg-gradient-to-r from-yellow-400 to-yellow-500 px-4 py-2 text-sm font-normal text-white hover:from-yellow-500 hover:to-yellow-600 transition-all disabled:opacity-50"
                       >
                         {isClaimingToken ? 'Claiming...' : 'Claim KYC Token'}
                       </button>
                     </div>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                       <div className="flex items-start space-x-3">
                         <Zap className="h-5 w-5 text-yellow-600 mt-0.5" />
                         <div>
-                          <h4 className="text-sm font-medium text-yellow-800">KYC Token Benefits</h4>
+                          <h4 className="text-sm font-normal text-yellow-800">KYC Token Benefits</h4>
                           <ul className="mt-2 text-xs text-yellow-700 space-y-1">
                             <li>• Access to American tech support</li>
                             <li>• Priority customer service</li>
@@ -362,7 +362,7 @@ export default function ProfilePage() {
                           <Award className="h-4 w-4 text-green-600" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">KYC Token Claimed</p>
+                          <p className="text-sm font-normal text-gray-900">KYC Token Claimed</p>
                           <p className="text-xs text-gray-500">You have access to premium features</p>
                         </div>
                       </div>
@@ -370,21 +370,21 @@ export default function ProfilePage() {
                         <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
                           <Shield className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-medium">
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full font-normal">
                           Premium User
                         </span>
                       </div>
                     </div>
 
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                       <div className="flex items-start space-x-3">
                         <Shield className="h-5 w-5 text-green-600 mt-0.5" />
                         <div className="flex-1">
-                          <h4 className="text-sm font-medium text-green-800 mb-2">Token Details</h4>
+                          <h4 className="text-sm font-normal text-green-800 mb-2">Token Details</h4>
                           <div className="text-xs text-green-700 space-y-1">
-                            <p><span className="font-medium">Balance:</span> {kycTokenBalance} KYC Token</p>
-                            <p><span className="font-medium">Network:</span> BNB Smart Chain</p>
-                            <p><span className="font-medium">Contract:</span> 0x742d35Cc6634C0532925a3b8D</p>
+                            <p><span className="font-normal">Balance:</span> {kycTokenBalance} KYC Token</p>
+                            <p><span className="font-normal">Network:</span> BNB Smart Chain</p>
+                            <p><span className="font-normal">Contract:</span> 0x742d35Cc6634C0532925a3b8D</p>
                           </div>
                           <div className="mt-3 flex space-x-2">
                             <a
@@ -418,9 +418,9 @@ export default function ProfilePage() {
           {/* Connected Services & Wallets */}
           <div className="space-y-6">
             {/* Social Accounts */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   <ExternalLink className="h-5 w-5 mr-2" />
                   Social Accounts
                 </h2>
@@ -433,7 +433,7 @@ export default function ProfilePage() {
                       <span className="text-red-600 font-bold text-sm">G</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Google</p>
+                      <p className="text-sm font-normal text-gray-900">Google</p>
                       <p className="text-xs text-gray-500">
                         {googleSubject ? 'Connected' : 'Not connected'}
                       </p>
@@ -464,7 +464,7 @@ export default function ProfilePage() {
                       <span className="text-blue-600 font-bold text-sm">𝕏</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Twitter</p>
+                      <p className="text-sm font-normal text-gray-900">Twitter</p>
                       <p className="text-xs text-gray-500">
                         {twitterSubject ? 'Connected' : 'Not connected'}
                       </p>
@@ -495,7 +495,7 @@ export default function ProfilePage() {
                       <span className="text-purple-600 font-bold text-sm">D</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Discord</p>
+                      <p className="text-sm font-normal text-gray-900">Discord</p>
                       <p className="text-xs text-gray-500">
                         {discordSubject ? 'Connected' : 'Not connected'}
                       </p>
@@ -522,9 +522,9 @@ export default function ProfilePage() {
             </div>
 
             {/* Wallets */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <h2 className="text-lg font-medium text-gray-900 flex items-center">
                   <Wallet className="h-5 w-5 mr-2" />
                   Wallets
                 </h2>
@@ -538,7 +538,7 @@ export default function ProfilePage() {
                         <Wallet className="h-4 w-4 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Primary Wallet</p>
+                        <p className="text-sm font-normal text-gray-900">Primary Wallet</p>
                         <p className="text-xs text-gray-500 font-mono">
                           {wallet.address.slice(0, 8)}...{wallet.address.slice(-8)}
                         </p>
@@ -562,7 +562,7 @@ export default function ProfilePage() {
                         <Shield className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Smart Wallet</p>
+                        <p className="text-sm font-normal text-gray-900">Smart Wallet</p>
                         <p className="text-xs text-gray-500 font-mono">
                           {smartWallet.address.slice(0, 8)}...{smartWallet.address.slice(-8)}
                         </p>
@@ -582,7 +582,7 @@ export default function ProfilePage() {
                         <Wallet className="h-4 w-4 text-gray-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-normal text-gray-900">
                           {connectedWallet.walletClientType === 'privy' ? 'Embedded Wallet' : 'External Wallet'}
                         </p>
                         <p className="text-xs text-gray-500 font-mono">
@@ -614,10 +614,10 @@ export default function ProfilePage() {
             </div>
 
             {/* Account Security Status */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200 p-6">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <Shield className="h-6 w-6 text-green-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Security Status</h3>
+                <h3 className="text-lg font-medium text-gray-900">Security Status</h3>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -651,13 +651,13 @@ export default function ProfilePage() {
 
         {/* Warning about account removal */}
         {!canRemoveAccount && (
-          <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <Shield className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-yellow-800">Account Security Notice</h3>
+                <h3 className="text-sm font-normal text-yellow-800">Account Security Notice</h3>
                 <p className="mt-1 text-sm text-yellow-700">
                   You cannot remove your last authentication method. Please add another method before removing your current one.
                 </p>
