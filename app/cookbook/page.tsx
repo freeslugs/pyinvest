@@ -9,10 +9,9 @@ import WalletList from '../../components/WalletList';
 import {
   ERC20_ABI,
   NETWORKS,
-  UNISWAP_V3_POOL_ABI,
   UNISWAP_V3_ROUTER_ADDRESS,
   getPoolsForNetwork,
-  getTokensForNetwork,
+  getTokensForNetwork
 } from '../../lib/constants';
 
 async function verifyToken() {
@@ -720,13 +719,18 @@ export default function CookbookPage() {
         return;
       }
 
+      console.log('🔍 Starting pool data checks...');
+      console.log('📍 Pool address:', PYUSD_USDC_POOL.address);
+      console.log('🏦 MetaMask address:', metamaskWallet.address);
+      console.log('🤖 Smart wallet address:', smartWallet.address);
+
       // Check balances for both tokens and both wallets
+      // Note: V3 pools don't have balanceOf for LP tokens - positions are NFTs
       const [
         metamaskPYUSD,
         smartWalletPYUSD,
         metamaskUSDC,
         smartWalletUSDC,
-        poolTokens,
         pyusdAllowance,
         usdcAllowance,
       ] = await Promise.all([
@@ -759,12 +763,6 @@ export default function CookbookPage() {
             })
           : Promise.resolve(0n),
         publicClient.readContract({
-          address: PYUSD_USDC_POOL.address,
-          abi: UNISWAP_V3_POOL_ABI,
-          functionName: 'balanceOf',
-          args: [metamaskWallet.address as `0x${string}`],
-        }),
-        publicClient.readContract({
           address: PYUSD_TOKEN_CONFIG.address,
           abi: ERC20_ABI,
           functionName: 'allowance',
@@ -785,6 +783,15 @@ export default function CookbookPage() {
             })
           : Promise.resolve(0n),
       ]);
+
+      console.log('💰 Token balances fetched:');
+      console.log('  MetaMask PYUSD:', (metamaskPYUSD as bigint).toString());
+      console.log('  Smart Wallet PYUSD:', (smartWalletPYUSD as bigint).toString());
+      console.log('  MetaMask USDC:', (metamaskUSDC as bigint).toString());
+      console.log('  Smart Wallet USDC:', (smartWalletUSDC as bigint).toString());
+      console.log('✅ Allowances fetched:');
+      console.log('  PYUSD allowance:', (pyusdAllowance as bigint).toString());
+      console.log('  USDC allowance:', (usdcAllowance as bigint).toString());
 
       const formatBalance = (balance: bigint, decimals: number) => {
         return (Number(balance) / 10 ** decimals).toFixed(2);
@@ -810,7 +817,7 @@ export default function CookbookPage() {
                 USDC_TOKEN_CONFIG.decimals
               )
             : '0',
-          poolTokens: formatBalance(poolTokens as bigint, 18), // LP tokens usually have 18 decimals
+          poolTokens: '0.00', // V3 positions are NFTs, not fungible tokens
         },
         approvals: {
           pyusdApproved: (pyusdAllowance as bigint) > 0n,
