@@ -7,6 +7,7 @@ The onboarding flow has been successfully implemented to guide new users through
 ## Components Created
 
 ### 1. OnboardingFlow Component (`components/OnboardingFlow.tsx`)
+
 The main onboarding modal that manages the multi-step flow:
 
 - **Welcome Step**: Introduces users to PyInvest
@@ -17,6 +18,7 @@ The main onboarding modal that manages the multi-step flow:
 - **Completion**: Marks onboarding as completed in localStorage
 
 ### 2. SmartWalletCard Component (`components/SmartWalletCard.tsx`)
+
 Replaces the traditional balance sources section when users have a smart wallet with PYUSD:
 
 - Displays smart wallet balance
@@ -25,6 +27,7 @@ Replaces the traditional balance sources section when users have a smart wallet 
 - Copy address functionality
 
 ### 3. QRCodeComponent (`components/ui/qr-code.tsx`)
+
 Reusable QR code component using the `qrcode` library:
 
 - Generates real QR codes from wallet addresses
@@ -39,12 +42,14 @@ Reusable QR code component using the `qrcode` library:
 The dashboard now includes:
 
 1. **Onboarding Detection Logic**:
+
    - Checks localStorage for `onboarding_completed` flag
    - Detects if user has connected external wallets
    - Monitors smart wallet balance
    - Shows onboarding modal for new users without significant setup
 
 2. **Smart Wallet Integration**:
+
    - Uses Privy hooks (`usePrivy`, `useSmartWallets`)
    - Fetches PYUSD balance from smart wallet on Sepolia testnet
    - Conditionally shows either SmartWalletCard or traditional balance sources
@@ -59,12 +64,15 @@ The dashboard now includes:
 ### New User Experience
 
 1. **First Login**:
+
    - User logs in for the first time
    - Dashboard checks if `onboarding_completed` exists in localStorage
    - If not completed and no significant wallet setup, shows onboarding modal
 
 2. **PYUSD Source Selection**:
+
    - **Traditional Apps Path**:
+
      - Shows QR code of smart wallet address
      - Provides step-by-step instructions for transferring from Venmo/PayPal/Coinbase
      - "I've sent the PYUSD" button leads to waiting state
@@ -74,6 +82,7 @@ The dashboard now includes:
      - Automatically proceeds to waiting state after connection
 
 3. **Waiting State**:
+
    - Shows loading spinner
    - Explains that balance monitoring is happening
    - "Continue to Dashboard" button to exit onboarding
@@ -92,22 +101,26 @@ The dashboard now includes:
 ## Technical Implementation Details
 
 ### Dependencies Added
+
 - `qrcode`: For generating QR codes
 - `@types/qrcode`: TypeScript types for qrcode library
 
 ### Privy Integration
+
 - **Authentication**: Uses `usePrivy()` hook for user authentication state
 - **Smart Wallets**: Uses `useSmartWallets()` for smart wallet access
 - **Wallet Linking**: Uses `linkWallet()` to connect external wallets
 - **Account Detection**: Checks `user.linkedAccounts` for smart wallets and external wallets
 
 ### Smart Wallet Configuration
+
 - **Network**: Sepolia testnet (chainId: 11155111)
 - **PYUSD Token**: Contract address `0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9`
 - **RPC Endpoint**: Uses PublicNode Sepolia endpoint with fallback handling
 - **Balance Fetching**: ERC20 `balanceOf` function call using viem
 
 ### State Management
+
 - **localStorage**: Stores onboarding completion status
 - **React State**: Manages onboarding flow steps, loading states, and balance data
 - **Conditional Rendering**: Shows appropriate UI based on user's wallet setup status
@@ -122,9 +135,9 @@ await QRCode.toCanvas(canvasRef.current, walletAddress, {
   margin: 2,
   color: {
     dark: '#000000',
-    light: '#FFFFFF'
+    light: '#FFFFFF',
   },
-  errorCorrectionLevel: 'M'
+  errorCorrectionLevel: 'M',
 });
 ```
 

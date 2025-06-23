@@ -7,16 +7,19 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 ## Key Changes Made
 
 ### 1. Balance Interface Update
+
 - **Updated `WalletBalance` interface** from `venmo` and `coinbase` properties to `smartWallet` and `metaMask`
 - **Removed hardcoded balance** of $4,200.00 for Coinbase
 - **Initialized both balances to '0'** for real-time fetching
 
 ### 2. Smart Wallet Balance Integration
+
 - **Enhanced `fetchSmartWalletBalance` function** to update both `smartWalletBalance` state and `balances.smartWallet` for consistency
 - **Maintained PYUSD token integration** on Sepolia testnet using viem
 - **Real-time balance fetching** when smart wallet is available
 
 ### 3. MetaMask Balance Implementation
+
 - **Added `fetchMetaMaskBalance` function** that:
   - Detects external wallets connected via Privy (non-privy wallet clients)
   - Fetches PYUSD balance from Sepolia testnet
@@ -24,6 +27,7 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
   - Updates `balances.metaMask` state
 
 ### 4. UI/UX Improvements
+
 - **Replaced traditional balance sources** with crypto wallet sources:
   - Venmo → Smart Wallet (blue "S" icon)
   - Coinbase → MetaMask (orange "M" icon)
@@ -32,6 +36,7 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 - **Removed Venmo configuration modal** and related functionality
 
 ### 5. Code Cleanup
+
 - **Removed unused functions**:
   - `fetchVenmoBalance` (was incorrectly updating smart wallet balance)
   - `handleVenmoSubmit`
@@ -42,6 +47,7 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 - **Removed Venmo modal JSX** completely
 
 ### 6. Balance Fetching Logic
+
 - **Always fetch both balances** when appropriate wallets are available:
   - Smart wallet balance fetched when `smartWallet` exists
   - MetaMask balance fetched when `hasConnectedWallet` is true
@@ -51,6 +57,7 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 ## Technical Implementation
 
 ### Balance Data Flow
+
 1. **Component Mount**: Check for smart wallet and connected external wallets
 2. **Smart Wallet**: Fetch PYUSD balance using wallet address
 3. **MetaMask**: Find external wallet from `user.linkedAccounts`, fetch PYUSD balance
@@ -58,6 +65,7 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 5. **Loading States**: Display "Loading..." during async operations
 
 ### Integration Points
+
 - **Privy Authentication**: Uses existing user authentication and wallet management
 - **PYUSD Token**: Maintains Sepolia testnet integration (address: `0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9`)
 - **viem Client**: Consistent RPC configuration across both wallet types
@@ -66,11 +74,13 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 ## User Experience
 
 ### Before
+
 - Hardcoded Coinbase balance of $4,200.00
 - Venmo configuration requiring manual address input
 - Traditional financial app integration appearance
 
 ### After
+
 - **Real-time PYUSD balances** from actual crypto wallets
 - **Automatic detection** of Smart Wallet and MetaMask
 - **Loading indicators** during balance fetching
@@ -78,11 +88,13 @@ Updated the PyInvest dashboard to replace hardcoded traditional balance sources 
 - **Crypto-native user experience** aligned with DeFi workflows
 
 ## Build Status
+
 ✅ **Build Successful** - All TypeScript errors resolved
 ✅ **Linting Clean** - ESLint warnings addressed
 ✅ **No Runtime Errors** - Clean component lifecycle management
 
 ## Next Steps
+
 - Monitor balance fetching performance and error rates
 - Consider adding balance refresh functionality
 - Implement caching for frequently accessed balances

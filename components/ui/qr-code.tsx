@@ -14,7 +14,7 @@ export function QRCodeComponent({
   value,
   size = 200,
   className = '',
-  errorCorrectionLevel = 'M'
+  errorCorrectionLevel = 'M',
 }: QRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,9 +33,9 @@ export function QRCodeComponent({
           margin: 2,
           color: {
             dark: '#000000',
-            light: '#FFFFFF'
+            light: '#FFFFFF',
           },
-          errorCorrectionLevel
+          errorCorrectionLevel,
         });
       } catch (err) {
         console.error('Error generating QR code:', err);
@@ -51,10 +51,10 @@ export function QRCodeComponent({
   if (error) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}
+        className={`flex items-center justify-center rounded-lg bg-gray-100 ${className}`}
         style={{ width: size, height: size }}
       >
-        <p className="text-sm text-red-500 text-center">
+        <p className='text-center text-sm text-red-500'>
           Error generating QR code
         </p>
       </div>
@@ -65,10 +65,10 @@ export function QRCodeComponent({
     <div className={`relative ${className}`}>
       {isLoading && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg"
+          className='absolute inset-0 flex items-center justify-center rounded-lg bg-gray-100'
           style={{ width: size, height: size }}
         >
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className='h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600'></div>
         </div>
       )}
       <canvas

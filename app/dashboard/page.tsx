@@ -72,6 +72,7 @@ export default function PyUSDYieldSelector() {
   const [showSmartWallet, setShowSmartWallet] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false);
+  const [isDepositFlow, setIsDepositFlow] = useState(false);
 
   // Privy hooks
   const { user, authenticated, ready } = usePrivy();
@@ -82,7 +83,9 @@ export default function PyUSDYieldSelector() {
   ) as { address: string } | undefined;
 
   // KYC state management
-  const [kycStatus, setKycStatus] = useState<'not_started' | 'passed' | 'claimed'>('not_started');
+  const [kycStatus, setKycStatus] = useState<
+    'not_started' | 'passed' | 'claimed'
+  >('not_started');
 
   // Mock KYC status - in real app this would come from backend
   useEffect(() => {
@@ -131,14 +134,19 @@ export default function PyUSDYieldSelector() {
     const checkOnboarding = setTimeout(() => {
       // Check if user has ever connected any external wallet
       // Smart wallet is created automatically, so we only count external wallets
-      const hasEverConnectedWallet = user?.linkedAccounts?.some(
-        (account: any) => account.type === 'wallet' && account.walletClientType !== 'privy'
-      ) || false;
+      const hasEverConnectedWallet =
+        user?.linkedAccounts?.some(
+          (account: any) =>
+            account.type === 'wallet' && account.walletClientType !== 'privy'
+        ) || false;
 
       console.log('📊 ONBOARDING DECISION FACTORS:');
       console.log('- hasEverConnectedWallet:', hasEverConnectedWallet);
       console.log('- user?.linkedAccounts:', user?.linkedAccounts);
-      console.log('- Total linked accounts:', user?.linkedAccounts?.length || 0);
+      console.log(
+        '- Total linked accounts:',
+        user?.linkedAccounts?.length || 0
+      );
 
       // Only show onboarding for users who have never connected an external wallet
       // Email, phone, social accounts are part of normal signup flow, not onboarding completion
@@ -152,7 +160,10 @@ export default function PyUSDYieldSelector() {
         setShowOnboarding(true);
       } else {
         console.log('❌ RETURNING USER - NOT SHOWING ONBOARDING MODAL');
-        console.log('  - has connected external wallet?', hasEverConnectedWallet);
+        console.log(
+          '  - has connected external wallet?',
+          hasEverConnectedWallet
+        );
       }
 
       // Mark onboarding check as completed
@@ -164,7 +175,10 @@ export default function PyUSDYieldSelector() {
       console.log('- Smart wallet address:', smartWallet?.address);
 
       if (smartWallet) {
-        console.log('🔄 Triggering smart wallet balance fetch for:', smartWallet.address);
+        console.log(
+          '🔄 Triggering smart wallet balance fetch for:',
+          smartWallet.address
+        );
         fetchSmartWalletBalance(smartWallet.address);
       }
 
@@ -208,7 +222,7 @@ export default function PyUSDYieldSelector() {
         args: [address as `0x${string}`],
       });
 
-            const formattedBalance = formatPyusdBalance(balance as bigint);
+      const formattedBalance = formatPyusdBalance(balance as bigint);
       console.log('🔵 SMART WALLET BALANCE UPDATE:');
       console.log('- Raw balance from contract:', balance);
       console.log('- Formatted balance:', formattedBalance);
@@ -223,7 +237,10 @@ export default function PyUSDYieldSelector() {
           ...prev,
           smartWallet: formattedBalance,
         };
-        console.log('- New balances state after smart wallet update:', newBalances);
+        console.log(
+          '- New balances state after smart wallet update:',
+          newBalances
+        );
         return newBalances;
       });
 
@@ -244,7 +261,8 @@ export default function PyUSDYieldSelector() {
     try {
       // Find MetaMask wallet from user's linked accounts
       const metaMaskWallet = user?.linkedAccounts?.find(
-        (account: any) => account.type === 'wallet' && account.walletClientType !== 'privy'
+        (account: any) =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
       ) as { address: string } | undefined;
 
       if (!metaMaskWallet) {
@@ -254,7 +272,10 @@ export default function PyUSDYieldSelector() {
       }
 
       setIsLoading(true);
-      console.log('Fetching MetaMask PYUSD balance for address:', metaMaskWallet.address);
+      console.log(
+        'Fetching MetaMask PYUSD balance for address:',
+        metaMaskWallet.address
+      );
 
       // Import viem utilities dynamically
       const { createPublicClient, http } = await import('viem');
@@ -311,7 +332,8 @@ export default function PyUSDYieldSelector() {
     console.log('Smart Wallet balance string:', balances.smartWallet);
     console.log('MetaMask balance string:', balances.metaMask);
 
-    const smartWalletNum = parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
+    const smartWalletNum =
+      parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
     const metaMaskNum = parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
 
     console.log('Smart Wallet parsed number:', smartWalletNum);
@@ -371,10 +393,16 @@ export default function PyUSDYieldSelector() {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
+    setIsDepositFlow(false);
     // Refresh smart wallet balance after onboarding
     if (smartWallet) {
       fetchSmartWalletBalance(smartWallet.address);
     }
+  };
+
+  const handleDepositClick = () => {
+    setIsDepositFlow(true);
+    setShowOnboarding(true);
   };
 
   return (
@@ -404,7 +432,7 @@ export default function PyUSDYieldSelector() {
               {/* Profile Icon - Direct Link */}
               <a
                 href='/profile'
-                className='flex items-center justify-center p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors'
+                className='flex items-center justify-center rounded-full bg-gray-100 p-2 transition-colors hover:bg-gray-200'
               >
                 <User className='h-5 w-5 text-gray-600' />
               </a>
@@ -413,24 +441,26 @@ export default function PyUSDYieldSelector() {
               <div className='relative'>
                 <button
                   onClick={() => setIsNetworkMenuOpen(!isNetworkMenuOpen)}
-                  className='flex items-center justify-center p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors relative'
+                  className='relative flex items-center justify-center rounded-full bg-gray-100 p-2 transition-colors hover:bg-gray-200'
                 >
                   <Globe className='h-5 w-5 text-gray-600' />
                   {/* Blinking green dot */}
-                  <div className='absolute -top-0.5 -right-0.5 h-3 w-3 bg-green-500 rounded-full animate-pulse'>
-                    <div className='absolute inset-0 h-3 w-3 bg-green-500 rounded-full animate-ping opacity-75'></div>
+                  <div className='absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full bg-green-500'>
+                    <div className='absolute inset-0 h-3 w-3 animate-ping rounded-full bg-green-500 opacity-75'></div>
                   </div>
                 </button>
 
                 {/* Network Dropdown Menu */}
                 {isNetworkMenuOpen && (
                   <>
-                    <div className='absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50'>
+                    <div className='absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg'>
                       <div className='py-1'>
-                        <div className='px-4 py-3 border-b border-gray-100'>
-                          <div className='flex items-center space-x-2 mb-2'>
-                            <div className='h-2 w-2 bg-green-500 rounded-full animate-pulse'></div>
-                            <span className='text-xs font-medium text-gray-700'>Network Status</span>
+                        <div className='border-b border-gray-100 px-4 py-3'>
+                          <div className='mb-2 flex items-center space-x-2'>
+                            <div className='h-2 w-2 animate-pulse rounded-full bg-green-500'></div>
+                            <span className='text-xs font-medium text-gray-700'>
+                              Network Status
+                            </span>
                           </div>
                           <NetworkSelector />
                         </div>
@@ -446,9 +476,7 @@ export default function PyUSDYieldSelector() {
             </div>
           </div>
           <div className='mb-2 mt-2 border-t border-gray-200'></div>
-          <p className='text-base leading-relaxed text-gray-600'>
-
-          </p>
+          <p className='text-base leading-relaxed text-gray-600'></p>
         </div>
 
         {/* Balance Display */}
@@ -458,26 +486,60 @@ export default function PyUSDYieldSelector() {
             balance={smartWalletBalance}
           />
         ) : (
-          <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
-            <div className='p-6'>
-              <p className='mb-2 text-base text-gray-500'>Balance</p>
-              <div className='mb-1 flex items-center space-x-2'>
-                <span className='font-adelle text-4xl font-light text-gray-300'>
-                  $
-                </span>
-                <p className='font-adelle text-4xl font-medium text-gray-800'>
-                  {totalBalance()}
-                </p>
-                <Image
-                  src='/assets/pyusd_logo.png'
-                  alt='pyUSD logo'
-                  width={24}
-                  height={24}
-                  className='ml-1 h-6 w-6'
-                  unoptimized
-                />
+          <div className='space-y-4'>
+            <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
+              <div className='p-6'>
+                <p className='mb-2 text-base text-gray-500'>Balance</p>
+                <div className='mb-1 flex items-center space-x-2'>
+                  <span className='font-adelle text-4xl font-light text-gray-300'>
+                    $
+                  </span>
+                  <p className='font-adelle text-4xl font-medium text-gray-800'>
+                    {totalBalance()}
+                  </p>
+                  <Image
+                    src='/assets/pyusd_logo.png'
+                    alt='pyUSD logo'
+                    width={24}
+                    height={24}
+                    className='ml-1 h-6 w-6'
+                    unoptimized
+                  />
+                </div>
               </div>
             </div>
+
+            {/* Deposit Button */}
+            <button
+              onClick={handleDepositClick}
+              className='flex w-full items-center justify-center space-x-2 rounded-xl bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700'
+            >
+              <div className='relative flex items-center'>
+                {/* Stacked/overlapped logos */}
+                <Image
+                  src='/assets/Venmo-icon.png'
+                  alt='Venmo'
+                  width={16}
+                  height={16}
+                  className='relative z-30 rounded-full border border-white shadow-sm'
+                />
+                <Image
+                  src='/assets/pyusd_logo.png'
+                  alt='PayPal'
+                  width={16}
+                  height={16}
+                  className='relative z-20 -ml-1.5 rounded-full border border-white shadow-sm'
+                />
+                <Image
+                  src='/assets/coinbase-icon.png'
+                  alt='Coinbase'
+                  width={16}
+                  height={16}
+                  className='relative z-10 -ml-1.5 rounded-full border border-white shadow-sm'
+                />
+              </div>
+              <span>Deposit</span>
+            </button>
           </div>
         )}
 
@@ -923,6 +985,7 @@ export default function PyUSDYieldSelector() {
         <OnboardingFlow
           isOpen={showOnboarding}
           onComplete={handleOnboardingComplete}
+          skipWelcome={isDepositFlow}
         />
       )}
     </div>

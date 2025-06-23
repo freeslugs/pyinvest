@@ -45,7 +45,7 @@ export function NetworkSelector() {
       <button
         type='button'
         onClick={() => setIsOpen(!isOpen)}
-        className='flex items-center justify-center space-x-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[40px] min-w-[100px] sm:min-w-[120px]'
+        className='flex min-h-[40px] min-w-[100px] items-center justify-center space-x-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:min-w-[120px]'
       >
         <div className={`h-2 w-2 rounded-full ${selectedNetwork.color}`} />
         <span>{selectedNetwork.shortName}</span>

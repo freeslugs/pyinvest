@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
     // Check if wallet API is available
     if (!client.walletApi) {
       return NextResponse.json(
-        { error: 'Wallet API not configured. Please set SESSION_SIGNER_SECRET environment variable.' },
+        {
+          error:
+            'Wallet API not configured. Please set SESSION_SIGNER_SECRET environment variable.',
+        },
         { status: 503 }
       );
     }
