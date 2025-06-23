@@ -2,6 +2,7 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import {
+  ArrowLeft,
   Check,
   ExternalLink,
   Mail,
