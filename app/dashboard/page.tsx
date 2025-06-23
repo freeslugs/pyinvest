@@ -1,6 +1,13 @@
 'use client';
 
-import { ArrowRight, CheckCircle, Edit3, Globe, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle,
+  Edit3,
+  Globe,
+  TrendingUp,
+  Zap
+} from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
