@@ -10,16 +10,16 @@ interface LogoPropsType {
 
 export function Logo(props: LogoPropsType) {
   const fontColor = props.fontColor || '#6B7280';
-  const width = props.width || '140';
-  const height = props.height || '40';
+  const width = props.width || '32';
+  const height = props.height || '32';
 
   return (
     <div className='flex items-center space-x-3'>
       <Image
         src='/assets/PyInvest-logomark.png'
         alt='PyInvest Logo'
-        width={32}
-        height={32}
+        width={Number.parseInt(width)}
+        height={Number.parseInt(height)}
         className='flex-shrink-0'
       />
       <span

@@ -479,8 +479,6 @@ export default function CookbookPage() {
     }
   };
 
-
-
   // Function to check token balances
   const checkTokenBalances = async () => {
     if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
@@ -1877,276 +1875,321 @@ export default function CookbookPage() {
     }
   };
 
-  // Optimized function to check balances and allowances with throttling and caching
-  const checkBalancesAndAllowances = useCallback(async (forceRefresh = false) => {
-    if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN) {
-      console.log('❌ Missing requirements for balance check');
-      return;
-    }
-
-    // Throttling: prevent multiple simultaneous calls
-    if (isLoadingRef.current && !forceRefresh) {
-      console.log('⏳ Balance check already in progress, skipping...');
-      return;
-    }
-
-    // Rate limiting: minimum time between fetches
-    const now = Date.now();
-    if (now - lastFetchTimeRef.current < FETCH_COOLDOWN && !forceRefresh) {
-      console.log(`⏳ Rate limited: ${Math.ceil((FETCH_COOLDOWN - (now - lastFetchTimeRef.current)) / 1000)}s until next allowed fetch`);
-      return;
-    }
-
-    isLoadingRef.current = true;
-    lastFetchTimeRef.current = now;
-
-    setPoolData(prev => ({ ...prev, isLoading: true, error: undefined }));
-
-    try {
-      console.log('🔍 === STARTING BALANCE & ALLOWANCE CHECK ===');
-      console.log('📍 MetaMask address:', metamaskWallet.address);
-
-      // Create viem public client with retry logic
-      const { createPublicClient, http } = await import('viem');
-      const { sepolia } = await import('viem/chains');
-
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(
-          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
-        ),
-      });
-
-      // Batch basic balance and allowance checks
-      console.log('💰 Fetching balances and allowances...');
-      const [
-        pyusdBalance,
-        usdcBalance,
-        routerAllowance,
-        pyusdPMAllowance,
-        usdcPMAllowance,
-      ] = await Promise.all([
-        publicClient.readContract({
-          address: PYUSD_TOKEN.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'balanceOf',
-          args: [metamaskWallet.address as `0x${string}`],
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: USDC_TOKEN.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'balanceOf',
-          args: [metamaskWallet.address as `0x${string}`],
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: PYUSD_TOKEN.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'allowance',
-          args: [
-            metamaskWallet.address as `0x${string}`,
-            UNISWAP_V3_ROUTER_ADDRESS,
-          ],
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: PYUSD_TOKEN.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'allowance',
-          args: [
-            metamaskWallet.address as `0x${string}`,
-            UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-          ],
-        }) as Promise<bigint>,
-        publicClient.readContract({
-          address: USDC_TOKEN.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'allowance',
-          args: [
-            metamaskWallet.address as `0x${string}`,
-            UNISWAP_V3_POSITION_MANAGER_ADDRESS,
-          ],
-        }) as Promise<bigint>,
-      ]);
-
-      const pyusdBalanceFormatted = Number(pyusdBalance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      const usdcBalanceFormatted = Number(usdcBalance) / Math.pow(10, USDC_TOKEN.decimals);
-      const routerAllowanceFormatted = Number(routerAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      const pyusdPMAllowanceFormatted = Number(pyusdPMAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
-      const usdcPMAllowanceFormatted = Number(usdcPMAllowance) / Math.pow(10, USDC_TOKEN.decimals);
-
-      console.log(`✅ PYUSD Balance: ${pyusdBalanceFormatted} PYUSD`);
-      console.log(`✅ USDC Balance: ${usdcBalanceFormatted} USDC`);
-      console.log(`✅ Router Allowance: ${routerAllowanceFormatted} PYUSD`);
-
-      // Optimized NFT position checking with limits
-      console.log('🎯 Checking Uniswap V3 positions...');
-      let nftCount = 0;
-      let totalValueUSD = 0;
-
+  // Helper function to process a single position
+  const processPosition = useCallback(
+    async (
+      publicClient: any,
+      walletAddress: string,
+      index: number
+    ): Promise<number> => {
       try {
-        // Get NFT balance (number of positions)
-        const nftBalance = (await publicClient.readContract({
+        // Get token ID by index
+        const tokenId = (await publicClient.readContract({
           address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
           abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-          functionName: 'balanceOf',
-          args: [metamaskWallet.address as `0x${string}`],
+          functionName: 'tokenOfOwnerByIndex',
+          args: [walletAddress as `0x${string}`, BigInt(index)],
         })) as bigint;
 
-        nftCount = Number(nftBalance);
-        console.log(`💎 NFT Positions owned: ${nftCount}`);
+        // Get position details
+        const position = (await publicClient.readContract({
+          address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+          abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+          functionName: 'positions',
+          args: [tokenId],
+        })) as readonly [
+          bigint,
+          `0x${string}`,
+          `0x${string}`,
+          `0x${string}`,
+          number,
+          number,
+          number,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+        ];
 
-        // Limit the number of positions we process to prevent RPC spam
-        const MAX_POSITIONS_TO_PROCESS = 10;
-        const positionsToProcess = Math.min(nftCount, MAX_POSITIONS_TO_PROCESS);
+        const [
+          ,
+          ,
+          token0Address,
+          token1Address,
+          fee,
+          tickLower,
+          tickUpper,
+          liquidity,
+        ] = position;
 
-        if (positionsToProcess > 0) {
-          console.log(`📊 Processing ${positionsToProcess} positions (max ${MAX_POSITIONS_TO_PROCESS})`);
+        // Check if this is our PYUSD/USDC pool
+        const isOurPool =
+          ((token0Address.toLowerCase() === USDC_TOKEN.address.toLowerCase() &&
+            token1Address.toLowerCase() ===
+              PYUSD_TOKEN.address.toLowerCase()) ||
+            (token0Address.toLowerCase() ===
+              PYUSD_TOKEN.address.toLowerCase() &&
+              token1Address.toLowerCase() ===
+                USDC_TOKEN.address.toLowerCase())) &&
+          fee === PYUSD_USDC_POOL.fee;
 
-          // Process positions in parallel with limits
-          const positionPromises = [];
-          for (let i = 0; i < positionsToProcess; i++) {
-            positionPromises.push(
-              processPosition(publicClient, metamaskWallet.address, i)
-            );
-          }
-
-          const positionResults = await Promise.allSettled(positionPromises);
-
-          positionResults.forEach((result, index) => {
-            if (result.status === 'fulfilled' && result.value) {
-              totalValueUSD += result.value;
-              console.log(`💰 Position ${index + 1} value: ~$${result.value.toFixed(2)} USD`);
-            } else if (result.status === 'rejected') {
-              console.warn(`⚠️ Position ${index + 1} failed:`, result.reason);
-            }
-          });
-
-          if (nftCount > MAX_POSITIONS_TO_PROCESS) {
-            console.log(`⚠️ Only processed ${MAX_POSITIONS_TO_PROCESS} of ${nftCount} positions to prevent RPC overload`);
-          }
+        if (!isOurPool || Number(liquidity) === 0) {
+          return 0; // Skip non-relevant or empty positions
         }
 
-        console.log(`💰 Total pool value: ~$${totalValueUSD.toFixed(2)} USD`);
-      } catch (nftError) {
-        console.warn('⚠️ Could not read NFT positions:', nftError);
+        // Simplified value calculation to avoid heavy RPC calls
+        const liquidityValue = Number(liquidity);
+        const tickRange = Math.abs(tickUpper - tickLower);
+
+        let estimatedValue: number;
+        if (tickRange <= 1000) {
+          // Narrow range - more concentrated
+          estimatedValue = (liquidityValue / 83587747) * 2; // Rough approximation
+        } else {
+          // Full range - spread across entire range
+          estimatedValue = (liquidityValue / 500000) * 2; // Rough approximation
+        }
+
+        return Math.max(0, estimatedValue);
+      } catch (error) {
+        console.warn(`⚠️ Error processing position ${index + 1}:`, error);
+        return 0;
+      }
+    },
+    [USDC_TOKEN, PYUSD_TOKEN, PYUSD_USDC_POOL]
+  );
+
+  // Optimized function to check balances and allowances with throttling and caching
+  const checkBalancesAndAllowances = useCallback(
+    async (forceRefresh = false) => {
+      if (!metamaskWallet || !PYUSD_TOKEN || !USDC_TOKEN) {
+        console.log('❌ Missing requirements for balance check');
+        return;
       }
 
-      // Update state with all the fetched data
-      setPoolData(prev => ({
-        ...prev,
-        metaMaskPYUSDBalance: pyusdBalanceFormatted,
-        metaMaskUSDCBalance: usdcBalanceFormatted,
-        routerAllowance: routerAllowanceFormatted,
-        positionManagerAllowance: pyusdPMAllowanceFormatted,
-        positionManagerUSDCAllowance: usdcPMAllowanceFormatted,
-        nftPositionCount: nftCount,
-        totalPoolValueUSD: totalValueUSD,
-        isLoading: false,
-        lastFetched: now,
-        error: undefined,
-      }));
+      // Throttling: prevent multiple simultaneous calls
+      if (isLoadingRef.current && !forceRefresh) {
+        console.log('⏳ Balance check already in progress, skipping...');
+        return;
+      }
 
-      // Check Permit2 allowances separately (less critical)
+      // Rate limiting: minimum time between fetches
+      const now = Date.now();
+      if (now - lastFetchTimeRef.current < FETCH_COOLDOWN && !forceRefresh) {
+        console.log(
+          `⏳ Rate limited: ${Math.ceil((FETCH_COOLDOWN - (now - lastFetchTimeRef.current)) / 1000)}s until next allowed fetch`
+        );
+        return;
+      }
+
+      isLoadingRef.current = true;
+      lastFetchTimeRef.current = now;
+
+      setPoolData(prev => ({ ...prev, isLoading: true, error: undefined }));
+
       try {
-        const [pyusdPermit2, usdcPermit2] = await Promise.all([
-          checkPermit2Allowance(PYUSD_TOKEN.address, metamaskWallet.address),
-          checkPermit2Allowance(USDC_TOKEN.address, metamaskWallet.address),
-        ]);
+        console.log('🔍 === STARTING BALANCE & ALLOWANCE CHECK ===');
+        console.log('📍 MetaMask address:', metamaskWallet.address);
 
-        setPermit2Data({
-          pyusdPermit2,
-          usdcPermit2,
+        // Create viem public client with retry logic
+        const { createPublicClient, http } = await import('viem');
+        const { sepolia } = await import('viem/chains');
+
+        const publicClient = createPublicClient({
+          chain: sepolia,
+          transport: http(
+            'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+          ),
         });
 
-        console.log('✅ Permit2 allowances checked');
-      } catch (permit2Error) {
-        console.warn('⚠️ Could not check Permit2 allowances:', permit2Error);
+        // Batch basic balance and allowance checks
+        console.log('💰 Fetching balances and allowances...');
+        const [
+          pyusdBalance,
+          usdcBalance,
+          routerAllowance,
+          pyusdPMAllowance,
+          usdcPMAllowance,
+        ] = await Promise.all([
+          publicClient.readContract({
+            address: PYUSD_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [metamaskWallet.address as `0x${string}`],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: USDC_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [metamaskWallet.address as `0x${string}`],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: PYUSD_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [
+              metamaskWallet.address as `0x${string}`,
+              UNISWAP_V3_ROUTER_ADDRESS,
+            ],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: PYUSD_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [
+              metamaskWallet.address as `0x${string}`,
+              UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+            ],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: USDC_TOKEN.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [
+              metamaskWallet.address as `0x${string}`,
+              UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+            ],
+          }) as Promise<bigint>,
+        ]);
+
+        const pyusdBalanceFormatted =
+          Number(pyusdBalance) / Math.pow(10, PYUSD_TOKEN.decimals);
+        const usdcBalanceFormatted =
+          Number(usdcBalance) / Math.pow(10, USDC_TOKEN.decimals);
+        const routerAllowanceFormatted =
+          Number(routerAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
+        const pyusdPMAllowanceFormatted =
+          Number(pyusdPMAllowance) / Math.pow(10, PYUSD_TOKEN.decimals);
+        const usdcPMAllowanceFormatted =
+          Number(usdcPMAllowance) / Math.pow(10, USDC_TOKEN.decimals);
+
+        console.log(`✅ PYUSD Balance: ${pyusdBalanceFormatted} PYUSD`);
+        console.log(`✅ USDC Balance: ${usdcBalanceFormatted} USDC`);
+        console.log(`✅ Router Allowance: ${routerAllowanceFormatted} PYUSD`);
+
+        // Optimized NFT position checking with limits
+        console.log('🎯 Checking Uniswap V3 positions...');
+        let nftCount = 0;
+        let totalValueUSD = 0;
+
+        try {
+          // Get NFT balance (number of positions)
+          const nftBalance = (await publicClient.readContract({
+            address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
+            abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+            functionName: 'balanceOf',
+            args: [metamaskWallet.address as `0x${string}`],
+          })) as bigint;
+
+          nftCount = Number(nftBalance);
+          console.log(`💎 NFT Positions owned: ${nftCount}`);
+
+          // Limit the number of positions we process to prevent RPC spam
+          const MAX_POSITIONS_TO_PROCESS = 10;
+          const positionsToProcess = Math.min(
+            nftCount,
+            MAX_POSITIONS_TO_PROCESS
+          );
+
+          if (positionsToProcess > 0) {
+            console.log(
+              `📊 Processing ${positionsToProcess} positions (max ${MAX_POSITIONS_TO_PROCESS})`
+            );
+
+            // Process positions in parallel with limits
+            const positionPromises = [];
+            for (let i = 0; i < positionsToProcess; i++) {
+              positionPromises.push(
+                processPosition(publicClient, metamaskWallet.address, i)
+              );
+            }
+
+            const positionResults = await Promise.allSettled(positionPromises);
+
+            positionResults.forEach((result, index) => {
+              if (result.status === 'fulfilled' && result.value) {
+                totalValueUSD += result.value;
+                console.log(
+                  `💰 Position ${index + 1} value: ~$${result.value.toFixed(2)} USD`
+                );
+              } else if (result.status === 'rejected') {
+                console.warn(`⚠️ Position ${index + 1} failed:`, result.reason);
+              }
+            });
+
+            if (nftCount > MAX_POSITIONS_TO_PROCESS) {
+              console.log(
+                `⚠️ Only processed ${MAX_POSITIONS_TO_PROCESS} of ${nftCount} positions to prevent RPC overload`
+              );
+            }
+          }
+
+          console.log(`💰 Total pool value: ~$${totalValueUSD.toFixed(2)} USD`);
+        } catch (nftError) {
+          console.warn('⚠️ Could not read NFT positions:', nftError);
+        }
+
+        // Update state with all the fetched data
+        setPoolData(prev => ({
+          ...prev,
+          metaMaskPYUSDBalance: pyusdBalanceFormatted,
+          metaMaskUSDCBalance: usdcBalanceFormatted,
+          routerAllowance: routerAllowanceFormatted,
+          positionManagerAllowance: pyusdPMAllowanceFormatted,
+          positionManagerUSDCAllowance: usdcPMAllowanceFormatted,
+          nftPositionCount: nftCount,
+          totalPoolValueUSD: totalValueUSD,
+          isLoading: false,
+          lastFetched: now,
+          error: undefined,
+        }));
+
+        // Check Permit2 allowances separately (less critical)
+        try {
+          const [pyusdPermit2, usdcPermit2] = await Promise.all([
+            checkPermit2Allowance(PYUSD_TOKEN.address, metamaskWallet.address),
+            checkPermit2Allowance(USDC_TOKEN.address, metamaskWallet.address),
+          ]);
+
+          setPermit2Data({
+            pyusdPermit2,
+            usdcPermit2,
+          });
+
+          console.log('✅ Permit2 allowances checked');
+        } catch (permit2Error) {
+          console.warn('⚠️ Could not check Permit2 allowances:', permit2Error);
+        }
+
+        console.log('✅ === BALANCE & ALLOWANCE CHECK COMPLETED ===\n');
+      } catch (error) {
+        console.error('❌ Error checking balances:', error);
+        setPoolData(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }));
+      } finally {
+        isLoadingRef.current = false;
       }
-
-      console.log('✅ === BALANCE & ALLOWANCE CHECK COMPLETED ===\n');
-    } catch (error) {
-      console.error('❌ Error checking balances:', error);
-      setPoolData(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
-    } finally {
-      isLoadingRef.current = false;
-    }
-  }, [metamaskWallet, PYUSD_TOKEN, USDC_TOKEN, checkPermit2Allowance]);
-
-  // Helper function to process a single position
-  const processPosition = async (publicClient: any, walletAddress: string, index: number): Promise<number> => {
-    try {
-      // Get token ID by index
-      const tokenId = (await publicClient.readContract({
-        address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
-        abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-        functionName: 'tokenOfOwnerByIndex',
-        args: [walletAddress as `0x${string}`, BigInt(index)],
-      })) as bigint;
-
-      // Get position details
-      const position = (await publicClient.readContract({
-        address: UNISWAP_V3_POSITION_MANAGER_ADDRESS as `0x${string}`,
-        abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-        functionName: 'positions',
-        args: [tokenId],
-      })) as readonly [
-        bigint,
-        `0x${string}`,
-        `0x${string}`,
-        `0x${string}`,
-        number,
-        number,
-        number,
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-        bigint,
-      ];
-
-      const [, , token0Address, token1Address, fee, tickLower, tickUpper, liquidity] = position;
-
-      // Check if this is our PYUSD/USDC pool
-      const isOurPool =
-        ((token0Address.toLowerCase() === USDC_TOKEN.address.toLowerCase() &&
-          token1Address.toLowerCase() === PYUSD_TOKEN.address.toLowerCase()) ||
-          (token0Address.toLowerCase() === PYUSD_TOKEN.address.toLowerCase() &&
-            token1Address.toLowerCase() === USDC_TOKEN.address.toLowerCase())) &&
-        fee === PYUSD_USDC_POOL.fee;
-
-      if (!isOurPool || Number(liquidity) === 0) {
-        return 0; // Skip non-relevant or empty positions
-      }
-
-      // Simplified value calculation to avoid heavy RPC calls
-      const liquidityValue = Number(liquidity);
-      const tickRange = Math.abs(tickUpper - tickLower);
-
-      let estimatedValue: number;
-      if (tickRange <= 1000) {
-        // Narrow range - more concentrated
-        estimatedValue = liquidityValue / 83587747 * 2; // Rough approximation
-      } else {
-        // Full range - spread across entire range
-        estimatedValue = liquidityValue / 500000 * 2; // Rough approximation
-      }
-
-      return Math.max(0, estimatedValue);
-    } catch (error) {
-      console.warn(`⚠️ Error processing position ${index + 1}:`, error);
-      return 0;
-    }
-  };
+    },
+    [
+      metamaskWallet,
+      PYUSD_TOKEN,
+      USDC_TOKEN,
+      checkPermit2Allowance,
+      ERC20_ABI,
+      processPosition,
+    ]
+  );
 
   // Load data on component mount and when wallet changes
   useEffect(() => {
     if (ready && authenticated && metamaskWallet) {
       checkBalancesAndAllowances();
     }
-  }, [ready, authenticated, metamaskWallet]); // Removed checkBalancesAndAllowances to prevent infinite loop
+  }, [ready, authenticated, metamaskWallet, checkBalancesAndAllowances]);
 
   // Approve router to spend PYUSD
   const approveRouter = async () => {
@@ -4188,7 +4231,7 @@ export default function CookbookPage() {
             <div className='mt-4 flex flex-wrap gap-2'>
               <button
                 type='button'
-                onClick={checkBalancesAndAllowances}
+                onClick={() => checkBalancesAndAllowances()}
                 className='rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700'
               >
                 🔄 Refresh Data
