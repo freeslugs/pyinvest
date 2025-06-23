@@ -38,12 +38,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Format the balance (PyUSD has 6 decimals)
-    const formattedBalance = formatUnits(balanceResult, 6);
+    const formattedBalance = formatUnits(balanceResult as bigint, 6);
 
     return NextResponse.json({
       success: true,
       balance: formattedBalance,
-      raw: balanceResult.toString(),
+      raw: (balanceResult as bigint).toString(),
     });
 
   } catch (error: any) {

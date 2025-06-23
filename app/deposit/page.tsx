@@ -1,8 +1,9 @@
 "use client";
 
+import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+
 import AAVEDeposit from '../../components/AAVEDeposit';
 
 export default function DepositPage() {
@@ -43,7 +44,7 @@ export default function DepositPage() {
     <main className="flex flex-col min-h-screen px-4 sm:px-20 py-6 sm:py-10 bg-privy-light-blue">
       {/* Header */}
       <div className="flex flex-row justify-between items-center mb-8">
-        <h1 className="text-2xl font-semibold">AAVE PyUSD Deposit (Sepolia)</h1>
+        <h1 className="text-2xl font-semibold">AAVE USDC Deposit (Sepolia)</h1>
         <div className="flex gap-4">
           <button
             onClick={() => router.push("/dashboard")}
