@@ -1,48 +1,9 @@
 'use client';
 
-import { ArrowRight, Backspace, Shield, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, Shield, TrendingUp, Zap } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
-
-const PRESET_AMOUNTS = [500, 1000, 2500, 5000];
 
 export default function PyUSDYieldSelector() {
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
-  const [showCustomAmount, setShowCustomAmount] = useState(false);
-  const [customAmount, setCustomAmount] = useState('');
-
-  const handlePresetAmount = (amount: number) => {
-    setSelectedAmount(amount);
-    setShowCustomAmount(false);
-    setCustomAmount('');
-  };
-
-  const handleCustomAmount = () => {
-    setShowCustomAmount(true);
-    setSelectedAmount(null);
-  };
-
-  const handlePinpadInput = (value: string) => {
-    if (value === 'backspace') {
-      setCustomAmount(prev => prev.slice(0, -1));
-    } else if (value === 'clear') {
-      setCustomAmount('');
-    } else {
-      // Prevent invalid input and limit to reasonable amount
-      const newAmount = customAmount + value;
-      if (newAmount.length <= 8 && /^\d*\.?\d*$/.test(newAmount)) {
-        setCustomAmount(newAmount);
-      }
-    }
-  };
-
-  const handleConfirmCustomAmount = () => {
-    const amount = parseFloat(customAmount);
-    if (amount > 0) {
-      setSelectedAmount(amount);
-    }
-  };
-
   return (
     <div className='min-h-screen bg-gray-50 p-4'>
       <div className='mx-auto max-w-md space-y-6'>
@@ -111,137 +72,6 @@ export default function PyUSDYieldSelector() {
           </div>
         </div>
 
-        {/* Amount Selection */}
-        <div className='rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden'>
-          <div className='p-4'>
-            <h3 className='mb-4 text-lg font-semibold text-gray-900'>
-              Select Amount to Invest
-            </h3>
-
-            {/* Amount Selection Menu */}
-            <div
-              className={`transition-all duration-300 ease-in-out ${
-                showCustomAmount ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
-              }`}
-            >
-              <div className='grid grid-cols-3 gap-3'>
-                {PRESET_AMOUNTS.map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => handlePresetAmount(amount)}
-                    className={`rounded-lg border-2 p-3 text-center font-semibold transition-all duration-200 ${
-                      selectedAmount === amount
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    ${amount.toLocaleString()}
-                  </button>
-                ))}
-
-                {/* Custom Amount Button */}
-                <button
-                  onClick={handleCustomAmount}
-                  className={`rounded-lg border-2 p-3 text-center font-semibold transition-all duration-200 ${
-                    showCustomAmount
-                      ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Custom
-                </button>
-              </div>
-            </div>
-
-            {/* Custom Amount Entry Area */}
-            <div
-              className={`transition-all duration-300 ease-in-out ${
-                showCustomAmount
-                  ? 'opacity-100 translate-y-0 max-h-96'
-                  : 'opacity-0 -translate-y-4 max-h-0 overflow-hidden'
-              }`}
-            >
-              {showCustomAmount && (
-                <div className='mt-4 space-y-4'>
-                  {/* Amount Display */}
-                  <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
-                    <div className='flex items-center justify-center'>
-                      <span className='text-2xl font-light text-gray-400 mr-1'>$</span>
-                      <span className='text-3xl font-semibold text-gray-800 min-w-0'>
-                        {customAmount || '0'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Pinpad */}
-                  <div className='grid grid-cols-3 gap-3'>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                      <button
-                        key={num}
-                        onClick={() => handlePinpadInput(num.toString())}
-                        className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95'
-                      >
-                        {num}
-                      </button>
-                    ))}
-
-                    {/* Decimal Point */}
-                    <button
-                      onClick={() => handlePinpadInput('.')}
-                      className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95'
-                      disabled={customAmount.includes('.')}
-                    >
-                      .
-                    </button>
-
-                    {/* Zero */}
-                    <button
-                      onClick={() => handlePinpadInput('0')}
-                      className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95'
-                    >
-                      0
-                    </button>
-
-                    {/* Backspace */}
-                    <button
-                      onClick={() => handlePinpadInput('backspace')}
-                      className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95 flex items-center justify-center'
-                    >
-                      <Backspace className='h-5 w-5' />
-                    </button>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className='flex gap-3'>
-                    <button
-                      onClick={() => setShowCustomAmount(false)}
-                      className='flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50'
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleConfirmCustomAmount}
-                      disabled={!customAmount || parseFloat(customAmount) <= 0}
-                      className='flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300'
-                    >
-                      Confirm
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Selected Amount Display */}
-            {selectedAmount && !showCustomAmount && (
-              <div className='mt-4 rounded-lg bg-blue-50 p-3'>
-                <p className='text-center text-lg font-semibold text-blue-700'>
-                  Selected: ${selectedAmount.toLocaleString()}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Investment Options */}
         <div className='space-y-4'>
           <h2 className='px-2 text-xl font-semibold text-gray-900'>
@@ -287,18 +117,9 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button
-                className={`inline-flex h-11 w-full items-center justify-center rounded-md px-4 text-sm font-semibold transition-all duration-200 ${
-                  selectedAmount
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 group-hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                disabled={!selectedAmount}
-              >
-                <span>
-                  {selectedAmount ? `Invest $${selectedAmount.toLocaleString()}` : 'Select amount to invest'}
-                </span>
-                {selectedAmount && <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />}
+              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
+                <span>1-click invest</span>
+                <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
               </button>
             </div>
           </div>
@@ -344,18 +165,9 @@ export default function PyUSDYieldSelector() {
                 </div>
               </div>
 
-              <button
-                className={`inline-flex h-11 w-full items-center justify-center rounded-md px-4 text-sm font-semibold transition-all duration-200 ${
-                  selectedAmount
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 group-hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                disabled={!selectedAmount}
-              >
-                <span>
-                  {selectedAmount ? `Invest $${selectedAmount.toLocaleString()}` : 'Select amount to invest'}
-                </span>
-                {selectedAmount && <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />}
+              <button className='inline-flex h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-blue-700 group-hover:bg-blue-700'>
+                <span>1-click invest</span>
+                <ArrowRight className='ml-2 h-4 w-4 transition-transform group-hover:translate-x-1' />
               </button>
             </div>
           </div>
