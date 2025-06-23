@@ -187,8 +187,6 @@ export default function CookbookPage() {
     },
   ] as const;
 
-
-
   // WETH Gateway ABI for depositing ETH
   const WETH_GATEWAY_ABI = [
     {
@@ -203,8 +201,6 @@ export default function CookbookPage() {
       outputs: [],
     },
   ] as const;
-
-
 
   // Function to switch networks
   const switchNetwork = async (chainId: number) => {
@@ -1346,7 +1342,10 @@ export default function CookbookPage() {
         args: [metamaskWallet.address as `0x${string}`, AAVE_CONFIG.POOL],
       });
 
-      console.log('Current AAVE allowance (raw):', (allowance as bigint).toString());
+      console.log(
+        'Current AAVE allowance (raw):',
+        (allowance as bigint).toString()
+      );
       console.log(
         'Current AAVE allowance (formatted):',
         (Number(allowance as bigint) / 10 ** 6).toFixed(6)
