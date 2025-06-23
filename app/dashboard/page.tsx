@@ -3,7 +3,7 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { ArrowRight, Edit3, Globe, User, Zap } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { SmartWalletCard } from '@/components/SmartWalletCard';
@@ -60,7 +60,6 @@ const formatPyusdBalance = (balance: bigint): string => {
 export default function PyUSDYieldSelector() {
   const [conservativeAmount, setConservativeAmount] = useState('');
   const [growthAmount, setGrowthAmount] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [balances, setBalances] = useState<WalletBalance>({
     smartWallet: '0',
     metaMask: '0',
@@ -82,25 +81,131 @@ export default function PyUSDYieldSelector() {
     (account: any) => account.type === 'smart_wallet'
   ) as { address: string } | undefined;
 
-  // KYC state management
-  const [kycStatus, setKycStatus] = useState<
-    'not_started' | 'passed' | 'claimed'
-  >('not_started');
+  // Function to fetch PYUSD balance for MetaMask wallet
+  const fetchMetaMaskBalance = useCallback(async () => {
+    try {
+      // Find MetaMask wallet from user's linked accounts
+      const metaMaskWallet = user?.linkedAccounts?.find(
+        (account: any) =>
+          account.type === 'wallet' && account.walletClientType !== 'privy'
+      ) as { address: string } | undefined;
 
-  // Mock KYC status - in real app this would come from backend
-  useEffect(() => {
-    if (user?.id) {
-      // Mock logic - simulate different states based on user ID
-      const userId = user.id;
-      if (userId.endsWith('1') || userId.endsWith('2')) {
-        setKycStatus('passed');
-      } else if (userId.endsWith('3') || userId.endsWith('4')) {
-        setKycStatus('claimed');
-      } else {
-        setKycStatus('not_started');
+      if (!metaMaskWallet) {
+        console.log('No MetaMask wallet found');
+        setBalances(prev => ({ ...prev, metaMask: '0' }));
+        return;
       }
+
+      console.log(
+        'Fetching MetaMask PYUSD balance for address:',
+        metaMaskWallet.address
+      );
+
+      // Import viem utilities dynamically
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+          {
+            timeout: 10_000,
+            retryCount: 2,
+          }
+        ),
+      });
+
+      // Fetch PYUSD balance
+      const balance = await publicClient.readContract({
+        address: PYUSD_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [metaMaskWallet.address as `0x${string}`],
+      });
+
+      const formattedBalance = formatPyusdBalance(balance as bigint);
+      console.log('🟠 METAMASK BALANCE UPDATE:');
+      console.log('- Raw balance from contract:', balance);
+      console.log('- Formatted balance:', formattedBalance);
+      console.log('- Updating balances.metaMask to:', formattedBalance);
+
+      setBalances(prev => {
+        const newBalances = {
+          ...prev,
+          metaMask: formattedBalance,
+        };
+        console.log('- New balances state after MetaMask update:', newBalances);
+        return newBalances;
+      });
+    } catch (error) {
+      console.error('Error fetching MetaMask PYUSD balance:', error);
+      setBalances(prev => ({
+        ...prev,
+        metaMask: '0',
+      }));
     }
-  }, [user?.id]);
+  }, [user]);
+
+  // Function to fetch PYUSD balance for smart wallet
+  const fetchSmartWalletBalance = async (address: string) => {
+    try {
+      console.log('Fetching smart wallet PYUSD balance for address:', address);
+
+      // Import viem utilities dynamically
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+          {
+            timeout: 10_000,
+            retryCount: 2,
+          }
+        ),
+      });
+
+      // Fetch PYUSD balance
+      const balance = await publicClient.readContract({
+        address: PYUSD_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`],
+      });
+
+      const formattedBalance = formatPyusdBalance(balance as bigint);
+      console.log('🔵 SMART WALLET BALANCE UPDATE:');
+      console.log('- Raw balance from contract:', balance);
+      console.log('- Formatted balance:', formattedBalance);
+      console.log('- Updating smartWalletBalance state to:', formattedBalance);
+      console.log('- Updating balances.smartWallet to:', formattedBalance);
+
+      setSmartWalletBalance(formattedBalance);
+
+      // Also update the balances state
+      setBalances(prev => {
+        const newBalances = {
+          ...prev,
+          smartWallet: formattedBalance,
+        };
+        console.log(
+          '- New balances state after smart wallet update:',
+          newBalances
+        );
+        return newBalances;
+      });
+
+      // If they have a balance, show smart wallet view
+      if (parseFloat(formattedBalance) > 0) {
+        setShowSmartWallet(true);
+      }
+    } catch (error) {
+      console.error('Error fetching smart wallet balance:', error);
+      setSmartWalletBalance('0');
+    }
+  };
 
   // Custom input states
   const [showConservativeCustom, setShowConservativeCustom] = useState(false);
@@ -191,139 +296,14 @@ export default function PyUSDYieldSelector() {
     }, 100); // Small delay to prevent flickering
 
     return () => clearTimeout(checkOnboarding);
-  }, [ready, authenticated, user, smartWallet, onboardingChecked]);
-
-  // Function to fetch PYUSD balance for smart wallet
-  const fetchSmartWalletBalance = async (address: string) => {
-    try {
-      setIsLoading(true);
-      console.log('Fetching smart wallet PYUSD balance for address:', address);
-
-      // Import viem utilities dynamically
-      const { createPublicClient, http } = await import('viem');
-      const { sepolia } = await import('viem/chains');
-
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(
-          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
-          {
-            timeout: 10_000,
-            retryCount: 2,
-          }
-        ),
-      });
-
-      // Fetch PYUSD balance
-      const balance = await publicClient.readContract({
-        address: PYUSD_TOKEN_CONFIG.address,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [address as `0x${string}`],
-      });
-
-      const formattedBalance = formatPyusdBalance(balance as bigint);
-      console.log('🔵 SMART WALLET BALANCE UPDATE:');
-      console.log('- Raw balance from contract:', balance);
-      console.log('- Formatted balance:', formattedBalance);
-      console.log('- Updating smartWalletBalance state to:', formattedBalance);
-      console.log('- Updating balances.smartWallet to:', formattedBalance);
-
-      setSmartWalletBalance(formattedBalance);
-
-      // Also update the balances state
-      setBalances(prev => {
-        const newBalances = {
-          ...prev,
-          smartWallet: formattedBalance,
-        };
-        console.log(
-          '- New balances state after smart wallet update:',
-          newBalances
-        );
-        return newBalances;
-      });
-
-      // If they have a balance, show smart wallet view
-      if (parseFloat(formattedBalance) > 0) {
-        setShowSmartWallet(true);
-      }
-    } catch (error) {
-      console.error('Error fetching smart wallet balance:', error);
-      setSmartWalletBalance('0');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Function to fetch PYUSD balance for MetaMask wallet
-  const fetchMetaMaskBalance = async () => {
-    try {
-      // Find MetaMask wallet from user's linked accounts
-      const metaMaskWallet = user?.linkedAccounts?.find(
-        (account: any) =>
-          account.type === 'wallet' && account.walletClientType !== 'privy'
-      ) as { address: string } | undefined;
-
-      if (!metaMaskWallet) {
-        console.log('No MetaMask wallet found');
-        setBalances(prev => ({ ...prev, metaMask: '0' }));
-        return;
-      }
-
-      setIsLoading(true);
-      console.log(
-        'Fetching MetaMask PYUSD balance for address:',
-        metaMaskWallet.address
-      );
-
-      // Import viem utilities dynamically
-      const { createPublicClient, http } = await import('viem');
-      const { sepolia } = await import('viem/chains');
-
-      const publicClient = createPublicClient({
-        chain: sepolia,
-        transport: http(
-          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
-          {
-            timeout: 10_000,
-            retryCount: 2,
-          }
-        ),
-      });
-
-      // Fetch PYUSD balance
-      const balance = await publicClient.readContract({
-        address: PYUSD_TOKEN_CONFIG.address,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [metaMaskWallet.address as `0x${string}`],
-      });
-
-      const formattedBalance = formatPyusdBalance(balance as bigint);
-      console.log('🟠 METAMASK BALANCE UPDATE:');
-      console.log('- Raw balance from contract:', balance);
-      console.log('- Formatted balance:', formattedBalance);
-      console.log('- Updating balances.metaMask to:', formattedBalance);
-
-      setBalances(prev => {
-        const newBalances = {
-          ...prev,
-          metaMask: formattedBalance,
-        };
-        console.log('- New balances state after MetaMask update:', newBalances);
-        return newBalances;
-      });
-    } catch (error) {
-      console.error('Error fetching MetaMask PYUSD balance:', error);
-      setBalances(prev => ({
-        ...prev,
-        metaMask: '0',
-      }));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [
+    ready,
+    authenticated,
+    user,
+    smartWallet,
+    onboardingChecked,
+    fetchMetaMaskBalance,
+  ]);
 
   // Calculate total balance
   const totalBalance = () => {
