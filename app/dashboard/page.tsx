@@ -1,9 +1,42 @@
 'use client';
 
-import { ArrowRight, Shield, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, Backspace, PenLine, Shield, TrendingUp, Zap } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 
 export default function PyUSDYieldSelector() {
+  const [showCustomAmount, setShowCustomAmount] = useState(false);
+  const [customAmount, setCustomAmount] = useState('');
+
+  const handleCustomAmountToggle = () => {
+    setShowCustomAmount(!showCustomAmount);
+    if (!showCustomAmount) {
+      setCustomAmount('');
+    }
+  };
+
+  const handlePinpadInput = (value: string) => {
+    if (value === 'backspace') {
+      setCustomAmount(prev => prev.slice(0, -1));
+    } else if (value === 'clear') {
+      setCustomAmount('');
+    } else {
+      // Prevent invalid input and limit to reasonable amount
+      const newAmount = customAmount + value;
+      if (newAmount.length <= 8 && /^\d*\.?\d*$/.test(newAmount)) {
+        setCustomAmount(newAmount);
+      }
+    }
+  };
+
+  const handleConfirmCustomAmount = () => {
+    if (customAmount && parseFloat(customAmount) > 0) {
+      // Here you would typically update the investment amount
+      console.log('Custom amount confirmed:', customAmount);
+      setShowCustomAmount(false);
+    }
+  };
+
   return (
     <div className='min-h-screen bg-gray-50 p-4'>
       <div className='mx-auto max-w-md space-y-6'>
@@ -23,9 +56,18 @@ export default function PyUSDYieldSelector() {
         </div>
 
         {/* Balance Display */}
-        <div className='rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm'>
+        <div className='rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm overflow-hidden'>
           <div className='p-6'>
-            <p className='mb-2 text-sm text-gray-500'>Amount</p>
+            <div className='flex items-center justify-between mb-2'>
+              <p className='text-sm text-gray-500'>Amount</p>
+              <button
+                type="button"
+                onClick={handleCustomAmountToggle}
+                className="flex min-w-[42px] items-center justify-center rounded-[10px] border-[1.5px] border-gray-300 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <PenLine className="h-4 w-4" />
+              </button>
+            </div>
             <div className='mb-1 flex items-center space-x-2'>
               <span className='text-4xl font-light text-gray-300 font-adelle'>$</span>
               <p className='text-4xl font-medium text-gray-800 font-adelle'>12,450.00</p>
@@ -36,6 +78,84 @@ export default function PyUSDYieldSelector() {
                 height={24}
                 className='ml-1 h-6 w-6'
               />
+            </div>
+
+            {/* Custom Amount Entry Area */}
+            <div
+              className={`transition-all duration-300 ease-in-out ${
+                showCustomAmount
+                  ? 'opacity-100 translate-y-0 max-h-96 mt-4'
+                  : 'opacity-0 -translate-y-4 max-h-0 overflow-hidden'
+              }`}
+            >
+              {showCustomAmount && (
+                <div className='space-y-4'>
+                  {/* Amount Display */}
+                  <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+                    <div className='flex items-center justify-center'>
+                      <span className='text-2xl font-light text-gray-400 mr-1'>$</span>
+                      <span className='text-3xl font-semibold text-gray-800 min-w-0'>
+                        {customAmount || '0'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Pinpad */}
+                  <div className='grid grid-cols-3 gap-3'>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => handlePinpadInput(num.toString())}
+                        className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95'
+                      >
+                        {num}
+                      </button>
+                    ))}
+
+                    {/* Decimal Point */}
+                    <button
+                      onClick={() => handlePinpadInput('.')}
+                      className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95'
+                      disabled={customAmount.includes('.')}
+                    >
+                      .
+                    </button>
+
+                    {/* Zero */}
+                    <button
+                      onClick={() => handlePinpadInput('0')}
+                      className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95'
+                    >
+                      0
+                    </button>
+
+                    {/* Backspace */}
+                    <button
+                      onClick={() => handlePinpadInput('backspace')}
+                      className='aspect-square rounded-lg border border-gray-200 bg-white text-xl font-semibold text-gray-800 transition-all duration-150 hover:bg-gray-50 active:scale-95 flex items-center justify-center'
+                    >
+                      <Backspace className='h-5 w-5' />
+                    </button>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className='flex gap-3'>
+                    <button
+                      onClick={handleCustomAmountToggle}
+                      className='flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50'
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmCustomAmount}
+                      disabled={!customAmount || parseFloat(customAmount) <= 0}
+                      className='flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300'
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className='mt-4 border-t border-gray-100 pt-4'>
