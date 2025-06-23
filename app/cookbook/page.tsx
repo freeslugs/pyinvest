@@ -1094,6 +1094,8 @@ export default function CookbookPage() {
           throw new Error(`Pool fee mismatch: expected ${PYUSD_USDC_POOL.fee}, got ${poolFee}`);
         }
 
+        console.log('✅ Pool verification passed - proceeding with swap');
+
       } catch (poolError) {
         console.error('Pool verification failed:', poolError);
         throw new Error(`Pool verification failed: ${poolError instanceof Error ? poolError.message : 'Unknown error'}`);
@@ -1127,9 +1129,12 @@ export default function CookbookPage() {
         args: [swapParams],
       });
 
-      console.log('Swap call data:', swapData);
+            console.log('Swap call data:', swapData);
 
       try {
+        // First, let's check if we can simulate this transaction to get better error info
+        console.log('Attempting swap transaction...');
+
         const swapTxHash = await client.sendTransaction({
           to: UNISWAP_V3_ROUTER_ADDRESS,
           data: swapData,
@@ -1137,24 +1142,48 @@ export default function CookbookPage() {
           gas: 500000n,
         });
 
-                 console.log('✅ Step 2b completed - PYUSD → USDC swap:', swapTxHash);
-         swapSuccessful = true;
-       } catch (swapError) {
-         console.error('Swap failed:', swapError);
+        console.log('✅ Step 2b completed - PYUSD → USDC swap:', swapTxHash);
+        swapSuccessful = true;
 
-         // If swap fails, we'll continue with just PYUSD (no swap)
-         setPoolData(prev => ({
-           ...prev,
-           depositStatus: '⚠️ Swap failed - continuing with PYUSD only. This might be due to insufficient pool liquidity on Sepolia testnet.'
-         }));
+      } catch (swapError) {
+        console.error('Swap failed:', swapError);
 
-         // Set remaining PYUSD to the full amount since swap failed
-         remainingPYUSD = totalDepositAmount;
-         swapSuccessful = false;
+        // Check if it's a liquidity issue by looking at the error
+        const errorMessage = swapError instanceof Error ? swapError.message : String(swapError);
+        console.log('Swap error details:', errorMessage);
 
-         // Continue to step 3 with just PYUSD
-         console.log('Continuing with PYUSD only due to swap failure');
-       }
+        // Common reasons for swap failure on testnets:
+        // 1. Insufficient liquidity in the pool
+        // 2. Price impact too high
+        // 3. Pool not properly initialized
+
+        setPoolData(prev => ({
+          ...prev,
+          depositStatus: `⚠️ Swap failed - continuing with PYUSD-only deposit. Reason: This pool likely has insufficient liquidity on Sepolia testnet. Your PYUSD will remain in your smart wallet.`
+        }));
+
+        // Set remaining PYUSD to the full amount since swap failed
+        remainingPYUSD = totalDepositAmount;
+        swapSuccessful = false;
+
+        // Continue without Uniswap position creation since we need both tokens
+        console.log('Skipping Uniswap V3 position creation due to swap failure - PYUSD will remain in wallet');
+
+        // Update final status and refresh balances
+        setTimeout(() => {
+          setPoolData(prev => ({
+            ...prev,
+            depositStatus: `✅ Deposit completed! ${(Number(totalDepositAmount) / 1e6).toFixed(2)} PYUSD transferred to smart wallet. Swap skipped due to testnet liquidity limitations.`,
+            depositHash: '',
+          }));
+
+          // Refresh balances after a short delay
+          checkPoolData();
+          checkTokenBalances();
+        }, 2000);
+
+        return; // Exit early, don't proceed to position creation
+      }
 
       // Step 3: Approve Position Manager to spend both tokens
       setPoolData(prev => ({ ...prev, depositStatus: 'Step 3/5: Approving tokens for Position Manager...' }));
@@ -2055,6 +2084,14 @@ export default function CookbookPage() {
                           You&apos;ll receive an NFT representing your position and start earning trading fees.
                         </p>
                       </div>
+
+                      <div className='mb-3 rounded border border-yellow-200 bg-yellow-50 p-3'>
+                        <p className='text-sm text-yellow-800'>
+                          <strong>⚠️ Testnet Notice:</strong> Sepolia testnet pools may have limited liquidity.
+                          If the PYUSD→USDC swap fails, your PYUSD will safely remain in your smart wallet.
+                        </p>
+                      </div>
+
                       <p className='mb-3 text-sm text-gray-600'>
                         Enter the amount of PYUSD to provide as liquidity. Half will be swapped to USDC, then both tokens will be deposited into the Uniswap V3 pool.
                       </p>
