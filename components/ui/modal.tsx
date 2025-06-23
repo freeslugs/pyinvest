@@ -27,8 +27,8 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       document.body.style.overflow = 'hidden';
     } else {
       setIsVisible(false);
-      // Wait for animation to complete before removing from DOM
-      setTimeout(() => setShouldRender(false), 200);
+      // Wait for animation to complete before removing from DOM (match CSS duration)
+      setTimeout(() => setShouldRender(false), 300);
       document.body.style.overflow = 'unset';
     }
 
@@ -52,10 +52,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
       {/* Modal */}
       <div
-        className={`relative z-10 w-full max-w-md max-h-[85vh] sm:max-h-[90vh] rounded-3xl bg-white shadow-xl transition-all duration-300 overflow-hidden ${
+        className={`relative z-10 w-full max-w-md max-h-[85vh] sm:max-h-[90vh] rounded-3xl bg-white shadow-xl transition-all duration-300 ease-out overflow-hidden ${
           isVisible
             ? 'translate-y-0 opacity-100 sm:scale-100'
-            : 'translate-y-full opacity-100 sm:translate-y-0 sm:opacity-0 sm:scale-95'
+            : 'translate-y-full opacity-0 sm:translate-y-0 sm:opacity-0 sm:scale-95'
         }`}
       >
         {title ? (

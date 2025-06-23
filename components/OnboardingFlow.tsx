@@ -33,14 +33,16 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
     account => account.type === 'smart_wallet'
   ) as { address: string } | undefined;
 
-  // Helper function to transition between steps with animation
+    // Helper function to transition between steps with animation
   const transitionToStep = (newStep: OnboardingStep, direction: 'left' | 'right' = 'right') => {
     setIsTransitioning(true);
     setSlideDirection(direction);
 
     setTimeout(() => {
       setCurrentStep(newStep);
-      setIsTransitioning(false);
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 10); // Small delay to ensure new content is rendered before animating in
     }, 150); // Half of the transition duration
   };
 
@@ -80,7 +82,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   };
 
   const renderWelcomeStep = () => (
-    <div className="text-center space-y-6">
+    <div className="space-y-6">
       <div className="mb-6">
         <div className="flex justify-center mb-4">
           <Image
@@ -92,10 +94,10 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
             unoptimized
           />
         </div>
-        <h2 className="text-2xl font-normal text-gray-900 mb-2">
+        <h2 className="text-2xl font-normal text-gray-900 mb-2 text-left">
           Welcome to PyInvest!
         </h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-left">
           Let&apos;s get you started with earning yield on your PYUSD
         </p>
       </div>
@@ -112,11 +114,11 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
   const renderPyusdSourceStep = () => (
     <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-normal text-gray-900 mb-2">
+      <div className="mb-6">
+        <h2 className="text-xl font-normal text-gray-900 mb-2 text-left">
           Do you already have PYUSD?
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 text-left">
           Tell us where you keep your PYUSD so we can help you get started
         </p>
       </div>
@@ -187,11 +189,11 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
   const renderTraditionalDepositStep = () => (
     <div className="space-y-4">
-      <div className="text-center mb-4">
-        <h2 className="text-xl font-normal text-gray-900 mb-2">
+      <div className="mb-4">
+        <h2 className="text-xl font-normal text-gray-900 mb-2 text-left">
           Transfer PYUSD to Your Smart Wallet
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 text-left">
           Send your PYUSD to this address to start earning yield
         </p>
       </div>
@@ -259,7 +261,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
       <div className="text-center">
         <button
-          onClick={() => setCurrentStep('pyusd-source')}
+          onClick={() => transitionToStep('pyusd-source', 'left')}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
           ← Back to options
@@ -270,11 +272,11 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
   const renderCryptoWalletStep = () => (
     <div className="space-y-6">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-normal text-gray-900 mb-2">
+      <div className="mb-6">
+        <h2 className="text-xl font-normal text-gray-900 mb-2 text-left">
           Connect Your Crypto Wallet
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 text-left">
           Link your MetaMask or other wallet that contains PYUSD
         </p>
       </div>
@@ -296,7 +298,7 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
 
       <div className="text-center">
         <button
-          onClick={() => setCurrentStep('pyusd-source')}
+          onClick={() => transitionToStep('pyusd-source', 'left')}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
           ← Back to options
@@ -306,16 +308,16 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
   );
 
   const renderWaitingDepositStep = () => (
-    <div className="text-center space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
 
       <div>
-        <h2 className="text-xl font-normal text-gray-900 mb-2">
+        <h2 className="text-xl font-normal text-gray-900 mb-2 text-left">
           Waiting for your PYUSD deposit
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 text-left">
           We&apos;re watching for your PYUSD to arrive. This usually takes a few minutes.
         </p>
       </div>
@@ -358,7 +360,19 @@ export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
       onClose={onComplete}
       title=""
     >
-      {renderCurrentStep()}
+            <div className="relative overflow-hidden">
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            isTransitioning
+              ? slideDirection === 'right'
+                ? 'translate-x-full opacity-0'   // Forward: slide out to right, new content comes from right
+                : '-translate-x-full opacity-0'  // Backward: slide out to left, new content comes from left
+              : 'translate-x-0 opacity-100'
+          }`}
+        >
+          {renderCurrentStep()}
+        </div>
+      </div>
     </Modal>
   );
 }
