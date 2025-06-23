@@ -9,6 +9,10 @@ import WalletList from '../../components/WalletList';
 import {
   ERC20_ABI,
   NETWORKS,
+  UNISWAP_V3_POSITION_MANAGER_ABI,
+  UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+  UNISWAP_V3_ROUTER_ABI,
+  UNISWAP_V3_ROUTER_ADDRESS,
   getPoolsForNetwork,
   getTokensForNetwork
 } from '../../lib/constants';
@@ -796,6 +800,21 @@ export default function CookbookPage() {
         return (Number(balance) / 10 ** decimals).toFixed(2);
       };
 
+      // Check for NFT positions
+      let nftPositions = 0;
+      try {
+        const nftBalance = await publicClient.readContract({
+          address: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+          abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+          functionName: 'balanceOf',
+          args: [smartWallet.address as `0x${string}`],
+        });
+        nftPositions = Number(nftBalance);
+        console.log('🎯 NFT Positions found:', nftPositions);
+      } catch (nftError) {
+        console.log('No NFT positions found or error checking:', nftError);
+      }
+
       setPoolData(prev => ({
         ...prev,
         userBalances: {
@@ -816,7 +835,7 @@ export default function CookbookPage() {
                 USDC_TOKEN_CONFIG.decimals
               )
             : '0',
-          poolTokens: '0.00', // V3 positions are NFTs, not fungible tokens
+          poolTokens: nftPositions.toString(), // Number of NFT positions
         },
                   approvals: {
             pyusdApproved: (pyusdAllowance as bigint) > 0n,
@@ -930,17 +949,18 @@ export default function CookbookPage() {
     }
   };
 
-  // Function to deposit into pool (simplified version - direct transfer for now)
+    // Function to deposit into pool using real Uniswap V3 liquidity provision
   const depositIntoPool = async () => {
     if (
       !client?.chain ||
       client.chain.id !== NETWORKS.SEPOLIA.id ||
       !PYUSD_TOKEN_CONFIG ||
+      !USDC_TOKEN_CONFIG ||
       !smartWallet
     ) {
       setPoolData(prev => ({
         ...prev,
-        error: 'Must be on Sepolia network with smart wallet and PYUSD token available',
+        error: 'Must be on Sepolia network with smart wallet and both tokens available',
       }));
       return;
     }
@@ -964,7 +984,7 @@ export default function CookbookPage() {
 
     setPoolData(prev => ({
       ...prev,
-      depositStatus: 'Preparing deposit...',
+      depositStatus: 'Starting Uniswap V3 liquidity provision...',
       error: '',
     }));
 
@@ -980,30 +1000,15 @@ export default function CookbookPage() {
         return;
       }
 
-      const metamaskWalletInList = wallets.find(
-        w =>
-          w.address.toLowerCase() === metamaskWallet.address.toLowerCase() &&
-          w.walletClientType !== 'privy'
-      );
-
-      if (!metamaskWalletInList) {
-        setPoolData(prev => ({
-          ...prev,
-          error: 'MetaMask wallet not found in wallet list',
-        }));
-        return;
-      }
-
-            const { encodeFunctionData } = await import('viem');
+      const { encodeFunctionData } = await import('viem');
 
       // Step 1: Transfer PYUSD from MetaMask to Smart Wallet
       const totalDepositAmount = BigInt(
         depositAmount * 10 ** PYUSD_TOKEN_CONFIG.decimals
       );
 
-            setPoolData(prev => ({ ...prev, depositStatus: 'Transferring PYUSD to smart wallet...' }));
+      setPoolData(prev => ({ ...prev, depositStatus: 'Step 1/5: Transferring PYUSD to smart wallet...' }));
 
-      // First, transfer PYUSD from MetaMask to Smart Wallet using transferFrom
       const transferFromData = encodeFunctionData({
         abi: ERC20_ABI,
         functionName: 'transferFrom',
@@ -1014,59 +1019,148 @@ export default function CookbookPage() {
         ],
       });
 
-      // This will be executed by the smart wallet (using the approval we set up earlier)
       const transferTxHash = await client.sendTransaction({
         to: PYUSD_TOKEN_CONFIG.address,
         data: transferFromData,
       });
 
-      console.log('Transfer to smart wallet completed:', transferTxHash);
+      console.log('✅ Step 1 completed - Transfer to smart wallet:', transferTxHash);
+
+      // Step 2: Swap half PYUSD → USDC using Uniswap V3 Router
+      const swapAmount = totalDepositAmount / 2n; // Half for swap
+      const remainingPYUSD = totalDepositAmount - swapAmount; // Half to keep as PYUSD
+
+      setPoolData(prev => ({ ...prev, depositStatus: 'Step 2/5: Swapping PYUSD → USDC via Uniswap Router...' }));
+
+      // First approve router to spend PYUSD
+      const approveRouterData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [UNISWAP_V3_ROUTER_ADDRESS, swapAmount],
+      });
+
+      await client.sendTransaction({
+        to: PYUSD_TOKEN_CONFIG.address,
+        data: approveRouterData,
+      });
+
+      // Perform swap: PYUSD → USDC
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes from now
+
+      const swapData = encodeFunctionData({
+        abi: UNISWAP_V3_ROUTER_ABI,
+        functionName: 'exactInputSingle',
+        args: [
+          {
+            tokenIn: PYUSD_TOKEN_CONFIG.address,
+            tokenOut: USDC_TOKEN_CONFIG.address,
+            fee: PYUSD_USDC_POOL.fee,
+            recipient: smartWallet!.address as `0x${string}`,
+            deadline,
+            amountIn: swapAmount,
+            amountOutMinimum: 0n, // Accept any amount of USDC (in production, calculate proper slippage)
+            sqrtPriceLimitX96: 0n,
+          },
+        ],
+      });
+
+      const swapTxHash = await client.sendTransaction({
+        to: UNISWAP_V3_ROUTER_ADDRESS,
+        data: swapData,
+      });
+
+      console.log('✅ Step 2 completed - PYUSD → USDC swap:', swapTxHash);
+
+      // Step 3: Approve Position Manager to spend both tokens
+      setPoolData(prev => ({ ...prev, depositStatus: 'Step 3/5: Approving tokens for Position Manager...' }));
+
+      // Approve PYUSD
+      const approvePYUSDData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [UNISWAP_V3_POSITION_MANAGER_ADDRESS, remainingPYUSD],
+      });
+
+      await client.sendTransaction({
+        to: PYUSD_TOKEN_CONFIG.address,
+        data: approvePYUSDData,
+      });
+
+      // Approve USDC (use a large amount since we don't know exact swap output)
+      const largeUSDCAmount = BigInt(depositAmount * 10 ** USDC_TOKEN_CONFIG.decimals);
+      const approveUSDCData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [UNISWAP_V3_POSITION_MANAGER_ADDRESS, largeUSDCAmount],
+      });
+
+      await client.sendTransaction({
+        to: USDC_TOKEN_CONFIG.address,
+        data: approveUSDCData,
+      });
+
+      console.log('✅ Step 3 completed - Tokens approved for Position Manager');
+
+      // Step 4: Create liquidity position using Position Manager
+      setPoolData(prev => ({ ...prev, depositStatus: 'Step 4/5: Creating Uniswap V3 liquidity position...' }));
+
+      // Use full range for simplicity (in production, you'd let user choose price ranges)
+      const tickLower = -887270; // Full range lower tick
+      const tickUpper = 887270;  // Full range upper tick
+
+      // Determine token order (Uniswap requires token0 < token1 by address)
+      const token0 = PYUSD_TOKEN_CONFIG.address.toLowerCase() < USDC_TOKEN_CONFIG.address.toLowerCase()
+        ? PYUSD_TOKEN_CONFIG.address : USDC_TOKEN_CONFIG.address;
+      const token1 = PYUSD_TOKEN_CONFIG.address.toLowerCase() < USDC_TOKEN_CONFIG.address.toLowerCase()
+        ? USDC_TOKEN_CONFIG.address : PYUSD_TOKEN_CONFIG.address;
+
+      const amount0Desired = token0 === PYUSD_TOKEN_CONFIG.address ? remainingPYUSD : largeUSDCAmount;
+      const amount1Desired = token1 === PYUSD_TOKEN_CONFIG.address ? remainingPYUSD : largeUSDCAmount;
+
+      const mintData = encodeFunctionData({
+        abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+        functionName: 'mint',
+        args: [
+          {
+            token0: token0 as `0x${string}`,
+            token1: token1 as `0x${string}`,
+            fee: PYUSD_USDC_POOL.fee,
+            tickLower,
+            tickUpper,
+            amount0Desired,
+            amount1Desired,
+            amount0Min: 0n, // Accept any amount (in production, calculate proper slippage)
+            amount1Min: 0n,
+            recipient: smartWallet!.address as `0x${string}`,
+            deadline,
+          },
+        ],
+      });
+
+      const mintTxHash = await client.sendTransaction({
+        to: UNISWAP_V3_POSITION_MANAGER_ADDRESS,
+        data: mintData,
+      });
+
+      console.log('✅ Step 4 completed - Liquidity position created:', mintTxHash);
 
       setPoolData(prev => ({
         ...prev,
-        depositStatus: 'PYUSD transferred to smart wallet. Preparing demo transfer...'
+        depositStatus: '🎉 Success! Uniswap V3 liquidity position created. You now have an NFT representing your position!',
+        depositHash: mintTxHash,
       }));
-
-      // Step 2: Demo transfer (simplified - NOT real liquidity provision)
-      // ⚠️ WARNING: This just sends tokens to the pool address - they don't provide liquidity!
-      // In production, you'd use Uniswap V3's Position Manager to create proper LP positions
-      const halfAmount = totalDepositAmount / 2n;
-
-      console.log(`⚠️ Demo transfer: Sending ${halfAmount.toString()} PYUSD tokens to pool address`);
-      console.log('⚠️ This is NOT real liquidity provision - tokens will just sit in the pool contract');
-
-      const demoTransferData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'transfer',
-        args: [PYUSD_USDC_POOL.address, halfAmount],
-      });
-
-      setPoolData(prev => ({ ...prev, depositStatus: 'Executing demo transfer to pool address...' }));
-
-      const demoTransferTxHash = await client.sendTransaction({
-        to: PYUSD_TOKEN_CONFIG.address,
-        data: demoTransferData,
-      });
-
-      console.log('Demo transfer completed:', demoTransferTxHash);
-      console.log('⚠️ Note: Tokens are now in pool contract but NOT providing liquidity');
-
-              setPoolData(prev => ({
-          ...prev,
-          depositStatus: '⚠️ Demo transfer completed! Tokens sent to pool address (not real liquidity provision).',
-          depositHash: demoTransferTxHash,
-        }));
 
       // Refresh balances after deposit
       setTimeout(() => {
         checkPoolData();
         checkTokenBalances();
-      }, 3000);
+      }, 5000);
+
     } catch (error) {
-      console.error('Error depositing:', error);
+      console.error('Error in Uniswap V3 liquidity provision:', error);
       setPoolData(prev => ({
         ...prev,
-        depositStatus: 'Deposit failed',
+        depositStatus: 'Liquidity provision failed',
         error: error instanceof Error ? error.message : 'Unknown error',
       }));
     }
@@ -1712,26 +1806,27 @@ export default function CookbookPage() {
                     </p>
                   </div>
 
-                  {/* Important Demo Warning */}
-                  <div className='rounded border border-red-200 bg-red-50 p-4'>
-                    <h4 className='mb-2 font-medium text-red-800'>
-                      🚨 Important: Demo Implementation Only
+                  {/* Real Uniswap V3 Implementation */}
+                  <div className='rounded border border-green-200 bg-green-50 p-4'>
+                    <h4 className='mb-2 font-medium text-green-800'>
+                      🎉 Real Uniswap V3 Liquidity Provision
                     </h4>
-                    <div className='space-y-2 text-sm text-red-700'>
+                    <div className='space-y-2 text-sm text-green-700'>
                       <p>
-                        <strong>Current Implementation:</strong> This demo only transfers tokens to the pool contract address.
+                        <strong>Full Implementation:</strong> This creates actual Uniswap V3 liquidity positions!
                       </p>
                       <p>
-                        <strong>What&apos;s Missing:</strong> Real Uniswap V3 liquidity provision requires:
+                        <strong>What Happens:</strong>
                       </p>
                       <ul className='ml-4 list-disc space-y-1'>
-                                                 <li>Using Uniswap&apos;s Position Manager contract</li>
-                         <li>Swapping half of PYUSD to USDC via Uniswap Router</li>
-                        <li>Creating a liquidity position with price ranges</li>
-                        <li>Receiving an NFT representing your liquidity position</li>
+                        <li>✅ Transfers PYUSD from MetaMask → Smart Wallet</li>
+                        <li>✅ Swaps half PYUSD → USDC via Uniswap V3 Router</li>
+                        <li>✅ Creates liquidity position using Position Manager</li>
+                        <li>✅ Mints NFT representing your liquidity position</li>
+                        <li>✅ Start earning fees on your liquidity!</li>
                       </ul>
                       <p>
-                        <strong>Current Status:</strong> Your transferred tokens are sitting in the pool contract but not earning fees or providing liquidity.
+                        <strong>Result:</strong> You&apos;ll receive an NFT token representing your liquidity position and start earning trading fees.
                       </p>
                     </div>
                   </div>
@@ -1792,10 +1887,13 @@ export default function CookbookPage() {
                       </div>
                       <div className='mt-3 border-t pt-3'>
                         <p className='text-sm text-gray-700'>
-                          Pool LP Tokens:{' '}
+                          Uniswap V3 NFT Positions:{' '}
                           <span className='font-medium text-purple-600'>
-                            {poolData.userBalances.poolTokens}
+                            {poolData.userBalances.poolTokens} {poolData.userBalances.poolTokens === '1' ? 'position' : 'positions'}
                           </span>
+                          {poolData.userBalances.poolTokens !== '0' && (
+                            <span className='ml-2 text-xs text-green-600'>🎉 Earning fees!</span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -1846,16 +1944,16 @@ export default function CookbookPage() {
                   {poolData.approvals?.smartWalletApproved && (
                     <div className='border-t border-gray-200 pt-4'>
                       <h4 className='mb-2 font-medium text-gray-800'>
-                        Step 2: Demo Pool Transfer (Simplified)
+                        Step 2: Provide Liquidity to Uniswap V3 Pool
                       </h4>
-                      <div className='mb-3 rounded border border-amber-200 bg-amber-50 p-3'>
-                        <p className='text-sm text-amber-800'>
-                          <strong>⚠️ Demo Implementation:</strong> This is a simplified demo that transfers tokens to the pool address.
-                          In production, you&apos;d use Uniswap&apos;s Position Manager to create proper liquidity positions and receive LP NFT tokens.
+                      <div className='mb-3 rounded border border-blue-200 bg-blue-50 p-3'>
+                        <p className='text-sm text-blue-800'>
+                          <strong>🚀 Real Implementation:</strong> This will create an actual Uniswap V3 liquidity position.
+                          You&apos;ll receive an NFT representing your position and start earning trading fees.
                         </p>
                       </div>
                       <p className='mb-3 text-sm text-gray-600'>
-                        Enter the amount of PYUSD to transfer. Half will be sent to the pool address as a demonstration.
+                        Enter the amount of PYUSD to provide as liquidity. Half will be swapped to USDC, then both tokens will be deposited into the Uniswap V3 pool.
                       </p>
 
                       <div className='mb-4 flex items-center space-x-3'>
@@ -1887,7 +1985,7 @@ export default function CookbookPage() {
                           }
                           className='rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:bg-gray-400'
                         >
-                          Demo Transfer to Pool Address
+                          🚀 Create Uniswap V3 Position
                         </button>
                     </div>
                   )}
