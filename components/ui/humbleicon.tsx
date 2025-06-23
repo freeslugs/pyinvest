@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { cn } from '../../lib/utils';
 
 interface HumbleIconProps {
@@ -39,7 +40,7 @@ interface HumbleIconInlineProps {
   children?: React.ReactNode;
 }
 
-export function HumbleIconInline({ name, className, children }: HumbleIconInlineProps) {
+export function HumbleIconInline({ name, className }: Omit<HumbleIconInlineProps, 'children'>) {
   // Note: This would require importing individual SVG files
   // For now, we'll just use the sprite version
   return (

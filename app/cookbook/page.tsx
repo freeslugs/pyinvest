@@ -1299,7 +1299,7 @@ export default function CookbookPage() {
                   <strong>Humbleicons</strong> has been installed and is ready to use in your app.
                 </p>
                 <div className='text-sm text-blue-700'>
-                  <h3 className='font-medium mb-2'>What's been added:</h3>
+                  <h3 className='font-medium mb-2'>What&apos;s been added:</h3>
                   <ul className='list-disc list-inside space-y-1'>
                     <li>✅ Package installed: <code className='bg-white px-1 rounded'>humbleicons@1.15.0</code></li>
                     <li>✅ SVG sprite copied to <code className='bg-white px-1 rounded'>public/humbleicons.svg</code></li>
