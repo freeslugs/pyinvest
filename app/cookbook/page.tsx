@@ -330,6 +330,7 @@ export default function CookbookPage() {
   const [swapAmount, setSwapAmount] = useState<string>('1');
   const [liquidityAmount, setLiquidityAmount] = useState<string>('2');
   const [swapDirection, setSwapDirection] = useState<'PYUSD_TO_USDC' | 'USDC_TO_PYUSD'>('PYUSD_TO_USDC');
+  const [slippageTolerance, setSlippageTolerance] = useState<string>('15'); // Default to 15% for more flexibility
 
   // Get token and pool configurations for Sepolia
   const SEPOLIA_TOKENS = getSepoliaTokens();
@@ -2415,18 +2416,38 @@ export default function CookbookPage() {
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
       console.log(`⏰ Deadline: ${deadline}`);
 
-      // Calculate minimum output amount with 5% slippage tolerance
+            // Calculate minimum output amount with configurable slippage tolerance
       // Based on rough price ratio from successful txs: ~70 PYUSD per USDC
-      const estimatedOutputWei = isUSDCToPYUSD
-        ? swapAmountWei * 70n  // USDC to PYUSD: multiply by 70
-        : swapAmountWei / 70n; // PYUSD to USDC: divide by 70
-      const slippageToleranceBps = 500n; // 5% = 500 basis points
-      const amountOutMinimum =
-        (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
+      // Use more conservative estimates and higher slippage for USDC->PYUSD
+      let estimatedOutputWei: bigint;
+      if (isUSDCToPYUSD) {
+        // USDC to PYUSD: use a more conservative rate (65 instead of 70 for safety)
+        estimatedOutputWei = swapAmountWei * 65n;
+      } else {
+        // PYUSD to USDC: use a more conservative rate (divide by 75 instead of 70)
+        estimatedOutputWei = swapAmountWei / 75n;
+      }
+
+      const slippageToleranceBps = BigInt(Number(slippageTolerance) * 100); // Convert percentage to basis points
+
+      // Calculate minimum output amount with safety checks
+      let amountOutMinimum: bigint;
+      if (Number(slippageTolerance) >= 25) {
+        // For very high slippage (25%+), use minimal protection to avoid failures
+        amountOutMinimum = 1n; // Accept any amount > 0
+        console.log('⚠️ Using minimal slippage protection due to high tolerance');
+      } else {
+        amountOutMinimum = (estimatedOutputWei * (10000n - slippageToleranceBps)) / 10000n;
+      }
+
+      // Ensure minimum is never 0
+      if (amountOutMinimum === 0n) {
+        amountOutMinimum = 1n;
+      }
 
       console.log(`📊 Estimated output: ${estimatedOutputWei} wei ${outputToken.symbol}`);
       console.log(
-        `📊 Minimum output (5% slippage): ${amountOutMinimum} wei ${outputToken.symbol}`
+        `📊 Minimum output (${slippageTolerance}% slippage): ${amountOutMinimum} wei ${outputToken.symbol}`
       );
 
       // Construct swap parameters
@@ -2547,6 +2568,12 @@ export default function CookbookPage() {
         ) {
           errorMessage =
             '🔒 Permit2 allowance has expired. The token approval to Permit2 needs to be renewed. Please approve Permit2 again.';
+        } else if (
+          error.message.includes('V3TooLittleReceived') ||
+          error.message.includes('TooLittleReceived') ||
+          error.message.includes('slippage')
+        ) {
+          errorMessage = `💱 Slippage Error: The swap failed because the price moved too much during execution. Current slippage tolerance: ${slippageTolerance}%. Try increasing the slippage tolerance above (recommend 15-25% for volatile pairs) or wait for better market conditions.`;
         } else if (error.message.includes('execution reverted')) {
           errorMessage =
             'Transaction reverted - check slippage/liquidity or token approvals';
@@ -4402,6 +4429,8 @@ export default function CookbookPage() {
             </h2>
             <p className='mb-4 text-sm text-purple-700'>
               Test the Uniswap V3 swap functionality by converting between PYUSD and USDC in both directions.
+              <br />
+              <strong>Note:</strong> USDC→PYUSD swaps may need higher slippage tolerance (15%+) due to price volatility and liquidity differences.
             </p>
 
             {/* Direction Selector */}
@@ -4435,18 +4464,76 @@ export default function CookbookPage() {
               </div>
             </div>
 
-            <div className='mb-4'>
-              <label className='block text-sm font-medium text-purple-800'>
-                Amount to Swap ({swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD' : 'USDC'})
-              </label>
-              <input
-                type='number'
-                value={swapAmount}
-                onChange={e => setSwapAmount(e.target.value)}
-                className='mt-1 block w-32 rounded-md border-gray-300 px-3 py-2 text-sm'
-                step='0.1'
-                min='0'
-              />
+            <div className='mb-4 space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-purple-800'>
+                  Amount to Swap ({swapDirection === 'PYUSD_TO_USDC' ? 'PYUSD' : 'USDC'})
+                </label>
+                <input
+                  type='number'
+                  value={swapAmount}
+                  onChange={e => setSwapAmount(e.target.value)}
+                  className='mt-1 block w-32 rounded-md border-gray-300 px-3 py-2 text-sm'
+                  step='0.1'
+                  min='0'
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-purple-800'>
+                  Slippage Tolerance (%)
+                </label>
+                <div className='flex gap-2 items-center mt-1'>
+                  <input
+                    type='number'
+                    value={slippageTolerance}
+                    onChange={e => setSlippageTolerance(e.target.value)}
+                    className='block w-20 rounded-md border-gray-300 px-3 py-2 text-sm'
+                    step='0.5'
+                    min='0.1'
+                    max='50'
+                  />
+                  <div className='flex gap-1'>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('5')}
+                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '5' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    >
+                      5%
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('10')}
+                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '10' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    >
+                      10%
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('15')}
+                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '15' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                    >
+                      15%
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSlippageTolerance('50')}
+                      className={`px-2 py-1 text-xs rounded ${slippageTolerance === '50' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}
+                      title="Disables slippage protection - use with caution!"
+                    >
+                      Max
+                    </button>
+                  </div>
+                </div>
+                                 <p className='text-xs text-purple-600 mt-1'>
+                   Higher slippage = more likely to succeed but potentially worse price.
+                   {slippageTolerance && Number(slippageTolerance) > 10 && (
+                     <span className='text-yellow-600 font-medium'> ⚠️ High slippage warning!</span>
+                   )}
+                   {swapDirection === 'USDC_TO_PYUSD' && Number(slippageTolerance) < 15 && (
+                     <span className='text-blue-600 font-medium'> 💡 Tip: USDC→PYUSD often needs 15%+ slippage</span>
+                   )}
+                 </p>
+              </div>
             </div>
             <button
               onClick={performSwap}
