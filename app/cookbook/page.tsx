@@ -121,7 +121,7 @@ export default function CookbookPage() {
 
   // USDC Token Configuration (Sepolia)
   const USDC_TOKEN_CONFIG = {
-    address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238' as const,
+    address: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8' as const,
     decimals: 6,
     symbol: 'USDC',
   };
@@ -129,7 +129,9 @@ export default function CookbookPage() {
   // AAVE Configuration (Sepolia)
   const AAVE_CONFIG = {
     POOL: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951' as const,
-    AUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80' as const,
+    WETH_GATEWAY: '0x387d311e47e80b498169e6fb51d3193167d89f7d' as const,
+    WETH: '0xc558dbdd856501fcd9aaf1e62eae57a9f0629a3c' as const,
+    AWETH: '0x5b071b590a59395fE4025A0Ccc1FcC931AAc1830' as const,
     MULTICALL3: '0xcA11bde05977b3631167028862bE2a173976CA11' as const,
   };
 
@@ -194,6 +196,21 @@ export default function CookbookPage() {
       inputs: [
         { name: 'asset', type: 'address' },
         { name: 'amount', type: 'uint256' },
+        { name: 'onBehalfOf', type: 'address' },
+        { name: 'referralCode', type: 'uint16' },
+      ],
+      outputs: [],
+    },
+  ] as const;
+
+  // WETH Gateway ABI for depositing ETH
+  const WETH_GATEWAY_ABI = [
+    {
+      name: 'depositETH',
+      type: 'function',
+      stateMutability: 'payable',
+      inputs: [
+        { name: 'lendingPool', type: 'address' },
         { name: 'onBehalfOf', type: 'address' },
         { name: 'referralCode', type: 'uint16' },
       ],
@@ -1081,8 +1098,8 @@ export default function CookbookPage() {
     }
   };
 
-  // Function to deposit USDC to AAVE using Smart Wallet (sequential transactions, no gas sponsorship)
-  const depositUsdcToAave = async () => {
+  // Function to deposit ETH to AAVE using Smart Wallet
+  const depositEthToAave = async () => {
     if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
       setUsdcTestResults({
         error: 'Must be on Sepolia network with smart wallet',
@@ -1090,13 +1107,13 @@ export default function CookbookPage() {
       return;
     }
 
-    setUsdcTestResults({ aaveDepositStatus: 'Preparing AAVE deposit...', error: '' });
+    setUsdcTestResults({ aaveDepositStatus: 'Preparing ETH deposit to AAVE...', error: '' });
 
     try {
-      console.log('Starting AAVE deposit via smart wallet...');
+      console.log('Starting ETH deposit to AAVE via smart wallet...');
       console.log('Smart wallet address:', smartWallet.address);
 
-      // Check if smart wallet has enough USDC balance
+      // Check if smart wallet has enough ETH balance
       const { createPublicClient, http } = await import('viem');
       const { sepolia } = await import('viem/chains');
       
@@ -1105,88 +1122,65 @@ export default function CookbookPage() {
         transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
       });
       
-      const currentBalanceRaw = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [smartWallet.address as `0x${string}`],
+      const currentBalanceWei = await publicClient.getBalance({
+        address: smartWallet.address as `0x${string}`,
       });
       
-      const currentBalance = Number(currentBalanceRaw) / 10 ** USDC_TOKEN_CONFIG.decimals;
-      const requiredAmount = 1; // We're depositing 1 USDC
-      console.log('Smart wallet USDC balance (direct read):', currentBalance);
+      const currentBalance = Number(currentBalanceWei) / 10 ** 18; // ETH has 18 decimals
+      const requiredAmount = 0.01; // We're depositing 0.01 ETH
+      console.log('Smart wallet ETH balance:', currentBalance);
       console.log('Required amount:', requiredAmount);
       
       if (currentBalance < requiredAmount) {
         setUsdcTestResults({
-          error: `Insufficient USDC balance in smart wallet. Have: ${currentBalance}, Need: ${requiredAmount}. Transfer USDC to smart wallet first using Step 2.`,
+          error: `Insufficient ETH balance in smart wallet. Have: ${currentBalance.toFixed(4)}, Need: ${requiredAmount}. Send ETH to smart wallet first.`,
         });
         return;
       }
 
-      // Deposit 1 USDC (with 6 decimals)
-      const depositAmount = BigInt(1 * 10 ** USDC_TOKEN_CONFIG.decimals);
+      // Deposit 0.01 ETH (18 decimals)
+      const depositAmount = BigInt(Math.floor(0.01 * 10 ** 18));
 
       const { encodeFunctionData } = await import('viem');
 
-      // Step 1: Approve AAVE Pool to spend USDC
-      setUsdcTestResults({ aaveDepositStatus: 'Approving AAVE Pool...', error: '' });
+      // Deposit ETH directly via WETH Gateway (no approval needed for ETH)
+      setUsdcTestResults({ aaveDepositStatus: 'Depositing ETH to AAVE...', error: '' });
 
-      const approveData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [AAVE_CONFIG.POOL, depositAmount],
+      const depositData = encodeFunctionData({
+        abi: WETH_GATEWAY_ABI,
+        functionName: 'depositETH',
+        args: [AAVE_CONFIG.POOL, smartWallet.address as `0x${string}`, 0],
       });
 
-      const approveTxHash = await client.sendTransaction({
-        to: USDC_TOKEN_CONFIG.address,
-        data: approveData,
-        value: 0n,
+      const depositTxHash = await client.sendTransaction({
+        to: AAVE_CONFIG.WETH_GATEWAY,
+        data: depositData,
+        value: depositAmount,
       });
 
-      console.log('Approve transaction hash:', approveTxHash);
-
-      // Wait a moment for approval to be mined
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Step 2: Supply to AAVE
-      setUsdcTestResults({ aaveDepositStatus: 'Depositing to AAVE...', error: '' });
-
-      const supplyData = encodeFunctionData({
-        abi: AAVE_POOL_ABI,
-        functionName: 'supply',
-        args: [USDC_TOKEN_CONFIG.address, depositAmount, smartWallet.address as `0x${string}`, 0],
-      });
-
-      const supplyTxHash = await client.sendTransaction({
-        to: AAVE_CONFIG.POOL,
-        data: supplyData,
-        value: 0n,
-      });
-
-      console.log('AAVE deposit transaction hash:', supplyTxHash);
+      console.log('ETH AAVE deposit transaction hash:', depositTxHash);
 
       setUsdcTestResults({
         ...usdcTestResults,
-        aaveDepositStatus: 'AAVE deposit successful!',
-        aaveDepositHash: supplyTxHash,
+        aaveDepositStatus: 'ETH AAVE deposit successful!',
+        aaveDepositHash: depositTxHash,
         error: '',
       });
 
       // Refresh balances after deposit
       setTimeout(() => checkUsdcBalances(), 3000);
     } catch (error) {
-      console.error('Error depositing to AAVE:', error);
+      console.error('Error depositing ETH to AAVE:', error);
       setUsdcTestResults({
         ...usdcTestResults,
-        aaveDepositStatus: 'AAVE deposit failed',
+        aaveDepositStatus: 'ETH AAVE deposit failed',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };
 
-  // Function to deposit USDC to AAVE using EOA/MetaMask
-  const depositUsdcToAaveEOA = async () => {
+  // Function to deposit ETH to AAVE using EOA/MetaMask
+  const depositEthToAaveEOA = async () => {
     if (!client?.chain || client.chain.id !== 11155111 || !smartWallet) {
       setUsdcTestResults({
         error: 'Must be on Sepolia network with smart wallet',
@@ -1239,16 +1233,16 @@ export default function CookbookPage() {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      console.log('Starting AAVE deposit via EOA/MetaMask...');
+      console.log('Starting ETH deposit to AAVE via EOA/MetaMask...');
       console.log('MetaMask address:', metamaskWallet.address);
-      console.log('USDC contract:', USDC_TOKEN_CONFIG.address);
+      console.log('WETH Gateway:', AAVE_CONFIG.WETH_GATEWAY);
       console.log('AAVE Pool contract:', AAVE_CONFIG.POOL);
 
-      // Deposit 1 USDC (with 6 decimals)
-      const depositAmount = BigInt(1 * 10 ** USDC_TOKEN_CONFIG.decimals);
+      // Deposit 0.01 ETH (18 decimals)
+      const depositAmount = BigInt(Math.floor(0.01 * 10 ** 18));
       console.log('Deposit amount (wei):', depositAmount.toString());
 
-      // Check if user has enough USDC balance (read directly from contract)
+      // Check if user has enough ETH balance
       const { createPublicClient, http } = await import('viem');
       const { sepolia } = await import('viem/chains');
       
@@ -1257,105 +1251,57 @@ export default function CookbookPage() {
         transport: http('https://ethereum-sepolia-rpc.publicnode.com'),
       });
       
-      const currentBalanceRaw = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [metamaskWallet.address as `0x${string}`],
+      const currentBalanceWei = await publicClient.getBalance({
+        address: metamaskWallet.address as `0x${string}`,
       });
       
-      const currentBalance = Number(currentBalanceRaw) / 10 ** USDC_TOKEN_CONFIG.decimals;
-      const requiredAmount = 1; // We're depositing 1 USDC
-      console.log('Current USDC balance (direct read):', currentBalance);
+      const currentBalance = Number(currentBalanceWei) / 10 ** 18;
+      const requiredAmount = 0.01; // We're depositing 0.01 ETH
+      console.log('Current ETH balance:', currentBalance);
       console.log('Required amount:', requiredAmount);
       
       if (currentBalance < requiredAmount) {
         setUsdcTestResults({
-          error: `Insufficient USDC balance. Have: ${currentBalance}, Need: ${requiredAmount}`,
+          error: `Insufficient ETH balance. Have: ${currentBalance.toFixed(4)}, Need: ${requiredAmount}`,
         });
         return;
       }
 
       const { encodeFunctionData } = await import('viem');
 
-      // Step 1: Approve AAVE Pool to spend USDC
-      setUsdcTestResults({ aaveDepositStatus: 'EOA: Approving AAVE Pool...', error: '' });
+      // Deposit ETH directly via WETH Gateway (no approval needed for ETH)
+      setUsdcTestResults({ aaveDepositStatus: 'EOA: Depositing ETH to AAVE...', error: '' });
 
-      const approveData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [AAVE_CONFIG.POOL, depositAmount],
+      const depositData = encodeFunctionData({
+        abi: WETH_GATEWAY_ABI,
+        functionName: 'depositETH',
+        args: [AAVE_CONFIG.POOL, metamaskWallet.address as `0x${string}`, 0],
       });
 
-      console.log('Approve calldata:', approveData);
-      console.log('About to send approve transaction with params:', {
+      console.log('Deposit calldata:', depositData);
+      console.log('About to send ETH deposit transaction with params:', {
         from: metamaskWallet.address,
-        to: USDC_TOKEN_CONFIG.address,
-        data: approveData,
+        to: AAVE_CONFIG.WETH_GATEWAY,
+        data: depositData,
+        value: `0x${depositAmount.toString(16)}`,
       });
 
-      const approveTxHash = await metamaskProvider.request({
+      const depositTxHash = await metamaskProvider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: metamaskWallet.address,
-          to: USDC_TOKEN_CONFIG.address,
-          data: approveData,
+          to: AAVE_CONFIG.WETH_GATEWAY,
+          data: depositData,
+          value: `0x${depositAmount.toString(16)}`,
         }],
       });
 
-      console.log('EOA Approve transaction hash:', approveTxHash);
-
-      // Wait a moment for approval to be mined
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Verify allowance before supplying
-      const allowanceAfterApprove = await publicClient.readContract({
-        address: USDC_TOKEN_CONFIG.address,
-        abi: ERC20_ABI,
-        functionName: 'allowance',
-        args: [metamaskWallet.address as `0x${string}`, AAVE_CONFIG.POOL],
-      });
-      
-      console.log('Allowance after approve (raw):', allowanceAfterApprove.toString());
-      console.log('Allowance after approve (formatted):', (Number(allowanceAfterApprove) / 10 ** USDC_TOKEN_CONFIG.decimals).toFixed(6));
-
-      // Step 2: Supply to AAVE
-      setUsdcTestResults({ aaveDepositStatus: 'EOA: Depositing to AAVE...', error: '' });
-
-      const supplyData = encodeFunctionData({
-        abi: AAVE_POOL_ABI,
-        functionName: 'supply',
-        args: [USDC_TOKEN_CONFIG.address, depositAmount, metamaskWallet.address as `0x${string}`, 0],
-      });
-
-      console.log('Supply calldata:', supplyData);
-      console.log('Supply args:', {
-        asset: USDC_TOKEN_CONFIG.address,
-        amount: depositAmount.toString(),
-        onBehalfOf: metamaskWallet.address,
-        referralCode: 0
-      });
-      console.log('About to send supply transaction with params:', {
-        from: metamaskWallet.address,
-        to: AAVE_CONFIG.POOL,
-        data: supplyData,
-      });
-
-      const supplyTxHash = await metamaskProvider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: metamaskWallet.address,
-          to: AAVE_CONFIG.POOL,
-          data: supplyData,
-        }],
-      });
-
-      console.log('EOA AAVE deposit transaction hash:', supplyTxHash);
+      console.log('EOA ETH AAVE deposit transaction hash:', depositTxHash);
 
       setUsdcTestResults({
         ...usdcTestResults,
-        aaveDepositStatus: 'EOA AAVE deposit successful!',
-        aaveDepositHash: supplyTxHash,
+        aaveDepositStatus: 'EOA ETH AAVE deposit successful!',
+        aaveDepositHash: depositTxHash,
         error: '',
       });
 
@@ -2204,39 +2150,39 @@ export default function CookbookPage() {
                   )}
                 </div>
 
-                {/* Step 3A: Deposit to AAVE with Smart Wallet */}
+                {/* Step 3A: Deposit ETH to AAVE with Smart Wallet */}
                 <div className='border-t border-gray-200 pt-4'>
                   <h4 className='mb-2 font-medium text-gray-800'>
-                    Step 3A: Deposit to AAVE (Smart Wallet)
+                    Step 3A: Deposit ETH to AAVE (Smart Wallet)
                   </h4>
                   <p className='mb-3 text-sm text-gray-600'>
-                    Use your smart wallet to deposit 1 USDC to AAVE v3 (approve + supply sequence)
+                    Use your smart wallet to deposit 0.01 ETH to AAVE v3 via WETH Gateway (no approval needed)
                   </p>
                   <button
                     type='button'
-                    onClick={depositUsdcToAave}
+                    onClick={depositEthToAave}
                     disabled={!client || client.chain?.id !== 11155111}
                     className='rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:bg-gray-400'
                   >
-                    Deposit 1 USDC to AAVE (Smart Wallet Signs)
+                    Deposit 0.01 ETH to AAVE (Smart Wallet Signs)
                   </button>
                 </div>
 
-                {/* Step 3B: Deposit to AAVE with EOA */}
+                {/* Step 3B: Deposit ETH to AAVE with EOA */}
                 <div className='border-t border-gray-200 pt-4'>
                   <h4 className='mb-2 font-medium text-gray-800'>
-                    Step 3B: Deposit to AAVE (EOA/MetaMask)
+                    Step 3B: Deposit ETH to AAVE (EOA/MetaMask)
                   </h4>
                   <p className='mb-3 text-sm text-gray-600'>
-                    Use your MetaMask wallet to deposit 1 USDC to AAVE v3 (approve + supply sequence)
+                    Use your MetaMask wallet to deposit 0.01 ETH to AAVE v3 via WETH Gateway (no approval needed)
                   </p>
                   <button
                     type='button'
-                    onClick={depositUsdcToAaveEOA}
+                    onClick={depositEthToAaveEOA}
                     disabled={!client || client.chain?.id !== 11155111}
                     className='rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400'
                   >
-                    Deposit 1 USDC to AAVE (MetaMask Signs)
+                    Deposit 0.01 ETH to AAVE (MetaMask Signs)
                   </button>
                 </div>
 
