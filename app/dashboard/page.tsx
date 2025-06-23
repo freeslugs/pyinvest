@@ -104,7 +104,7 @@ export default function PyUSDYieldSelector() {
 
       // Use multiple RPC endpoints for better reliability
       const rpcUrls = [
-        'https://ethereum-sepolia-rpc.publicnode.com',
+        'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
         'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
         'https://rpc.sepolia.org',
         'https://rpc2.sepolia.org',
