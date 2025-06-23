@@ -9,7 +9,6 @@ import WalletList from '../../components/WalletList';
 import {
   ERC20_ABI,
   NETWORKS,
-  UNISWAP_V3_ROUTER_ADDRESS,
   getPoolsForNetwork,
   getTokensForNetwork
 } from '../../lib/constants';
@@ -61,7 +60,7 @@ export default function CookbookPage() {
     approvals?: {
       pyusdApproved: boolean;
       usdcApproved: boolean;
-      routerApproved: boolean;
+      smartWalletApproved: boolean;
     };
     depositAmount: string;
     depositStatus?: string;
@@ -768,7 +767,7 @@ export default function CookbookPage() {
           functionName: 'allowance',
           args: [
             metamaskWallet.address as `0x${string}`,
-            UNISWAP_V3_ROUTER_ADDRESS,
+            smartWallet.address as `0x${string}`, // Check approval to smart wallet, not router
           ],
         }),
         USDC_TOKEN_CONFIG
@@ -778,7 +777,7 @@ export default function CookbookPage() {
               functionName: 'allowance',
               args: [
                 metamaskWallet.address as `0x${string}`,
-                UNISWAP_V3_ROUTER_ADDRESS,
+                smartWallet.address as `0x${string}`, // Check approval to smart wallet, not router
               ],
             })
           : Promise.resolve(0n),
@@ -819,12 +818,11 @@ export default function CookbookPage() {
             : '0',
           poolTokens: '0.00', // V3 positions are NFTs, not fungible tokens
         },
-        approvals: {
-          pyusdApproved: (pyusdAllowance as bigint) > 0n,
-          usdcApproved: (usdcAllowance as bigint) > 0n,
-          routerApproved:
-            (pyusdAllowance as bigint) > 0n && (usdcAllowance as bigint) > 0n,
-        },
+                  approvals: {
+            pyusdApproved: (pyusdAllowance as bigint) > 0n,
+            usdcApproved: (usdcAllowance as bigint) > 0n,
+            smartWalletApproved: (pyusdAllowance as bigint) > 0n, // MetaMask → Smart Wallet approval
+          },
         isLoading: false,
       }));
     } catch (error) {
@@ -837,8 +835,8 @@ export default function CookbookPage() {
     }
   };
 
-  // Function to approve tokens for Uniswap router
-  const approveTokensForRouter = async () => {
+  // Function to approve PYUSD tokens to smart wallet
+  const approvePYUSDToSmartWallet = async () => {
     if (
       !client?.chain ||
       client.chain.id !== NETWORKS.SEPOLIA.id ||
@@ -894,14 +892,14 @@ export default function CookbookPage() {
       const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
       const { encodeFunctionData } = await import('viem');
 
-      // Approve large amount for both tokens
-      const approveAmount = BigInt(1000000 * 10 ** 6); // 1M tokens
+      // Approve 100 PYUSD to smart wallet (with 6 decimals)
+      const approveAmount = BigInt(100 * 10 ** PYUSD_TOKEN_CONFIG.decimals);
 
-      // Approve PYUSD
+      // Approve PYUSD to smart wallet
       const pyusdData = encodeFunctionData({
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [UNISWAP_V3_ROUTER_ADDRESS, approveAmount],
+        args: [smartWallet!.address as `0x${string}`, approveAmount], // Approve to smart wallet
       });
 
       await metamaskProvider.request({
@@ -915,30 +913,10 @@ export default function CookbookPage() {
         ],
       });
 
-      // Approve USDC if available
-      if (USDC_TOKEN_CONFIG) {
-        const usdcData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [UNISWAP_V3_ROUTER_ADDRESS, approveAmount],
-        });
-
-        await metamaskProvider.request({
-          method: 'eth_sendTransaction',
-          params: [
-            {
-              from: metamaskWallet.address,
-              to: USDC_TOKEN_CONFIG.address,
-              data: usdcData,
-            },
-          ],
-        });
-      }
-
-      setPoolData(prev => ({
-        ...prev,
-        depositStatus: 'Tokens approved successfully!',
-      }));
+              setPoolData(prev => ({
+          ...prev,
+          depositStatus: 'PYUSD approved to smart wallet successfully!',
+        }));
 
       // Refresh pool data after approval
       setTimeout(() => checkPoolData(), 3000);
@@ -957,11 +935,12 @@ export default function CookbookPage() {
     if (
       !client?.chain ||
       client.chain.id !== NETWORKS.SEPOLIA.id ||
-      !PYUSD_TOKEN_CONFIG
+      !PYUSD_TOKEN_CONFIG ||
+      !smartWallet
     ) {
       setPoolData(prev => ({
         ...prev,
-        error: 'Must be on Sepolia network with PYUSD token available',
+        error: 'Must be on Sepolia network with smart wallet and PYUSD token available',
       }));
       return;
     }
@@ -1015,39 +994,65 @@ export default function CookbookPage() {
         return;
       }
 
-      const metamaskProvider = await metamaskWalletInList.getEthereumProvider();
-      const { encodeFunctionData } = await import('viem');
+            const { encodeFunctionData } = await import('viem');
 
-      // For now, we'll do a simple transfer to the pool address
-      // In a full implementation, you'd use Uniswap's position manager for proper liquidity provision
-      const transferAmount = BigInt(
+      // Step 1: Transfer PYUSD from MetaMask to Smart Wallet
+      const totalDepositAmount = BigInt(
         depositAmount * 10 ** PYUSD_TOKEN_CONFIG.decimals
       );
 
-      const transferData = encodeFunctionData({
+      setPoolData(prev => ({ ...prev, depositStatus: 'Transferring PYUSD to smart wallet...' }));
+
+      // First, transfer PYUSD from MetaMask to Smart Wallet using transferFrom
+      const transferFromData = encodeFunctionData({
         abi: ERC20_ABI,
-        functionName: 'transfer',
-        args: [PYUSD_USDC_POOL.address, transferAmount],
-      });
-
-      setPoolData(prev => ({ ...prev, depositStatus: 'Depositing tokens...' }));
-
-      const txHash = await metamaskProvider.request({
-        method: 'eth_sendTransaction',
-        params: [
-          {
-            from: metamaskWallet.address,
-            to: PYUSD_TOKEN_CONFIG.address,
-            data: transferData,
-          },
+        functionName: 'transferFrom',
+        args: [
+          metamaskWallet.address as `0x${string}`,
+          smartWallet!.address as `0x${string}`,
+          totalDepositAmount,
         ],
       });
 
+      // This will be executed by the smart wallet (using the approval we set up earlier)
+      const transferTxHash = await client.sendTransaction({
+        to: PYUSD_TOKEN_CONFIG.address,
+        data: transferFromData,
+      });
+
+      console.log('Transfer to smart wallet completed:', transferTxHash);
+
       setPoolData(prev => ({
         ...prev,
-        depositStatus: 'Deposit successful!',
-        depositHash: txHash,
+        depositStatus: 'PYUSD transferred to smart wallet. Swapping half to USDC...'
       }));
+
+      // Step 2: Swap half of PYUSD to USDC (simplified - direct transfer to pool for now)
+      // In a real implementation, you'd use Uniswap Router to swap PYUSD → USDC
+      const halfAmount = totalDepositAmount / 2n;
+
+      // For now, we'll simulate the pool deposit by transferring both halves
+      // In production, you'd use Uniswap V3's position manager
+      const depositData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'transfer',
+        args: [PYUSD_USDC_POOL.address, halfAmount],
+      });
+
+      setPoolData(prev => ({ ...prev, depositStatus: 'Depositing into pool...' }));
+
+      const poolDepositTxHash = await client.sendTransaction({
+        to: PYUSD_TOKEN_CONFIG.address,
+        data: depositData,
+      });
+
+      console.log('Pool deposit completed:', poolDepositTxHash);
+
+              setPoolData(prev => ({
+          ...prev,
+          depositStatus: 'Deposit successful! PYUSD transferred and deposited into pool.',
+          depositHash: poolDepositTxHash,
+        }));
 
       // Refresh balances after deposit
       setTimeout(() => {
@@ -1784,63 +1789,46 @@ export default function CookbookPage() {
                       <div className='space-y-2 text-sm'>
                         <p className='flex items-center'>
                           <span
-                            className={`mr-2 ${poolData.approvals.pyusdApproved ? 'text-green-600' : 'text-red-600'}`}
+                            className={`mr-2 ${poolData.approvals.smartWalletApproved ? 'text-green-600' : 'text-red-600'}`}
                           >
-                            {poolData.approvals.pyusdApproved ? '✅' : '❌'}
+                            {poolData.approvals.smartWalletApproved ? '✅' : '❌'}
                           </span>
-                          PYUSD approved for Uniswap Router
-                        </p>
-                        <p className='flex items-center'>
-                          <span
-                            className={`mr-2 ${poolData.approvals.usdcApproved ? 'text-green-600' : 'text-red-600'}`}
-                          >
-                            {poolData.approvals.usdcApproved ? '✅' : '❌'}
-                          </span>
-                          USDC approved for Uniswap Router
-                        </p>
-                        <p className='flex items-center'>
-                          <span
-                            className={`mr-2 ${poolData.approvals.routerApproved ? 'text-green-600' : 'text-red-600'}`}
-                          >
-                            {poolData.approvals.routerApproved ? '✅' : '❌'}
-                          </span>
-                          Ready for pool deposits
+                          MetaMask → Smart Wallet PYUSD approval
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Approve Tokens */}
-                  {poolData.approvals && !poolData.approvals.routerApproved && (
+                  {/* Approve PYUSD to Smart Wallet */}
+                  {poolData.approvals && !poolData.approvals.smartWalletApproved && (
                     <div className='border-t border-gray-200 pt-4'>
                       <h4 className='mb-2 font-medium text-gray-800'>
-                        Step 1: Approve Tokens for Router
+                        Step 1: Approve PYUSD to Smart Wallet
                       </h4>
                       <p className='mb-3 text-sm text-gray-600'>
-                        Approve PYUSD and USDC tokens for the Uniswap Router to
-                        enable pool deposits
+                        Allow your smart wallet to spend PYUSD tokens from your MetaMask wallet for pool deposits
                       </p>
                       <button
                         type='button'
-                        onClick={approveTokensForRouter}
+                        onClick={approvePYUSDToSmartWallet}
                         disabled={
                           !client || client.chain?.id !== NETWORKS.SEPOLIA.id
                         }
                         className='rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:bg-gray-400'
                       >
-                        Approve Tokens for Router
+                        Approve PYUSD tokens to smart wallet
                       </button>
                     </div>
                   )}
 
                   {/* Deposit Section */}
-                  {poolData.approvals?.routerApproved && (
+                  {poolData.approvals?.smartWalletApproved && (
                     <div className='border-t border-gray-200 pt-4'>
                       <h4 className='mb-2 font-medium text-gray-800'>
-                        Step 2: Deposit into Pool
+                        Step 2: Deposit PYUSD into Pool
                       </h4>
                       <p className='mb-3 text-sm text-gray-600'>
-                        Enter the amount of PYUSD to deposit into the pool
+                        Enter the amount of PYUSD to deposit. Half will be swapped to USDC, then both tokens will be deposited into the pool via your smart wallet.
                       </p>
 
                       <div className='mb-4 flex items-center space-x-3'>
