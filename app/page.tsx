@@ -1,4 +1,4 @@
-import { ClockIcon, ShieldCheckIcon } from '@heroicons/react/24/solid';
+import { BoltIcon, ChartBarIcon, ClockIcon, CurrencyDollarIcon, ShieldCheckIcon } from '@heroicons/react/24/solid';
 import { PrivyClient } from '@privy-io/server-auth';
 import { cookies } from 'next/headers';
 import Image from 'next/image';
@@ -119,74 +119,74 @@ export default async function HomePage() {
               {/* Higher Returns */}
               <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
-                  <span className="text-3xl sm:text-4xl">📈</span>
+                  <ChartBarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Higher Returns</h3>
                 <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Earn up to 8-12% APY with digital assets compared to 0.5-2% with traditional savings accounts.
                 </p>
                 <div className="space-y-2 sm:space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
-                    <span className="text-red-500 font-medium text-xs sm:text-sm">0.5-2% APY</span>
+                    <span className="text-gray-400 font-medium text-xs sm:text-sm">0.5-2% APY</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs sm:text-sm">High-yield Savings</span>
-                    <span className="text-orange-500 font-medium text-xs sm:text-sm">2-4% APY</span>
+                    <span className="text-gray-400 font-medium text-xs sm:text-sm">2-4% APY</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-900 font-normal text-xs sm:text-sm">PyInvest</span>
-                    <span className="text-green-600 font-medium text-xs sm:text-sm">8-12% APY</span>
+                  <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <span className="text-blue-900 font-semibold text-xs sm:text-sm">PyInvest</span>
+                    <span className="text-blue-600 font-bold text-xs sm:text-sm">8-12% APY</span>
                   </div>
                 </div>
               </div>
 
               {/* Instant Liquidity */}
               <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-green-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
-                  <span className="text-3xl sm:text-4xl">💰</span>
+                <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
+                  <CurrencyDollarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Instant Access</h3>
                 <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Access your funds anytime without penalties, unlike CDs that lock up your money for months or years.
                 </p>
                 <div className="space-y-2 sm:space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
-                    <span className="text-red-500 font-medium text-xs sm:text-sm">Locked 6mo-5yr</span>
+                    <span className="text-gray-400 font-medium text-xs sm:text-sm">Locked 6mo-5yr</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs sm:text-sm">Savings Account</span>
-                    <span className="text-orange-500 font-medium text-xs sm:text-sm">Limited transfers</span>
+                    <span className="text-gray-400 font-medium text-xs sm:text-sm">Limited transfers</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-900 font-normal text-xs sm:text-sm">PyInvest</span>
-                    <span className="text-green-600 font-medium text-xs sm:text-sm">Instant access</span>
+                  <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <span className="text-blue-900 font-semibold text-xs sm:text-sm">PyInvest</span>
+                    <span className="text-blue-600 font-bold text-xs sm:text-sm">Instant access</span>
                   </div>
                 </div>
               </div>
 
               {/* Simple Setup */}
               <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="bg-purple-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
-                  <span className="text-3xl sm:text-4xl">⚡</span>
+                <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl w-fit mb-4 sm:mb-6">
+                  <BoltIcon className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3 sm:mb-4">Simple Setup</h3>
                 <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Get started in under 3 minutes with no minimum deposits, paperwork, or lengthy approval processes.
                 </p>
                 <div className="space-y-2 sm:space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs sm:text-sm">Traditional CD</span>
-                    <span className="text-red-500 font-medium text-xs sm:text-sm">Days to weeks</span>
+                    <span className="text-gray-400 font-medium text-xs sm:text-sm">Days to weeks</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-500 text-xs sm:text-sm">Bank Account</span>
-                    <span className="text-orange-500 font-medium text-xs sm:text-sm">1-3 days</span>
+                    <span className="text-gray-400 font-medium text-xs sm:text-sm">1-3 days</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-900 font-normal text-xs sm:text-sm">PyInvest</span>
-                    <span className="text-green-600 font-medium text-xs sm:text-sm">Under 3 minutes</span>
+                  <div className="flex justify-between items-center py-2 px-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <span className="text-blue-900 font-semibold text-xs sm:text-sm">PyInvest</span>
+                    <span className="text-blue-600 font-bold text-xs sm:text-sm">Under 3 minutes</span>
                   </div>
                 </div>
               </div>
