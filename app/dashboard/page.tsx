@@ -324,7 +324,7 @@ export default function PyUSDYieldSelector() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  How to get your Venmo ETH address:
+                  How to get your Venmo Balance:
                 </h3>
                 <div className="space-y-2 text-sm text-gray-700">
                   <div className="flex items-start space-x-2">
@@ -333,11 +333,11 @@ export default function PyUSDYieldSelector() {
                   </div>
                   <div className="flex items-start space-x-2">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">2</span>
-                    <p>Tap on &ldquo;Receive&rdquo; or &ldquo;Deposit&rdquo; for Ethereum</p>
+                    <p>Tap on PayPal USD at the top of the list of options</p>
                   </div>
                   <div className="flex items-start space-x-2">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">3</span>
-                    <p>Copy your Ethereum wallet address (starts with 0x)</p>
+                    <p>Copy your Venmo PayPal wallet address (starts with 0x)</p>
                   </div>
                   <div className="flex items-start space-x-2">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-semibold mt-0.5">4</span>
