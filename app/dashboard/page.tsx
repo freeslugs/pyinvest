@@ -112,18 +112,31 @@ export default function PyUSDYieldSelector() {
     // Mark onboarding check as completed
     setOnboardingChecked(true);
 
-    // Always fetch both smart wallet and MetaMask balances
+        // Always fetch both smart wallet and MetaMask balances
+    console.log('⚡ BALANCE FETCHING TRIGGERS:');
+    console.log('- Smart wallet exists:', !!smartWallet);
+    console.log('- Smart wallet address:', smartWallet?.address);
+    console.log('- Has connected wallet:', hasConnectedWallet);
+    console.log('- User linked accounts:', user?.linkedAccounts?.length || 0);
+
     if (smartWallet) {
+      console.log('🔄 Triggering smart wallet balance fetch for:', smartWallet.address);
       fetchSmartWalletBalance(smartWallet.address);
+    } else {
+      console.log('❌ No smart wallet found, skipping smart wallet balance fetch');
     }
 
     // Fetch MetaMask balance if connected
     if (hasConnectedWallet) {
+      console.log('🔄 Triggering MetaMask balance fetch');
       fetchMetaMaskBalance();
+    } else {
+      console.log('❌ No connected external wallet, skipping MetaMask balance fetch');
     }
 
     // Show smart wallet view if user has connected external wallet
     if (hasConnectedWallet) {
+      console.log('✅ Setting showSmartWallet to true due to connected external wallet');
       setShowSmartWallet(true);
     }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,6 +150,15 @@ export default function PyUSDYieldSelector() {
       setShowOnboarding(false);
     }
   }, [smartWalletBalance]);
+
+  // Debug effect to track balance state changes
+  useEffect(() => {
+    console.log('📊 BALANCE STATE CHANGE:');
+    console.log('- Current balances object:', balances);
+    console.log('- Smart wallet balance:', balances.smartWallet);
+    console.log('- MetaMask balance:', balances.metaMask);
+    console.log('- Smart wallet balance state:', smartWalletBalance);
+  }, [balances, smartWalletBalance]);
 
   // Function to fetch PYUSD balance for smart wallet
   const fetchSmartWalletBalance = async (address: string) => {
@@ -167,15 +189,24 @@ export default function PyUSDYieldSelector() {
         args: [address as `0x${string}`],
       });
 
-      const formattedBalance = formatPyusdBalance(balance as bigint);
-      console.log('Smart wallet balance:', formattedBalance);
+            const formattedBalance = formatPyusdBalance(balance as bigint);
+      console.log('🔵 SMART WALLET BALANCE UPDATE:');
+      console.log('- Raw balance from contract:', balance);
+      console.log('- Formatted balance:', formattedBalance);
+      console.log('- Updating smartWalletBalance state to:', formattedBalance);
+      console.log('- Updating balances.smartWallet to:', formattedBalance);
+
       setSmartWalletBalance(formattedBalance);
 
       // Also update the balances state
-      setBalances(prev => ({
-        ...prev,
-        smartWallet: formattedBalance,
-      }));
+      setBalances(prev => {
+        const newBalances = {
+          ...prev,
+          smartWallet: formattedBalance,
+        };
+        console.log('- New balances state after smart wallet update:', newBalances);
+        return newBalances;
+      });
 
       // If they have a balance, show smart wallet view
       if (parseFloat(formattedBalance) > 0) {
@@ -232,12 +263,19 @@ export default function PyUSDYieldSelector() {
       });
 
       const formattedBalance = formatPyusdBalance(balance as bigint);
-      console.log('MetaMask balance:', formattedBalance);
+      console.log('🟠 METAMASK BALANCE UPDATE:');
+      console.log('- Raw balance from contract:', balance);
+      console.log('- Formatted balance:', formattedBalance);
+      console.log('- Updating balances.metaMask to:', formattedBalance);
 
-      setBalances(prev => ({
-        ...prev,
-        metaMask: formattedBalance,
-      }));
+      setBalances(prev => {
+        const newBalances = {
+          ...prev,
+          metaMask: formattedBalance,
+        };
+        console.log('- New balances state after MetaMask update:', newBalances);
+        return newBalances;
+      });
     } catch (error) {
       console.error('Error fetching MetaMask PYUSD balance:', error);
       setBalances(prev => ({
@@ -251,12 +289,29 @@ export default function PyUSDYieldSelector() {
 
   // Calculate total balance
   const totalBalance = () => {
+    console.log('=== TOTAL BALANCE CALCULATION ===');
+    console.log('Raw balances object:', balances);
+    console.log('Smart Wallet balance string:', balances.smartWallet);
+    console.log('MetaMask balance string:', balances.metaMask);
+
     const smartWalletNum = parseFloat(balances.smartWallet.replace(/,/g, '')) || 0;
     const metaMaskNum = parseFloat(balances.metaMask.replace(/,/g, '')) || 0;
-    return (smartWalletNum + metaMaskNum).toLocaleString('en-US', {
+
+    console.log('Smart Wallet parsed number:', smartWalletNum);
+    console.log('MetaMask parsed number:', metaMaskNum);
+
+    const total = smartWalletNum + metaMaskNum;
+    console.log('Total sum:', total);
+
+    const formattedTotal = total.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+
+    console.log('Formatted total:', formattedTotal);
+    console.log('=== END TOTAL BALANCE CALCULATION ===');
+
+    return formattedTotal;
   };
 
 
@@ -400,6 +455,19 @@ export default function PyUSDYieldSelector() {
                       {isLoading ? 'Loading...' : `$${balances.metaMask}`}
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Debug Info - Remove in production */}
+              <div className='mt-4 border-t border-red-100 pt-4 bg-red-50 rounded p-2'>
+                <p className='mb-2 text-xs text-red-600 font-semibold'>Debug Info:</p>
+                <div className='space-y-1 text-xs text-red-600'>
+                  <div>Smart Wallet Raw: &quot;{balances.smartWallet}&quot;</div>
+                  <div>MetaMask Raw: &quot;{balances.metaMask}&quot;</div>
+                  <div>Total Calculated: {totalBalance()}</div>
+                  <div>Smart Wallet Balance State: &quot;{smartWalletBalance}&quot;</div>
+                  <div>Show Smart Wallet: {showSmartWallet ? 'true' : 'false'}</div>
+                  <div>Is Loading: {isLoading ? 'true' : 'false'}</div>
                 </div>
               </div>
             </div>
