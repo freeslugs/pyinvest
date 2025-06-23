@@ -1,0 +1,333 @@
+'use client';
+
+import { usePrivy } from '@privy-io/react-auth';
+import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
+import { ArrowRight, Copy, Wallet } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
+import { Modal } from './ui/modal';
+import { QRCodeComponent } from './ui/qr-code';
+
+type OnboardingStep =
+  | 'welcome'
+  | 'pyusd-source'
+  | 'traditional-deposit'
+  | 'crypto-wallet'
+  | 'waiting-deposit'
+  | 'completed';
+
+interface OnboardingFlowProps {
+  isOpen: boolean;
+  onComplete: () => void;
+}
+
+export function OnboardingFlow({ isOpen, onComplete }: OnboardingFlowProps) {
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [isLoading, setIsLoading] = useState(false);
+  const { user, linkWallet } = usePrivy();
+  const { client } = useSmartWallets();
+
+  // Get smart wallet address
+  const smartWallet = user?.linkedAccounts?.find(
+    account => account.type === 'smart_wallet'
+  ) as { address: string } | undefined;
+
+  const handlePyusdSource = (source: 'traditional' | 'crypto') => {
+    if (source === 'traditional') {
+      setCurrentStep('traditional-deposit');
+    } else {
+      setCurrentStep('crypto-wallet');
+    }
+  };
+
+  const handleConnectWallet = async () => {
+    setIsLoading(true);
+    try {
+      await linkWallet();
+      // After successful wallet connection, check if they have a balance
+      setCurrentStep('waiting-deposit');
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleContinueToDeposit = () => {
+    setCurrentStep('waiting-deposit');
+  };
+
+  const handleCompleteOnboarding = () => {
+    // Mark onboarding as completed in localStorage
+    localStorage.setItem('onboarding_completed', 'true');
+    onComplete();
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const renderWelcomeStep = () => (
+    <div className="text-center space-y-6">
+      <div className="mb-6">
+        <div className="flex justify-center mb-4">
+          <Image
+            src="/assets/PyInvest-logomark.png"
+            alt="PyInvest"
+            width={48}
+            height={48}
+            className="h-12 w-12"
+            unoptimized
+          />
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          Welcome to PyInvest!
+        </h2>
+        <p className="text-gray-600">
+          Let's get you started with earning yield on your PYUSD
+        </p>
+      </div>
+
+      <button
+        onClick={() => setCurrentStep('pyusd-source')}
+        className="w-full flex items-center justify-center space-x-2 rounded-xl bg-blue-600 px-6 py-4 text-white hover:bg-blue-700 transition-colors"
+      >
+        <span>Get Started</span>
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
+  const renderPyusdSourceStep = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Do you already have PYUSD?
+        </h2>
+        <p className="text-sm text-gray-600">
+          Tell us where you keep your PYUSD so we can help you get started
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          onClick={() => handlePyusdSource('traditional')}
+          className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <Image src="/assets/Venmo-icon.png" alt="Venmo" width={20} height={20} />
+              <Image src="/assets/pyusd_logo.png" alt="PayPal" width={20} height={20} />
+              <Image src="/assets/coinbase-icon.png" alt="Coinbase" width={20} height={20} />
+            </div>
+            <div className="text-left">
+              <p className="font-medium text-gray-900">Venmo, PayPal, or Coinbase</p>
+              <p className="text-sm text-gray-500">Transfer to your smart wallet</p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 text-gray-400" />
+        </button>
+
+        <button
+          onClick={() => handlePyusdSource('crypto')}
+          className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors"
+        >
+          <div className="flex items-center space-x-3">
+            <Wallet className="h-5 w-5 text-gray-600" />
+            <div className="text-left">
+              <p className="font-medium text-gray-900">Crypto Wallet</p>
+              <p className="text-sm text-gray-500">Connect your MetaMask or other wallet</p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 text-gray-400" />
+        </button>
+      </div>
+
+      <div className="text-center pt-4">
+        <button
+          onClick={handleCompleteOnboarding}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          I don't have PYUSD yet
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderTraditionalDepositStep = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Transfer PYUSD to Your Smart Wallet
+        </h2>
+        <p className="text-sm text-gray-600">
+          Send your PYUSD to this address to start earning yield
+        </p>
+      </div>
+
+      {smartWallet && (
+        <div className="space-y-4">
+          {/* QR Code */}
+          <div className="flex justify-center">
+            <div className="p-4 bg-white border border-gray-200 rounded-xl">
+              <QRCodeComponent
+                value={smartWallet.address}
+                size={192}
+                className="rounded-lg"
+              />
+            </div>
+          </div>
+
+          {/* Wallet Address */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Smart Wallet Address:</p>
+            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
+              <code className="text-sm font-mono text-gray-800 flex-1 mr-2 break-all">
+                {smartWallet.address}
+              </code>
+              <button
+                onClick={() => copyToClipboard(smartWallet.address)}
+                className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div className="bg-blue-50 rounded-xl p-4">
+            <h3 className="font-medium text-blue-900 mb-2">How to send PYUSD:</h3>
+            <div className="space-y-2 text-sm text-blue-800">
+              <div className="flex items-start space-x-2">
+                <span className="font-semibold">1.</span>
+                <p>Open your Venmo, PayPal, or Coinbase app</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <span className="font-semibold">2.</span>
+                <p>Go to your PYUSD balance or crypto section</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <span className="font-semibold">3.</span>
+                <p>Choose "Send" or "Transfer" and scan the QR code above</p>
+              </div>
+              <div className="flex items-start space-x-2">
+                <span className="font-semibold">4.</span>
+                <p>Or copy and paste the wallet address</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleContinueToDeposit}
+            className="w-full rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition-colors"
+          >
+            I've sent the PYUSD
+          </button>
+        </div>
+      )}
+
+      <div className="text-center">
+        <button
+          onClick={() => setCurrentStep('pyusd-source')}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          ← Back to options
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderCryptoWalletStep = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Connect Your Crypto Wallet
+        </h2>
+        <p className="text-sm text-gray-600">
+          Link your MetaMask or other wallet that contains PYUSD
+        </p>
+      </div>
+
+      <div className="bg-amber-50 rounded-xl p-4">
+        <p className="text-sm text-amber-800">
+          <strong>Note:</strong> Make sure your wallet contains PYUSD on the Ethereum network before connecting.
+        </p>
+      </div>
+
+      <button
+        onClick={handleConnectWallet}
+        disabled={isLoading}
+        className="w-full flex items-center justify-center space-x-2 rounded-xl bg-blue-600 px-6 py-4 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <Wallet className="h-4 w-4" />
+        <span>{isLoading ? 'Connecting...' : 'Connect Wallet'}</span>
+      </button>
+
+      <div className="text-center">
+        <button
+          onClick={() => setCurrentStep('pyusd-source')}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          ← Back to options
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderWaitingDepositStep = () => (
+    <div className="text-center space-y-6">
+      <div className="flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          Waiting for your PYUSD deposit
+        </h2>
+        <p className="text-sm text-gray-600">
+          We're watching for your PYUSD to arrive. This usually takes a few minutes.
+        </p>
+      </div>
+
+      <div className="bg-gray-50 rounded-xl p-4">
+        <p className="text-sm text-gray-700">
+          Once we detect your PYUSD, you'll be able to start earning yield immediately!
+        </p>
+      </div>
+
+      <button
+        onClick={handleCompleteOnboarding}
+        className="w-full rounded-xl bg-green-600 px-6 py-3 text-white hover:bg-green-700 transition-colors"
+      >
+        Continue to Dashboard
+      </button>
+    </div>
+  );
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 'welcome':
+        return renderWelcomeStep();
+      case 'pyusd-source':
+        return renderPyusdSourceStep();
+      case 'traditional-deposit':
+        return renderTraditionalDepositStep();
+      case 'crypto-wallet':
+        return renderCryptoWalletStep();
+      case 'waiting-deposit':
+        return renderWaitingDepositStep();
+      default:
+        return renderWelcomeStep();
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {}} // Prevent closing during onboarding
+      title="Getting Started"
+    >
+      {renderCurrentStep()}
+    </Modal>
+  );
+}

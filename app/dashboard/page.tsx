@@ -68,6 +68,20 @@ export default function PyUSDYieldSelector() {
     coinbase: '4,200.00', // Hardcoded for now
   });
 
+  // Onboarding and smart wallet states
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [smartWalletBalance, setSmartWalletBalance] = useState('0');
+  const [showSmartWallet, setShowSmartWallet] = useState(false);
+
+  // Privy hooks
+  const { user, authenticated, ready } = usePrivy();
+  const { client } = useSmartWallets();
+
+  // Get smart wallet from user's linked accounts
+  const smartWallet = user?.linkedAccounts?.find(
+    (account: any) => account.type === 'smart_wallet'
+  ) as { address: string } | undefined;
+
   // Custom input states
   const [showConservativeCustom, setShowConservativeCustom] = useState(false);
   const [showGrowthCustom, setShowGrowthCustom] = useState(false);
@@ -83,15 +97,80 @@ export default function PyUSDYieldSelector() {
     useState(false);
   const [growthYieldEnabled, setGrowthYieldEnabled] = useState(false);
 
-  // Load Venmo address from localStorage on component mount
+  // Check onboarding status and load saved data
   useEffect(() => {
-    const savedVenmoAddress = localStorage.getItem('venmoWalletAddress');
-    if (savedVenmoAddress) {
-      setVenmoAddress(savedVenmoAddress);
-      // Fetch balance for the saved address
-      fetchVenmoBalance(savedVenmoAddress);
+    if (!ready || !authenticated) return;
+
+    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    const hasConnectedWallet = user?.linkedAccounts?.some(
+      (account: any) => account.type === 'wallet' && account.walletClientType !== 'privy'
+    );
+    const hasSmartWalletBalance = smartWalletBalance !== '0';
+
+    // Show onboarding if not completed and user doesn't have significant setup
+    if (!onboardingCompleted && !hasConnectedWallet && !hasSmartWalletBalance) {
+      setShowOnboarding(true);
     }
-  }, []);
+
+    // Determine whether to show smart wallet or traditional balance sources
+    if (smartWallet && (hasSmartWalletBalance || hasConnectedWallet)) {
+      setShowSmartWallet(true);
+      // Fetch smart wallet balance
+      fetchSmartWalletBalance(smartWallet.address);
+    } else {
+      // Load traditional Venmo address setup
+      const savedVenmoAddress = localStorage.getItem('venmoWalletAddress');
+      if (savedVenmoAddress) {
+        setVenmoAddress(savedVenmoAddress);
+        fetchVenmoBalance(savedVenmoAddress);
+      }
+    }
+  }, [ready, authenticated, user, smartWallet, smartWalletBalance]);
+
+  // Function to fetch PYUSD balance for smart wallet
+  const fetchSmartWalletBalance = async (address: string) => {
+    try {
+      setIsLoading(true);
+      console.log('Fetching smart wallet PYUSD balance for address:', address);
+
+      // Import viem utilities dynamically
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a',
+          {
+            timeout: 10_000,
+            retryCount: 2,
+          }
+        ),
+      });
+
+      // Fetch PYUSD balance
+      const balance = await publicClient.readContract({
+        address: PYUSD_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`],
+      });
+
+      const formattedBalance = formatPyusdBalance(balance as bigint);
+      console.log('Smart wallet balance:', formattedBalance);
+      setSmartWalletBalance(formattedBalance);
+
+      // If they have a balance, show smart wallet view
+      if (parseFloat(formattedBalance) > 0) {
+        setShowSmartWallet(true);
+      }
+    } catch (error) {
+      console.error('Error fetching smart wallet balance:', error);
+      setSmartWalletBalance('0');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Real function to fetch PYUSD balance for Venmo wallet from Sepolia
   const fetchVenmoBalance = async (address: string) => {
@@ -286,6 +365,14 @@ export default function PyUSDYieldSelector() {
     setGrowthSliding(false);
   };
 
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    // Refresh smart wallet balance after onboarding
+    if (smartWallet) {
+      fetchSmartWalletBalance(smartWallet.address);
+    }
+  };
+
   return (
     <div className='min-h-screen bg-white p-4'>
       <div className='mx-auto max-w-md space-y-8'>
@@ -326,74 +413,81 @@ export default function PyUSDYieldSelector() {
         </div>
 
         {/* Balance Display */}
-        <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
-          <div className='p-6'>
-            <p className='mb-2 text-base text-gray-500'>Amount</p>
-            <div className='mb-1 flex items-center space-x-2'>
-              <span className='font-adelle text-4xl font-light text-gray-300'>
-                $
-              </span>
-              <p className='font-adelle text-4xl font-medium text-gray-800'>
-                {totalBalance()}
-              </p>
-              <Image
-                src='/assets/pyusd_logo.png'
-                alt='pyUSD logo'
-                width={24}
-                height={24}
-                className='ml-1 h-6 w-6'
-                unoptimized
-              />
-            </div>
+        {showSmartWallet && smartWallet ? (
+          <SmartWalletCard
+            address={smartWallet.address}
+            balance={smartWalletBalance}
+          />
+        ) : (
+          <div className='rounded-xl border border-gray-200 bg-white text-gray-950 shadow-sm'>
+            <div className='p-6'>
+              <p className='mb-2 text-base text-gray-500'>Amount</p>
+              <div className='mb-1 flex items-center space-x-2'>
+                <span className='font-adelle text-4xl font-light text-gray-300'>
+                  $
+                </span>
+                <p className='font-adelle text-4xl font-medium text-gray-800'>
+                  {totalBalance()}
+                </p>
+                <Image
+                  src='/assets/pyusd_logo.png'
+                  alt='pyUSD logo'
+                  width={24}
+                  height={24}
+                  className='ml-1 h-6 w-6'
+                  unoptimized
+                />
+              </div>
 
-            <div className='mt-4 border-t border-gray-100 pt-4'>
-              <p className='mb-2 text-sm text-gray-400'>Balance sources</p>
-              <div className='space-y-2'>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center'>
-                    <Image
-                      src='/assets/Venmo-icon.png'
-                      alt='Venmo'
-                      width={16}
-                      height={16}
-                      className='mr-2 h-4 w-4'
-                    />
-                    <span className='text-base text-gray-500'>Venmo</span>
+              <div className='mt-4 border-t border-gray-100 pt-4'>
+                <p className='mb-2 text-sm text-gray-400'>Balance sources</p>
+                <div className='space-y-2'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center'>
+                      <Image
+                        src='/assets/Venmo-icon.png'
+                        alt='Venmo'
+                        width={16}
+                        height={16}
+                        className='mr-2 h-4 w-4'
+                      />
+                      <span className='text-base text-gray-500'>Venmo</span>
+                    </div>
+                    <div className='flex items-center'>
+                      {venmoAddress ? (
+                        <span className='text-sm text-gray-500'>
+                          ${balances.venmo}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setIsVenmoModalOpen(true)}
+                          className='text-sm text-blue-600 hover:text-blue-800 hover:underline'
+                        >
+                          Configure
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className='flex items-center'>
-                    {venmoAddress ? (
-                      <span className='text-sm text-gray-500'>
-                        ${balances.venmo}
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setIsVenmoModalOpen(true)}
-                        className='text-sm text-blue-600 hover:text-blue-800 hover:underline'
-                      >
-                        Configure
-                      </button>
-                    )}
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center'>
+                      <Image
+                        src='/assets/coinbase-icon.png'
+                        alt='Coinbase'
+                        width={16}
+                        height={16}
+                        className='mr-2 h-4 w-4'
+                      />
+                      <span className='text-base text-gray-500'>Coinbase</span>
+                    </div>
+                    <span className='text-sm text-gray-500'>
+                      ${balances.coinbase}
+                    </span>
                   </div>
-                </div>
-                <div className='flex items-center justify-between'>
-                  <div className='flex items-center'>
-                    <Image
-                      src='/assets/coinbase-icon.png'
-                      alt='Coinbase'
-                      width={16}
-                      height={16}
-                      className='mr-2 h-4 w-4'
-                    />
-                    <span className='text-base text-gray-500'>Coinbase</span>
-                  </div>
-                  <span className='text-sm text-gray-500'>
-                    ${balances.coinbase}
-                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Venmo Configuration Modal */}
         <Modal
@@ -942,6 +1036,12 @@ export default function PyUSDYieldSelector() {
           <p className='mt-1'>Your funds are secured by smart contracts</p>
         </div>
       </div>
+
+      {/* Onboarding Flow */}
+      <OnboardingFlow
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
     </div>
   );
 }
