@@ -1,8 +1,8 @@
 import { PrivyClient } from '@privy-io/server-auth';
 import { cookies } from 'next/headers';
 
+import { FinalCTAButton, HeaderButton, HeroCTAButton } from '../components/homepage-client';
 import { Logo } from '../components/logo';
-import { Button } from '../components/ui/button';
 
 async function checkAuth() {
   const cookieStore = await cookies();
@@ -41,22 +41,7 @@ export default async function HomePage() {
               <Logo fontColor="#1E40AF" width="140" height="40" />
             </div>
             <div>
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => window.location.href = '/dashboard'}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-medium"
-                >
-                  Open App
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => window.location.href = '/login'}
-                  variant="outline"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-2 rounded-xl font-medium"
-                >
-                  Open App
-                </Button>
-              )}
+              <HeaderButton isAuthenticated={isAuthenticated} />
             </div>
           </div>
         </div>
@@ -79,13 +64,7 @@ export default async function HomePage() {
 
               {/* CTA Button with Trust Indicators */}
               <div className="flex flex-col items-center space-y-6">
-                <Button
-                  onClick={() => window.location.href = isAuthenticated ? '/dashboard' : '/login'}
-                  size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  Get Started
-                </Button>
+                <HeroCTAButton isAuthenticated={isAuthenticated} />
 
                 {/* Trust Indicators */}
                 <div className="flex items-center space-x-6 text-gray-500">
@@ -204,13 +183,7 @@ export default async function HomePage() {
             <p className="text-xl text-blue-100 mb-8">
               Join thousands of users who have already started earning more with PyInvest.
             </p>
-            <Button
-              onClick={() => window.location.href = isAuthenticated ? '/dashboard' : '/login'}
-              size="lg"
-              className="bg-white text-blue-600 hover:bg-gray-50 px-12 py-6 rounded-2xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              Get Started - It's Free
-            </Button>
+            <FinalCTAButton isAuthenticated={isAuthenticated} />
           </div>
         </section>
       </main>
