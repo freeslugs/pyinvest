@@ -2,15 +2,11 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import {
-  AlertCircle,
   ArrowRight,
-  Award,
-  CheckCircle,
-  Copy,
   Edit3,
   Globe,
-  Shield,
-  Zap,
+  User,
+  Zap
 } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
@@ -75,10 +71,7 @@ export default function PyUSDYieldSelector() {
     metaMask: '0',
   });
 
-  // KYC state management
-  const [kycStatus, setKycStatus] = useState<
-    'not_started' | 'passed' | 'claimed'
-  >('not_started');
+
 
   // Onboarding and smart wallet states
   const [showOnboarding, setShowOnboarding] = useState(false);
