@@ -45,17 +45,15 @@ export const TOKENS = {
 } as const;
 
 // Pool configurations
-// Note: The PYUSD/USDC pool address needs to be determined
-// The original address was invalid (32 bytes instead of 20 bytes for Ethereum addresses)
 export const POOLS = {
   [NETWORKS.SEPOLIA.id]: {
-    // PYUSD_USDC: {
-    //   address: 'POOL_ADDRESS_NEEDS_TO_BE_FOUND' as const,
-    //   token0: TOKENS[NETWORKS.SEPOLIA.id].PYUSD,
-    //   token1: TOKENS[NETWORKS.SEPOLIA.id].USDC,
-    //   fee: 500, // 0.05%
-    //   name: 'PYUSD/USDC',
-    // },
+    PYUSD_USDC: {
+      address: '0x1eA26f380A71E15E75E61c6D66B4242c1f652FEd' as const,
+      token0: TOKENS[NETWORKS.SEPOLIA.id].PYUSD,
+      token1: TOKENS[NETWORKS.SEPOLIA.id].USDC,
+      fee: 500, // 0.05%
+      name: 'PYUSD/USDC',
+    },
   },
 } as const;
 
