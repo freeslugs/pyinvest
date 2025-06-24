@@ -314,8 +314,10 @@ export default function PyUSDYieldSelector() {
     try {
       // Find MetaMask wallet from user's linked accounts
       const metaMaskWallet = user?.linkedAccounts?.find(
-        (account: any) =>
-          account.type === 'wallet' && account.walletClientType !== 'privy'
+        account =>
+          account.type === 'wallet' &&
+          account.walletClientType &&
+          account.walletClientType !== 'privy'
       ) as { address: string } | undefined;
 
       if (!metaMaskWallet) {
@@ -448,7 +450,14 @@ export default function PyUSDYieldSelector() {
   // Helper function to process a single position (adapted from cookbook)
   const processPosition = useCallback(
     async (
-      publicClient: any,
+      publicClient: {
+        readContract: (params: {
+          address: string;
+          abi: any[];
+          functionName: string;
+          args: any[];
+        }) => Promise<any>;
+      },
       walletAddress: string,
       index: number
     ): Promise<number> => {
@@ -1134,40 +1143,31 @@ export default function PyUSDYieldSelector() {
     console.log(`  - PYUSD: ${currentPyusdBalance.toString()} wei`);
     console.log(`  - USDC: ${currentUsdcBalance.toString()} wei`);
 
-    // COOKBOOK APPROACH: Use equal amounts (1 PYUSD + 1 USDC) like cookbook
-    // This ensures perfect balance and avoids slippage issues
-    const liquidityAmount = 1.0; // Same as cookbook
-    const pyusdAmountWei = BigInt(
-      liquidityAmount * 10 ** PYUSD_TOKEN_CONFIG.decimals
-    ); // 1 PYUSD
-    const usdcAmountWei = BigInt(
-      liquidityAmount * 10 ** USDC_TOKEN_CONFIG.decimals
-    ); // 1 USDC
-
-    console.log('🔄 === COOKBOOK APPROACH: EQUAL AMOUNTS ===');
+    // Use the actual amounts passed to this function instead of hardcoded values
+    console.log('🔄 === USING ACTUAL AMOUNTS ===');
     console.log(
-      `💰 Using cookbook approach: ${liquidityAmount} PYUSD + ${liquidityAmount} USDC`
+      `💰 Using actual amounts: ${Number(pyusdAmount) / 1000000} PYUSD + ${Number(usdcAmount) / 1000000} USDC`
     );
-    console.log(`💰 PYUSD amount: ${pyusdAmountWei.toString()} wei`);
-    console.log(`💰 USDC amount: ${usdcAmountWei.toString()} wei`);
+    console.log(`💰 PYUSD amount: ${pyusdAmount.toString()} wei`);
+    console.log(`💰 USDC amount: ${usdcAmount.toString()} wei`);
 
     // Validate we have enough balance
-    if (currentPyusdBalance < pyusdAmountWei) {
+    if (currentPyusdBalance < pyusdAmount) {
       throw new Error(
-        `Insufficient PYUSD: have ${Number(currentPyusdBalance) / 1000000}, need ${liquidityAmount}`
+        `Insufficient PYUSD: have ${Number(currentPyusdBalance) / 1000000}, need ${Number(pyusdAmount) / 1000000}`
       );
     }
-    if (currentUsdcBalance < usdcAmountWei) {
+    if (currentUsdcBalance < usdcAmount) {
       throw new Error(
-        `Insufficient USDC: have ${Number(currentUsdcBalance) / 1000000}, need ${liquidityAmount}`
+        `Insufficient USDC: have ${Number(currentUsdcBalance) / 1000000}, need ${Number(usdcAmount) / 1000000}`
       );
     }
 
-    console.log('✅ Sufficient balances for cookbook approach');
+    console.log('✅ Sufficient balances for actual amounts');
 
-    // Use cookbook amounts
-    const actualPyusdAmount = pyusdAmountWei;
-    const actualUsdcAmount = usdcAmountWei;
+    // Use the actual amounts passed to the function
+    const actualPyusdAmount = pyusdAmount;
+    const actualUsdcAmount = usdcAmount;
 
     // Check and approve position manager for both tokens
     const MAX_UINT256 = 2n ** 256n - 1n;
@@ -1418,8 +1418,10 @@ export default function PyUSDYieldSelector() {
       // Smart wallet is created automatically, so we only count external wallets
       const hasEverConnectedWallet =
         user?.linkedAccounts?.some(
-          (account: any) =>
-            account.type === 'wallet' && account.walletClientType !== 'privy'
+          account =>
+            account.type === 'wallet' &&
+            account.walletClientType &&
+            account.walletClientType !== 'privy'
         ) || false;
 
       console.log('📊 ONBOARDING DECISION FACTORS:');
@@ -1741,6 +1743,13 @@ export default function PyUSDYieldSelector() {
                     <div
                       className='fixed inset-0 z-40'
                       onClick={() => setIsNetworkMenuOpen(false)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setIsNetworkMenuOpen(false);
+                        }
+                      }}
+                      role='button'
+                      tabIndex={0}
                     />
                   </>
                 )}
