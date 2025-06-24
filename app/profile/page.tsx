@@ -79,13 +79,22 @@ export default function ProfilePage() {
     }
   }, [ready, authenticated, router]);
 
+  // Helper function to get the embedded wallet address consistently
+  const getEmbeddedWalletAddress = () => {
+    const embeddedWallet = wallets.find(
+      wallet => wallet.walletClientType === 'privy'
+    );
+    return embeddedWallet?.address;
+  };
+
   const checkBnbBalance = async () => {
-    if (!user?.wallet?.address) return;
+    const walletAddress = getEmbeddedWalletAddress();
+    if (!walletAddress) return;
 
     setIsCheckingBnbBalance(true);
     try {
       const balance = await publicClient.getBalance({
-        address: user.wallet.address as `0x${string}`,
+        address: walletAddress as `0x${string}`,
       });
 
       const formattedBalance = Number(balance) / 10 ** 18; // Convert from wei to BNB
@@ -101,19 +110,24 @@ export default function ProfilePage() {
   };
 
   const checkKycTokenBalance = async () => {
-    if (!user?.wallet?.address) return;
+    const walletAddress = getEmbeddedWalletAddress();
+    if (!walletAddress) return;
 
     setIsCheckingBalance(true);
     try {
+      console.log('Checking KYC token balance for address:', walletAddress);
+
       // Read the token balance directly from the blockchain
       const balanceResult = await publicClient.readContract({
         address: KYC_CONTRACT_ADDRESS as `0x${string}`,
         abi: KYC_CONTRACT_ABI,
         functionName: 'balanceOf',
-        args: [user.wallet.address as `0x${string}`],
+        args: [walletAddress as `0x${string}`],
       });
 
       const balance = Number(balanceResult);
+      console.log('KYC token balance result:', balance);
+
       setKycTokenBalance(balance);
       setKycStatus(balance > 0 ? 'has_token' : 'no_token');
     } catch (error) {
@@ -126,16 +140,17 @@ export default function ProfilePage() {
 
   // Check KYC token balance and BNB balance on component mount
   useEffect(() => {
-    if (user?.wallet?.address) {
+    if (wallets.length > 0 && getEmbeddedWalletAddress()) {
       checkKycTokenBalance();
       checkBnbBalance();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.wallet?.address]);
+  }, [wallets]);
 
   const handleClaimKycToken = async () => {
-    if (!user?.wallet?.address) {
-      alert('No wallet connected');
+    const walletAddress = getEmbeddedWalletAddress();
+    if (!walletAddress) {
+      alert('No embedded wallet found');
       return;
     }
 
@@ -572,12 +587,12 @@ export default function ProfilePage() {
                           </p>
                           <div className='mt-1 flex items-center space-x-2 rounded bg-gray-100 p-2'>
                             <code className='font-mono text-xs text-gray-800'>
-                              {user?.wallet?.address}
+                              {getEmbeddedWalletAddress()}
                             </code>
                             <button
                               onClick={() =>
                                 navigator.clipboard.writeText(
-                                  user?.wallet?.address || ''
+                                  getEmbeddedWalletAddress() || ''
                                 )
                               }
                               className='text-blue-600 hover:text-blue-800'
