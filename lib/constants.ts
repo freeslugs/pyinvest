@@ -182,7 +182,7 @@ export const UNISWAP_V3_POOL_ABI = [
   },
 ] as const;
 
-// Uniswap V3 Router ABI (Universal Router)
+// Uniswap V3 Universal Router ABI (for legacy support)
 export const UNISWAP_V3_ROUTER_ABI = [
   {
     inputs: [
@@ -192,6 +192,32 @@ export const UNISWAP_V3_ROUTER_ABI = [
     ],
     name: 'execute',
     outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+] as const;
+
+// Uniswap V3 SwapRouter02 ABI
+export const UNISWAP_V3_SWAPROUTER_ABI = [
+  {
+    inputs: [
+      {
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'tokenOut', type: 'address' },
+          { name: 'fee', type: 'uint24' },
+          { name: 'recipient', type: 'address' },
+          { name: 'deadline', type: 'uint256' },
+          { name: 'amountIn', type: 'uint256' },
+          { name: 'amountOutMinimum', type: 'uint256' },
+          { name: 'sqrtPriceLimitX96', type: 'uint160' },
+        ],
+        name: 'params',
+        type: 'tuple',
+      },
+    ],
+    name: 'exactInputSingle',
+    outputs: [{ name: 'amountOut', type: 'uint256' }],
     stateMutability: 'payable',
     type: 'function',
   },
@@ -270,7 +296,7 @@ export const UNISWAP_V3_POSITION_MANAGER_ABI = [
 
 // Uniswap V3 contract addresses on Sepolia
 export const UNISWAP_V3_ROUTER_ADDRESS =
-  '0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b' as const; // Universal Router
+  '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E' as const; // SwapRouter02
 export const UNISWAP_V3_POSITION_MANAGER_ADDRESS =
   '0x1238536071E1c677A632429e3655c799b22cDA52' as const;
 export const UNISWAP_V3_FACTORY_ADDRESS =
