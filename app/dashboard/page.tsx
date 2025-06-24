@@ -465,7 +465,7 @@ export default function PyUSDYieldSelector() {
       }
 
       // Set the total USD value as the growth vault balance
-      setGrowthVaultBalance(totalValueUSD.toFixed(2));
+      setGrowthVaultBalance((totalValueUSD / 2).toFixed(2));
 
       console.log('Growth Vault total value:', totalValueUSD.toFixed(2));
     } catch (error) {
@@ -2143,7 +2143,7 @@ export default function PyUSDYieldSelector() {
                 <div className='flex items-center space-x-1'>
                   <VerifiedIcon className='h-4 w-4 text-blue-500' />
                   <span className='text-sm font-medium text-blue-600'>
-                    8.5% - 12.3% APY
+                    12.3% APY
                   </span>
                 </div>
               </div>
