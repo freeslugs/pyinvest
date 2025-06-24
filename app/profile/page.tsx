@@ -51,6 +51,7 @@ export default function ProfilePage() {
   const KYC_CONTRACT_ABI = parseAbi([
     'function balanceOf(address owner) view returns (uint256)',
     'function mintFree() external',
+    'function decimals() view returns (uint8)',
   ]);
 
   // Create public client for reading contract data
@@ -117,19 +118,33 @@ export default function ProfilePage() {
     try {
       console.log('Checking KYC token balance for address:', walletAddress);
 
-      // Read the token balance directly from the blockchain
-      const balanceResult = await publicClient.readContract({
-        address: KYC_CONTRACT_ADDRESS as `0x${string}`,
-        abi: KYC_CONTRACT_ABI,
-        functionName: 'balanceOf',
-        args: [walletAddress as `0x${string}`],
-      });
+      // Get token decimals and balance in parallel
+      const [balanceResult, decimalsResult] = await Promise.all([
+        publicClient.readContract({
+          address: KYC_CONTRACT_ADDRESS as `0x${string}`,
+          abi: KYC_CONTRACT_ABI,
+          functionName: 'balanceOf',
+          args: [walletAddress as `0x${string}`],
+        }),
+        publicClient
+          .readContract({
+            address: KYC_CONTRACT_ADDRESS as `0x${string}`,
+            abi: KYC_CONTRACT_ABI,
+            functionName: 'decimals',
+          })
+          .catch(() => 18), // Default to 18 decimals if call fails
+      ]);
 
-      const balance = Number(balanceResult);
-      console.log('KYC token balance result:', balance);
+      const rawBalance = Number(balanceResult);
+      const decimals = Number(decimalsResult);
+      const formattedBalance = rawBalance / 10 ** decimals;
 
-      setKycTokenBalance(balance);
-      setKycStatus(balance > 0 ? 'has_token' : 'no_token');
+      console.log('Raw balance:', rawBalance);
+      console.log('Decimals:', decimals);
+      console.log('Formatted balance:', formattedBalance);
+
+      setKycTokenBalance(formattedBalance);
+      setKycStatus(formattedBalance > 0 ? 'has_token' : 'no_token');
     } catch (error) {
       console.error('Error checking KYC balance:', error);
       setKycStatus('no_token');
@@ -731,7 +746,8 @@ export default function ProfilePage() {
                           <div className='space-y-1 text-xs text-green-700'>
                             <p>
                               <span className='font-medium'>Balance:</span>{' '}
-                              {kycTokenBalance} KYC Token
+                              {Number(kycTokenBalance).toLocaleString()} KYC
+                              Token
                               {kycTokenBalance !== 1 ? 's' : ''}
                             </p>
                             <p>
@@ -769,6 +785,53 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
+
+                {/* Forte KYC Security Information */}
+                <div className='mt-6 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4'>
+                  <div className='flex items-start space-x-3'>
+                    <Shield className='mt-0.5 h-5 w-5 text-blue-600' />
+                    <div className='flex-1'>
+                      <h4 className='mb-2 text-sm font-semibold text-blue-900'>
+                        🔒 Powered by Forte KYC Solutions
+                      </h4>
+                      <div className='space-y-2 text-xs text-blue-800'>
+                        <p>
+                          <span className='font-medium'>
+                            ✓ Bank-grade security:
+                          </span>{' '}
+                          Your identity is verified using institutional-level
+                          compliance protocols
+                        </p>
+                        <p>
+                          <span className='font-medium'>✓ OFAC screening:</span>{' '}
+                          Real-time sanctions and watchlist monitoring for
+                          regulatory compliance
+                        </p>
+                        <p>
+                          <span className='font-medium'>
+                            ✓ Privacy protected:
+                          </span>{' '}
+                          Zero-knowledge verification ensures your data remains
+                          secure and private
+                        </p>
+                        <p>
+                          <span className='font-medium'>
+                            ✓ Globally compliant:
+                          </span>{' '}
+                          Meets AML/BSA requirements across jurisdictions
+                        </p>
+                      </div>
+                      <div className='mt-3 flex items-center space-x-2 text-xs'>
+                        <span className='rounded-full bg-blue-100 px-2 py-1 font-medium text-blue-700'>
+                          SOC 2 Type II Certified
+                        </span>
+                        <span className='rounded-full bg-indigo-100 px-2 py-1 font-medium text-indigo-700'>
+                          ISO 27001 Compliant
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
