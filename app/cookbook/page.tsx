@@ -3046,14 +3046,40 @@ export default function CookbookPage() {
     <main className='flex min-h-screen flex-col bg-privy-light-blue px-4 py-6 sm:px-20 sm:py-10'>
       {ready && authenticated ? (
         <>
-          <div className='flex flex-row justify-between'>
-            <h1 className='text-2xl font-semibold'>Privy Auth Demo</h1>
-            <button
-              onClick={logout}
-              className='rounded-md bg-violet-200 px-4 py-2 text-sm text-violet-700 hover:text-violet-900'
-            >
-              Logout
-            </button>
+          {/* Header with Dashboard Navigation */}
+          <div className='mb-6 rounded-xl border border-gray-200 bg-white p-6'>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center space-x-4'>
+                <a
+                  href='/dashboard'
+                  className='flex items-center text-gray-600 transition-colors hover:text-gray-900'
+                >
+                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span className='text-base font-medium'>Back to Dashboard</span>
+                </a>
+                <div className='h-6 w-px bg-gray-300'></div>
+                <div className='flex items-center space-x-2'>
+                  <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600'>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className='text-2xl font-semibold text-gray-900'>Expert Mode</h1>
+                    <p className='text-sm text-gray-500'>Advanced DeFi operations and testing</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                className='rounded-md bg-red-100 px-4 py-2 text-sm text-red-700 hover:bg-red-200 hover:text-red-900'
+              >
+                Logout
+              </button>
+            </div>
           </div>
           <div className='mt-12 flex flex-wrap gap-4'>
             {googleSubject ? (

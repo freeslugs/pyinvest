@@ -2,7 +2,7 @@
 
 import { usePrivy } from '@privy-io/react-auth';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle, Globe } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -297,6 +297,17 @@ export default function AnalyticsPage() {
             are estimates based on current APY rates and assume compound growth.
             Actual returns may vary due to market conditions and other factors.
           </p>
+        </motion.div>
+
+        {/* Return to Dashboard Button */}
+        <motion.div variants={itemVariants}>
+          <a
+            href='/dashboard'
+            className='flex w-full items-center justify-center space-x-2 rounded-xl bg-blue-600 px-6 py-4 font-medium text-white transition-colors hover:bg-blue-700'
+          >
+            <span>Ready to Invest?</span>
+            <ArrowRight className='h-5 w-5' />
+          </a>
         </motion.div>
 
         {/* Footer spacing */}
