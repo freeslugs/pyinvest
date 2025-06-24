@@ -836,7 +836,34 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Connected Services & Wallets */}
+                      {/* PYUSD Flow Balance - Compact */}
+            <div className='rounded-lg border border-gray-200 bg-white shadow-sm'>
+              <div className='px-6 py-4'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center space-x-3'>
+                    <img
+                      src='/assets/pyusd_logo.png'
+                      alt='PYUSD'
+                      className='h-8 w-8 rounded-full'
+                    />
+                    <div>
+                      <p className='text-sm font-medium text-gray-900'>
+                        PYUSD on Flow
+                      </p>
+                      <p className='text-xs text-gray-500'>Flow testnet balance</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => router.push('/profile/pyusd-flow')}
+                    className='rounded-md bg-blue-600 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-700'
+                  >
+                    View
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Connected Services & Wallets */}
           <div className='space-y-6'>
             {/* Social Accounts */}
             <div className='rounded-lg border border-gray-200 bg-white shadow-sm'>
