@@ -2,7 +2,7 @@
 
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
-import { ArrowRight, Edit3, Globe, User, Zap } from 'lucide-react';
+import { ArrowRight, Edit3, Globe, Lock, User, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import { encodeFunctionData } from 'viem';
@@ -249,6 +249,20 @@ const formatPyusdBalance = (balance: bigint): string => {
   });
 };
 
+// KYC Contract configuration
+const KYC_CONTRACT_CONFIG = {
+  address: '0xcc8e8b424464991bbcda036c4781a60334c40628' as const,
+  abi: [
+    {
+      name: 'balanceOf',
+      type: 'function',
+      inputs: [{ name: 'owner', type: 'address' }],
+      outputs: [{ name: '', type: 'uint256' }],
+      stateMutability: 'view',
+    },
+  ] as const,
+};
+
 export default function PyUSDYieldSelector() {
   const { user, authenticated, ready } = usePrivy();
   const { wallets } = useWallets();
@@ -289,25 +303,43 @@ export default function PyUSDYieldSelector() {
   const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false);
   const [isDepositFlow, setIsDepositFlow] = useState(false);
 
-  // Mock KYC status - in real app this would come from backend - commented out as not currently used
-  // useEffect(() => {
-  //   if (user?.id) {
-  //     // Mock logic - simulate different states based on user ID
-  //     const userId = user.id;
-  //     if (userId.endsWith('1') || userId.endsWith('2')) {
-  //       setKycStatus('passed');
-  //     } else if (userId.endsWith('3') || userId.endsWith('4')) {
-  //       setKycStatus('claimed');
-  //     } else {
-  //       setKycStatus('not_started');
-  //     }
-  //   }
-  // }, [user]);
+  // KYC state management
+  const [hasKycToken, setHasKycToken] = useState(false);
 
-  // // Get smart wallet from user's linked accounts
-  // const smartWallet = user?.linkedAccounts?.find(
-  //   (account: any) => account.type === 'smart_wallet'
-  // ) as { address: string } | undefined;
+  // Get smart wallet from user's linked accounts
+  const smartWallet = user?.linkedAccounts?.find(
+    (account: any) => account.type === 'smart_wallet'
+  ) as { address: string } | undefined;
+
+  // Function to check KYC token balance
+  const checkKycTokenBalance = useCallback(async () => {
+    if (!user?.wallet?.address) return;
+
+    try {
+      // Import viem utilities dynamically
+      const { createPublicClient, http } = await import('viem');
+      const { bscTestnet } = await import('viem/chains');
+
+      const publicClient = createPublicClient({
+        chain: bscTestnet,
+        transport: http('https://data-seed-prebsc-1-s1.binance.org:8545'),
+      });
+
+      // Check KYC token balance
+      const balance = await publicClient.readContract({
+        address: KYC_CONTRACT_CONFIG.address,
+        abi: KYC_CONTRACT_CONFIG.abi,
+        functionName: 'balanceOf',
+        args: [user.wallet.address as `0x${string}`],
+      });
+
+      const hasTokens = Number(balance) > 0;
+      setHasKycToken(hasTokens);
+    } catch (error) {
+      console.error('Error checking KYC balance:', error);
+      setHasKycToken(false);
+    }
+  }, [user]);
 
   // Function to fetch PYUSD balance for MetaMask wallet
   const fetchMetaMaskBalance = useCallback(async () => {
@@ -1500,6 +1532,9 @@ export default function PyUSDYieldSelector() {
         fetchMetaMaskBalance();
         setShowSmartWallet(true);
       }
+
+      // Check KYC token balance
+      checkKycTokenBalance();
     }, 100); // Small delay to prevent flickering
 
     return () => clearTimeout(checkOnboarding);
@@ -1511,6 +1546,7 @@ export default function PyUSDYieldSelector() {
     onboardingChecked,
     fetchMetaMaskBalance,
     fetchSmartWalletBalance,
+    checkKycTokenBalance,
   ]);
 
   // Calculate total balance
@@ -1745,7 +1781,10 @@ export default function PyUSDYieldSelector() {
               </div>
               <div className='flex-1'>
                 <h1 className='text-3xl font-medium leading-tight tracking-tight text-gray-900'>
-                  PyInvest
+                  PyInvest{' '}
+                  <span className='text-sm font-normal text-gray-400'>
+                    by Fellow
+                  </span>
                 </h1>
               </div>
             </div>
@@ -1753,9 +1792,14 @@ export default function PyUSDYieldSelector() {
               {/* Profile Icon - Direct Link */}
               <a
                 href='/profile'
-                className='flex items-center justify-center rounded-full bg-gray-100 p-2 transition-colors hover:bg-gray-200'
+                className='relative flex items-center space-x-2 rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200'
               >
                 <User className='h-5 w-5 text-gray-600' />
+                {hasKycToken && (
+                  <div className='absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500'>
+                    <Lock className='h-2.5 w-2.5 text-white' />
+                  </div>
+                )}
               </a>
 
               {/* Network Status Dropdown */}
@@ -1870,6 +1914,14 @@ export default function PyUSDYieldSelector() {
               </div>
               <span>Deposit</span>
             </button>
+
+            {/* Analytics Button */}
+            <a
+              href='/analytics'
+              className='flex w-full items-center justify-center space-x-2 rounded-xl border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50'
+            >
+              <span>View Potential Returns</span>
+            </a>
           </div>
         )}
 
