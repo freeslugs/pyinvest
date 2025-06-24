@@ -1143,34 +1143,73 @@ export default function PyUSDYieldSelector() {
     console.log(`  - PYUSD: ${currentPyusdBalance.toString()} wei`);
     console.log(`  - USDC: ${currentUsdcBalance.toString()} wei`);
 
-    // Use the actual amounts passed to this function instead of hardcoded values
-    console.log('🔄 === USING ACTUAL AMOUNTS ===');
+    // Use balanced amounts based on available balances
+    // Calculate how much we can add while keeping roughly 1:1 ratio
+    const pyusdAvailable = currentPyusdBalance;
+    const usdcAvailable = currentUsdcBalance;
+
+    // Use the smaller amount to maintain balance (both in similar USD value)
+    // Since both are USD-pegged, use the smaller USD amount for both
+    const pyusdUsdValue = Number(pyusdAvailable) / 1000000; // PYUSD has 6 decimals
+    const usdcUsdValue = Number(usdcAvailable) / 1000000; // USDC has 6 decimals
+
+    // Use most of both amounts available, but ensure they're balanced
+    // If we have very little USDC compared to PYUSD, use more USDC
+    const maxLiquidityUsd = Math.min(pyusdUsdValue * 0.95, usdcUsdValue * 0.95);
+
+    // However, if one token is much smaller, use a higher percentage of the smaller one
+    // to maximize liquidity utilization
+    let actualPyusdUsd: number;
+    let actualUsdcUsd: number;
+
+    if (usdcUsdValue < pyusdUsdValue * 0.1) {
+      // USDC is much smaller, use more of it
+      actualUsdcUsd = usdcUsdValue * 0.98;
+      actualPyusdUsd = actualUsdcUsd; // Match the USDC amount
+    } else if (pyusdUsdValue < usdcUsdValue * 0.1) {
+      // PYUSD is much smaller, use more of it
+      actualPyusdUsd = pyusdUsdValue * 0.98;
+      actualUsdcUsd = actualPyusdUsd; // Match the PYUSD amount
+    } else {
+      // Amounts are reasonably balanced, use 90% of smaller
+      actualPyusdUsd = actualUsdcUsd = maxLiquidityUsd;
+    }
+
+    const balancedPyusdAmount = BigInt(Math.floor(actualPyusdUsd * 1000000));
+    const balancedUsdcAmount = BigInt(Math.floor(actualUsdcUsd * 1000000));
+
+    console.log('🔄 === USING BALANCED AMOUNTS ===');
     console.log(
-      `💰 Using actual amounts: ${Number(pyusdAmount) / 1000000} PYUSD + ${Number(usdcAmount) / 1000000} USDC`
+      `💰 Available: ${pyusdUsdValue.toFixed(2)} PYUSD + ${usdcUsdValue.toFixed(2)} USDC`
     );
-    console.log(`💰 PYUSD amount: ${pyusdAmount.toString()} wei`);
-    console.log(`💰 USDC amount: ${usdcAmount.toString()} wei`);
+    console.log(`💰 Max liquidity USD: ${maxLiquidityUsd.toFixed(2)}`);
+    console.log(
+      `💰 Using balanced amounts: ${Number(balancedPyusdAmount) / 1000000} PYUSD + ${Number(balancedUsdcAmount) / 1000000} USDC`
+    );
+    console.log(`💰 PYUSD amount: ${balancedPyusdAmount.toString()} wei`);
+    console.log(`💰 USDC amount: ${balancedUsdcAmount.toString()} wei`);
 
-    // Validate we have enough balance
-    if (currentPyusdBalance < pyusdAmount) {
+    // Validate we have enough balance for balanced amounts
+    if (currentPyusdBalance < balancedPyusdAmount) {
       throw new Error(
-        `Insufficient PYUSD: have ${Number(currentPyusdBalance) / 1000000}, need ${Number(pyusdAmount) / 1000000}`
+        `Insufficient PYUSD: have ${Number(currentPyusdBalance) / 1000000}, need ${Number(balancedPyusdAmount) / 1000000}`
       );
     }
-    if (currentUsdcBalance < usdcAmount) {
+    if (currentUsdcBalance < balancedUsdcAmount) {
       throw new Error(
-        `Insufficient USDC: have ${Number(currentUsdcBalance) / 1000000}, need ${Number(usdcAmount) / 1000000}`
+        `Insufficient USDC: have ${Number(currentUsdcBalance) / 1000000}, need ${Number(balancedUsdcAmount) / 1000000}`
       );
     }
 
-    console.log('✅ Sufficient balances for actual amounts');
+    console.log('✅ Sufficient balances for balanced amounts');
 
-    // Use the actual amounts passed to the function
-    const actualPyusdAmount = pyusdAmount;
-    const actualUsdcAmount = usdcAmount;
+    // Use the balanced amounts for liquidity addition
+    const actualPyusdAmount = balancedPyusdAmount;
+    const actualUsdcAmount = balancedUsdcAmount;
 
-    // Check and approve position manager for both tokens
+    // Check and batch approve position manager for both tokens
     const MAX_UINT256 = 2n ** 256n - 1n;
+    const approvalsNeeded = [];
 
     // Check PYUSD allowance
     console.log('🔍 Checking PYUSD allowance for Position Manager...');
@@ -1182,19 +1221,17 @@ export default function PyUSDYieldSelector() {
     );
 
     if (pyusdAllowance < actualPyusdAmount) {
-      console.log('📝 Approving unlimited PYUSD for Position Manager...');
+      console.log('📝 PYUSD approval needed for Position Manager...');
       const pyusdApproveData = encodeFunctionData({
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS, MAX_UINT256],
       });
-
-      const pyusdApproveTx = await client.sendTransaction({
+      approvalsNeeded.push({
         to: PYUSD_TOKEN_CONFIG.address,
         data: pyusdApproveData,
         value: 0n,
       });
-      console.log('✅ PYUSD approval tx:', pyusdApproveTx);
     } else {
       console.log('✅ Sufficient PYUSD allowance exists');
     }
@@ -1209,26 +1246,44 @@ export default function PyUSDYieldSelector() {
     );
 
     if (usdcAllowance < actualUsdcAmount) {
-      console.log('📝 Approving unlimited USDC for Position Manager...');
+      console.log('📝 USDC approval needed for Position Manager...');
       const usdcApproveData = encodeFunctionData({
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [UNISWAP_CONFIG.POSITION_MANAGER_ADDRESS, MAX_UINT256],
       });
-
-      const usdcApproveTx = await client.sendTransaction({
+      approvalsNeeded.push({
         to: USDC_TOKEN_CONFIG.address,
         data: usdcApproveData,
         value: 0n,
       });
-      console.log('✅ USDC approval tx:', usdcApproveTx);
     } else {
       console.log('✅ Sufficient USDC allowance exists');
     }
 
-    // Wait for any approvals to be mined
-    console.log('⏳ Waiting for approvals to be mined...');
-    await new Promise(resolve => setTimeout(resolve, 8000));
+    // Batch send approvals if needed
+    if (approvalsNeeded.length > 0) {
+      console.log(`📝 Sending ${approvalsNeeded.length} approvals in batch...`);
+      const batchTx = await client.sendTransaction({
+        calls: approvalsNeeded,
+      });
+      console.log('✅ Batch approval tx:', batchTx);
+
+      // Wait for batch transaction to be confirmed
+      console.log('⏳ Waiting for batch approvals to be confirmed...');
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
+      });
+      await publicClient.waitForTransactionReceipt({ hash: batchTx });
+      console.log('✅ Batch approvals confirmed on-chain');
+    } else {
+      console.log('✅ No approvals needed - sufficient allowances exist');
+    }
 
     // Determine correct token order (token0 < token1 by address)
     const isUSDCToken0 =
