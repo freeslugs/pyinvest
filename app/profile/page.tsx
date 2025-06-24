@@ -836,39 +836,28 @@ export default function ProfilePage() {
             </div>
           </div>
 
-                      {/* Balances Section */}
+                      {/* PYUSD Flow Balance - Compact */}
             <div className='rounded-lg border border-gray-200 bg-white shadow-sm'>
-              <div className='border-b border-gray-200 px-6 py-4'>
-                <h2 className='flex items-center text-lg font-semibold text-gray-900'>
-                  <Wallet className='mr-2 h-5 w-5' />
-                  Balances
-                </h2>
-              </div>
               <div className='px-6 py-4'>
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center space-x-3'>
-                    <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600'>
-                      <img
-                        src='/assets/pyusd_logo.png'
-                        alt='PYUSD'
-                        className='h-6 w-6 rounded-full'
-                      />
-                    </div>
+                    <img
+                      src='/assets/pyusd_logo.png'
+                      alt='PYUSD'
+                      className='h-8 w-8 rounded-full'
+                    />
                     <div>
                       <p className='text-sm font-medium text-gray-900'>
                         PYUSD on Flow
                       </p>
-                      <p className='text-xs text-gray-500'>
-                        Check your PYUSD balance on Flow testnet
-                      </p>
+                      <p className='text-xs text-gray-500'>Flow testnet balance</p>
                     </div>
                   </div>
                   <button
                     onClick={() => router.push('/profile/pyusd-flow')}
-                    className='inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700'
+                    className='rounded-md bg-blue-600 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-700'
                   >
-                    <ExternalLink className='mr-1 h-4 w-4' />
-                    View Balance
+                    View
                   </button>
                 </div>
               </div>
