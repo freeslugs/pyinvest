@@ -306,11 +306,6 @@ export default function PyUSDYieldSelector() {
   // KYC state management
   const [hasKycToken, setHasKycToken] = useState(false);
 
-  // Get smart wallet from user's linked accounts
-  const smartWallet = user?.linkedAccounts?.find(
-    (account: any) => account.type === 'smart_wallet'
-  ) as { address: string } | undefined;
-
   // Function to check KYC token balance
   const checkKycTokenBalance = useCallback(async () => {
     if (!user?.wallet?.address) return;
@@ -482,14 +477,7 @@ export default function PyUSDYieldSelector() {
   // Helper function to process a single position (adapted from cookbook)
   const processPosition = useCallback(
     async (
-      publicClient: {
-        readContract: (params: {
-          address: string;
-          abi: any[];
-          functionName: string;
-          args: any[];
-        }) => Promise<any>;
-      },
+      publicClient: any,
       walletAddress: string,
       index: number
     ): Promise<number> => {
