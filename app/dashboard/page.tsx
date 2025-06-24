@@ -1143,53 +1143,26 @@ export default function PyUSDYieldSelector() {
     console.log(`  - PYUSD: ${currentPyusdBalance.toString()} wei`);
     console.log(`  - USDC: ${currentUsdcBalance.toString()} wei`);
 
-    // Use balanced amounts based on available balances
-    // Calculate how much we can add while keeping roughly 1:1 ratio
-    const pyusdAvailable = currentPyusdBalance;
-    const usdcAvailable = currentUsdcBalance;
+    // Use the amounts passed to this function (from the deposit operation)
+    // These represent the actual amounts we want to add as liquidity
+    const depositPyusdUsd = Number(pyusdAmount) / 1000000; // PYUSD has 6 decimals
+    const depositUsdcUsd = Number(usdcAmount) / 1000000; // USDC has 6 decimals
 
-    // Use the smaller amount to maintain balance (both in similar USD value)
-    // Since both are USD-pegged, use the smaller USD amount for both
-    const pyusdUsdValue = Number(pyusdAvailable) / 1000000; // PYUSD has 6 decimals
-    const usdcUsdValue = Number(usdcAvailable) / 1000000; // USDC has 6 decimals
+    // Use the actual deposit amounts (these should already be balanced from the swap)
+    const balancedPyusdAmount = pyusdAmount;
+    const balancedUsdcAmount = usdcAmount;
 
-    // Use most of both amounts available, but ensure they're balanced
-    // If we have very little USDC compared to PYUSD, use more USDC
-    const maxLiquidityUsd = Math.min(pyusdUsdValue * 0.95, usdcUsdValue * 0.95);
-
-    // However, if one token is much smaller, use a higher percentage of the smaller one
-    // to maximize liquidity utilization
-    let actualPyusdUsd: number;
-    let actualUsdcUsd: number;
-
-    if (usdcUsdValue < pyusdUsdValue * 0.1) {
-      // USDC is much smaller, use more of it
-      actualUsdcUsd = usdcUsdValue * 0.98;
-      actualPyusdUsd = actualUsdcUsd; // Match the USDC amount
-    } else if (pyusdUsdValue < usdcUsdValue * 0.1) {
-      // PYUSD is much smaller, use more of it
-      actualPyusdUsd = pyusdUsdValue * 0.98;
-      actualUsdcUsd = actualPyusdUsd; // Match the PYUSD amount
-    } else {
-      // Amounts are reasonably balanced, use 90% of smaller
-      actualPyusdUsd = actualUsdcUsd = maxLiquidityUsd;
-    }
-
-    const balancedPyusdAmount = BigInt(Math.floor(actualPyusdUsd * 1000000));
-    const balancedUsdcAmount = BigInt(Math.floor(actualUsdcUsd * 1000000));
-
-    console.log('🔄 === USING BALANCED AMOUNTS ===');
+    console.log('🔄 === USING DEPOSIT AMOUNTS ===');
     console.log(
-      `💰 Available: ${pyusdUsdValue.toFixed(2)} PYUSD + ${usdcUsdValue.toFixed(2)} USDC`
+      `💰 Deposit amounts: ${depositPyusdUsd.toFixed(6)} PYUSD + ${depositUsdcUsd.toFixed(6)} USDC`
     );
-    console.log(`💰 Max liquidity USD: ${maxLiquidityUsd.toFixed(2)}`);
     console.log(
-      `💰 Using balanced amounts: ${Number(balancedPyusdAmount) / 1000000} PYUSD + ${Number(balancedUsdcAmount) / 1000000} USDC`
+      `💰 Using deposit amounts: ${Number(balancedPyusdAmount) / 1000000} PYUSD + ${Number(balancedUsdcAmount) / 1000000} USDC`
     );
     console.log(`💰 PYUSD amount: ${balancedPyusdAmount.toString()} wei`);
     console.log(`💰 USDC amount: ${balancedUsdcAmount.toString()} wei`);
 
-    // Validate we have enough balance for balanced amounts
+    // Validate we have enough balance for deposit amounts
     if (currentPyusdBalance < balancedPyusdAmount) {
       throw new Error(
         `Insufficient PYUSD: have ${Number(currentPyusdBalance) / 1000000}, need ${Number(balancedPyusdAmount) / 1000000}`
@@ -1201,7 +1174,7 @@ export default function PyUSDYieldSelector() {
       );
     }
 
-    console.log('✅ Sufficient balances for balanced amounts');
+    console.log('✅ Sufficient balances for deposit amounts');
 
     // Use the balanced amounts for liquidity addition
     const actualPyusdAmount = balancedPyusdAmount;
@@ -1689,10 +1662,30 @@ export default function PyUSDYieldSelector() {
       setInvestmentStatus('Adding liquidity to pool...');
       const halfAmount = investmentAmountWei / 2n;
 
-      // Check USDC balance after swap (estimated)
-      const estimatedUsdcAmount = halfAmount / 70n; // Rough conversion rate
+      // Get actual USDC balance after swap
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
 
-      await addLiquidityToPool(halfAmount, estimatedUsdcAmount);
+      const publicClient = createPublicClient({
+        chain: sepolia,
+        transport: http(
+          'https://ethereum-sepolia-rpc.publicnode.com/b95cdba153627243b104e8933572f0a48c39aeea53084f43e0dce7c5dbbc028a'
+        ),
+      });
+
+      const actualUsdcBalance = (await publicClient.readContract({
+        address: USDC_TOKEN_CONFIG.address,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [smartWallet?.address as `0x${string}`],
+      })) as bigint;
+
+      console.log(
+        `💰 Actual USDC balance after swap: ${actualUsdcBalance.toString()} wei`
+      );
+      console.log(`💰 Half PYUSD amount: ${halfAmount.toString()} wei`);
+
+      await addLiquidityToPool(halfAmount, actualUsdcBalance);
 
       // Wait for liquidity addition to be mined
       await new Promise(resolve => setTimeout(resolve, 10000));
