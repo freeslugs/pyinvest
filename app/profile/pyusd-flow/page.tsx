@@ -1,7 +1,7 @@
 'use client';
 
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { ArrowLeft, ExternalLink, RefreshCw, Wallet } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createPublicClient, http, parseAbi } from 'viem';
@@ -119,121 +119,80 @@ export default function PyusdFlowBalancePage() {
   const contractUrl = `${FLOW_TESTNET_CONFIG.explorerUrl}/address/${PYUSD_FLOW_CONFIG.address}`;
 
   return (
-    <div className='min-h-screen bg-gray-50 py-8'>
-      <div className='mx-auto max-w-2xl px-4 sm:px-6 lg:px-8'>
+    <div className='min-h-screen bg-gray-50 py-4'>
+      <div className='mx-auto max-w-md px-4'>
         {/* Header */}
-        <div className='mb-8 rounded-lg border border-gray-200 bg-white shadow-sm'>
-          <div className='px-6 py-8'>
-            <div className='flex items-center space-x-4'>
-              <button
-                onClick={() => router.push('/profile')}
-                className='flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200'
-              >
-                <ArrowLeft className='h-5 w-5 text-gray-600' />
-              </button>
-              <div className='flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600'>
-                <Wallet className='h-8 w-8 text-white' />
-              </div>
-              <div>
-                <h1 className='text-2xl font-bold text-gray-900'>
-                  PYUSD on Flow Balance
-                </h1>
-                <p className='text-gray-600'>Flow EVM Testnet</p>
-              </div>
-            </div>
-          </div>
+        <div className='mb-4 flex items-center justify-between'>
+          <button
+            onClick={() => router.push('/profile')}
+            className='flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm transition-colors hover:bg-gray-50'
+          >
+            <ArrowLeft className='h-4 w-4 text-gray-600' />
+          </button>
+          <h1 className='text-lg font-semibold text-gray-900'>
+            PYUSD on Flow
+          </h1>
+          <div></div>
         </div>
 
         {/* Balance Card */}
-        <div className='rounded-lg border border-gray-200 bg-white shadow-sm'>
-          <div className='px-6 py-8'>
-            <div className='text-center'>
-              {/* PYUSD Logo */}
-              <div className='mb-6 flex justify-center'>
-                <img
-                  src='/assets/pyusd_logo.png'
-                  alt='PYUSD'
-                  className='h-16 w-16 rounded-full border-2 border-gray-100'
-                />
+        <div className='rounded-lg border border-gray-200 bg-white p-4 shadow-sm'>
+          <div className='text-center'>
+            {/* PYUSD Logo */}
+            <div className='mb-3 flex justify-center'>
+              <img
+                src='/assets/pyusd_logo.png'
+                alt='PYUSD'
+                className='h-12 w-12 rounded-full'
+              />
+            </div>
+
+            {/* Balance Display */}
+            <div className='mb-4'>
+              <div className='flex items-baseline justify-center space-x-1'>
+                <span className='text-2xl font-bold text-gray-900'>
+                  {pyusdBalance}
+                </span>
+                <span className='text-sm font-medium text-gray-500'>
+                  PYUSD
+                </span>
               </div>
+            </div>
 
-              {/* Balance Display */}
-              <div className='mb-6'>
-                <p className='mb-2 text-sm font-medium text-gray-500'>
-                  Your Balance
-                </p>
-                <div className='flex items-center justify-center space-x-2'>
-                  <span className='text-4xl font-bold text-gray-900'>
-                    {pyusdBalance}
-                  </span>
-                  <span className='text-xl font-medium text-gray-500'>
-                    PYUSD
-                  </span>
-                </div>
-              </div>
+            {/* Refresh Button */}
+            <button
+              onClick={checkPyusdBalance}
+              disabled={isLoading || !walletAddress}
+              className='mb-4 inline-flex items-center space-x-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
+            >
+              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
 
-              {/* Refresh Button */}
-              <div className='mb-8'>
-                <button
-                  onClick={checkPyusdBalance}
-                  disabled={isLoading || !walletAddress}
-                  className='inline-flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
-                >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  <span>{isLoading ? 'Refreshing...' : 'Refresh Balance'}</span>
-                </button>
-              </div>
-
-              {/* Contract Info */}
-              <div className='space-y-4 border-t border-gray-100 pt-6'>
-                <div>
-                  <p className='mb-2 text-sm font-medium text-gray-500'>
-                    Contract Address
-                  </p>
-                  <p className='font-mono text-sm text-gray-700'>
-                    {PYUSD_FLOW_CONFIG.address}
-                  </p>
-                </div>
-
-                <div>
-                  <p className='mb-2 text-sm font-medium text-gray-500'>
-                    Your Wallet Address
-                  </p>
-                  <p className='font-mono text-sm text-gray-700'>
-                    {walletAddress || 'Not available'}
-                  </p>
-                </div>
-
-                {/* Link to Contract Explorer */}
-                <div className='pt-4'>
-                  <a
-                    href={contractUrl}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='inline-flex items-center space-x-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50'
-                  >
-                    <ExternalLink className='h-4 w-4' />
-                    <span>View Contract on Flow Scanner</span>
-                  </a>
-                </div>
-              </div>
+            {/* Contract Link */}
+            <div className='border-t border-gray-100 pt-3'>
+              <a
+                href={contractUrl}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='inline-flex items-center space-x-1 text-xs text-blue-600 transition-colors hover:text-blue-800'
+              >
+                <ExternalLink className='h-3 w-3' />
+                <span>View Contract</span>
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Network Info */}
-        <div className='mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm'>
-          <div className='flex items-center justify-between text-sm'>
-            <span className='text-gray-500'>Network:</span>
-            <span className='font-medium text-gray-900'>
-              {FLOW_TESTNET_CONFIG.name}
-            </span>
+        {/* Compact Info */}
+        <div className='mt-3 rounded-lg bg-white p-3 text-xs text-gray-500'>
+          <div className='flex justify-between'>
+            <span>Network:</span>
+            <span className='font-medium'>Flow Testnet</span>
           </div>
-          <div className='mt-2 flex items-center justify-between text-sm'>
-            <span className='text-gray-500'>Chain ID:</span>
-            <span className='font-medium text-gray-900'>
-              {FLOW_TESTNET_CONFIG.id}
-            </span>
+          <div className='mt-1 flex justify-between'>
+            <span>Chain ID:</span>
+            <span className='font-medium'>{FLOW_TESTNET_CONFIG.id}</span>
           </div>
         </div>
       </div>
